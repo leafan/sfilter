@@ -1,7 +1,7 @@
 /**
 * 优秀参考对象:
-  1. https://github.com/mellaught/ethereum-blocks/blob/master/src/ethereum/blocks.go
-  2. https://github.com/Orochyy/blockchainETH-MongoDb/blob/main/modules/main.go
+ 1. https://github.com/mellaught/ethereum-blocks/blob/master/src/ethereum/blocks.go
+ 2. https://github.com/Orochyy/blockchainETH-MongoDb/blob/main/modules/main.go
 */
 
 package main
@@ -10,16 +10,22 @@ import (
 	"context"
 	"log"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/cloudfresco/ethblocks"
 
-	"sfilter/schem"
+	"sfilter/handler"
+	"sfilter/schema"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var ws_addr = "ws://127.0.0.1:8546"
+var mongo_addr = "mongodb://127.0.0.1:27017"
 
 func main() {
 	// todo
@@ -41,8 +47,18 @@ func loop() {
 	if err != nil {
 		panic(err)
 	}
+	log.Printf("[ loop ] start SubscribeNewHead now..\n\n")
 
-	log.Println("[ loop ] start SubscribeNewHead now..\n\n")
+	clientOptions := options.Client().ApplyURI(mongo_addr)
+	mongodb, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err = mongodb.Disconnect(ctx); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	for {
 		select {
@@ -51,17 +67,18 @@ func loop() {
 			return
 
 		case header := <-headers:
-			log.Println("\n[ loop ] get new header now. number: ", header.Number)
-			go getBlock(header.Number, client)
+			log.Printf("\n\n\n\n\n[ loop ] get new header now. number: %v\n\n\n", header.Number)
+			go getBlock(header.Number, client, mongodb)
 		}
 
 	}
 }
 
-func getBlock(blockNumber *big.Int, client *ethclient.Client) {
+func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client) {
+	start := time.Now()
 	ctx := context.Background()
 
-	oneBlk := new(schem.OneBlock)
+	oneBlk := new(schema.Block)
 
 	block, err := ethblocks.GetBlockByNumber(ctx, client, blockNumber)
 	if err != nil {
@@ -77,16 +94,20 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client) {
 			continue
 		}
 
-		oneTx := new(schem.OneTransaction)
+		oneTx := new(schema.Transaction)
 		oneTx.OriginTx = tx
 		oneTx.Receipt = receipt
 
 		oneBlk.Transactions = append(oneBlk.Transactions, oneTx)
 	}
 
-	// schem.PrintOneBlock(oneBlk)
+	// schema.PrintOneBlock(oneBlk)
 
-	// go handleBlock()
+	go handleBlock(oneBlk, mongodb)
 
-	log.Printf("\n\n[ getBlock ] finished block: %d\n\n", blockNumber)
+	log.Printf("[ getBlock ] finished block: %d, time elapsed: % v\n\n", blockNumber, time.Since(start))
+}
+
+func handleBlock(blk *schema.Block, mongodb *mongo.Client) {
+	go handler.Swap_handle(blk, mongodb)
 }
