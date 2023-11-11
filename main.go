@@ -31,23 +31,18 @@ func main() {
 	// todo
 	// retrive_old_blocks()
 
-	loop()
+	client, mongodb := _init()
+
+	loop(client, mongodb)
 }
 
-func loop() {
+func _init() (*ethclient.Client, *mongo.Client) {
 	client, err := ethblocks.GetClient(ws_addr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ctx := context.Background()
-
-	headers := make(chan *types.Header)
-	sub, err := client.SubscribeNewHead(ctx, headers)
-	if err != nil {
-		panic(err)
-	}
-	log.Printf("[ loop ] start SubscribeNewHead now..\n\n")
 
 	clientOptions := options.Client().ApplyURI(mongo_addr)
 	mongodb, err := mongo.Connect(ctx, clientOptions)
@@ -59,6 +54,19 @@ func loop() {
 			log.Fatal(err)
 		}
 	}()
+
+	schema.InitTables(mongodb)
+
+	return client, mongodb
+}
+
+func loop(client *ethclient.Client, mongodb *mongo.Client) {
+	headers := make(chan *types.Header)
+	sub, err := client.SubscribeNewHead(context.Background(), headers)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("[ loop ] start SubscribeNewHead now..\n\n")
 
 	for {
 		select {

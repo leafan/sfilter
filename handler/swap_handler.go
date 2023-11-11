@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"context"
-	"log"
 	"sfilter/schema"
+	service_swap "sfilter/services/swap"
+
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -17,7 +18,7 @@ func Swap_handle(block *schema.Block, mongodb *mongo.Client) {
 
 					// 发现有swap交易
 					if _type > 0 {
-						log.Printf("[ Swap_handle ] swap tx now. type: %v, tx: %v\n\n", _type, tx.OriginTx.Hash())
+						// log.Printf("[ Swap_handle ] swap tx now. type: %v, tx: %v\n\n", _type, tx.OriginTx.Hash())
 
 						var swap *schema.Swap
 
@@ -28,7 +29,8 @@ func Swap_handle(block *schema.Block, mongodb *mongo.Client) {
 						}
 
 						if swap != nil {
-							saveSwapInfo(swap, mongodb)
+							swap.CreatedAt = time.Now()
+							handleOneSwap(swap, mongodb)
 						}
 					}
 				}
@@ -38,13 +40,10 @@ func Swap_handle(block *schema.Block, mongodb *mongo.Client) {
 	}
 }
 
-func saveSwapInfo(swap *schema.Swap, mongodb *mongo.Client) {
-	collection := mongodb.Database("deepeye").Collection("swap")
+func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
+	go service_swap.UpdateKline(swap, mongodb)
+	go service_swap.UpdateTxTrends(swap, mongodb)
+	go service_swap.UpdateKOLTxTrends(swap, mongodb)
 
-	result, err := collection.InsertOne(context.Background(), swap)
-	if err != nil {
-		log.Printf("[ saveSwapInfo ] InsertOne error: %v\n", err)
-	}
-
-	log.Printf("Inserted document ID: %v\n", result.InsertedID)
+	go service_swap.SaveSwapTx(swap, mongodb)
 }
