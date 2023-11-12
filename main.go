@@ -10,13 +10,13 @@ import (
 	"context"
 	"log"
 	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/cloudfresco/ethblocks"
 
+	"sfilter/config"
 	"sfilter/handler"
 	"sfilter/schema"
 
@@ -28,9 +28,6 @@ var ws_addr = "ws://127.0.0.1:8546"
 var mongo_addr = "mongodb://127.0.0.1:27017"
 
 func main() {
-	// todo
-	// retrive_old_blocks()
-
 	client, mongodb := _init()
 
 	loop(client, mongodb)
@@ -49,18 +46,30 @@ func _init() (*ethclient.Client, *mongo.Client) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err = mongodb.Disconnect(ctx); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	schema.InitTables(mongodb)
 
 	return client, mongodb
 }
 
+// 每次启动往回回溯3天的区块
+// 防止某一次未处理
+func retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
+	curBlkNo, err := client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		log.Fatal("[ retrive_old_blocks ] HeaderByNumber err: ", err)
+	}
+
+	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
+	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
+		go handler.GetBlock(big.NewInt((i)), client, mongodb)
+	}
+
+}
+
 func loop(client *ethclient.Client, mongodb *mongo.Client) {
+	go retrive_old_blocks(client, mongodb) // 先回溯
+
 	headers := make(chan *types.Header)
 	sub, err := client.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
@@ -76,46 +85,8 @@ func loop(client *ethclient.Client, mongodb *mongo.Client) {
 
 		case header := <-headers:
 			log.Printf("\n\n\n\n\n[ loop ] get new header now. number: %v\n\n\n", header.Number)
-			go getBlock(header.Number, client, mongodb)
+			go handler.GetBlock(header.Number, client, mongodb)
 		}
 
 	}
-}
-
-func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client) {
-	start := time.Now()
-	ctx := context.Background()
-
-	oneBlk := new(schema.Block)
-
-	block, err := ethblocks.GetBlockByNumber(ctx, client, blockNumber)
-	if err != nil {
-		log.Fatal(err)
-	}
-	oneBlk.Block = block
-
-	// ethblocks.PrintTransaction(txs[0])
-	for _, tx := range block.Transactions() {
-		receipt, err := ethblocks.GetTransactionReceipt(ctx, client, tx.Hash())
-		if err != nil {
-			log.Println("[ getBlock ] GetTransactionReceipt err: ", err)
-			continue
-		}
-
-		oneTx := new(schema.Transaction)
-		oneTx.OriginTx = tx
-		oneTx.Receipt = receipt
-
-		oneBlk.Transactions = append(oneBlk.Transactions, oneTx)
-	}
-
-	// schema.PrintOneBlock(oneBlk)
-
-	go handleBlock(oneBlk, mongodb)
-
-	log.Printf("[ getBlock ] finished block: %d, time elapsed: % v\n\n", blockNumber, time.Since(start))
-}
-
-func handleBlock(blk *schema.Block, mongodb *mongo.Client) {
-	go handler.Swap_handle(blk, mongodb)
 }

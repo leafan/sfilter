@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"context"
-	"log"
 	"math/big"
 	"time"
 
@@ -24,45 +22,20 @@ type Swap struct {
 	CreatedAt     time.Time
 }
 
-const SwapSaveTime = 60 * 60 * 24 * 7 // 7d
-// const SwapSaveTime = 10
+const swapSaveTime = 60 * 60 * 24 * 7 // 7d
+// const swapSaveTime = 10
 
 var SwapIndexModel = []mongo.IndexModel{
 	{
-		Keys:    bson.D{{"createdat", -1}},
-		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(SwapSaveTime),
+		Keys:    bson.D{{Key: "createdat", Value: -1}},
+		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(swapSaveTime),
 	},
 	{
-		Keys:    bson.D{{"tx", 1}},
-		Options: options.Index().SetName("tx_index"),
+		Keys:    bson.D{{Key: "tx", Value: 1}},
+		Options: options.Index().SetName("tx_index").SetUnique(true),
 	},
 	{
-		Keys:    bson.D{{"receiver", 1}},
+		Keys:    bson.D{{Key: "receiver", Value: 1}},
 		Options: options.Index().SetName("receiver_index"),
 	},
-}
-
-// 如果不存在表, 则创建索引
-func InitTables(mongodb *mongo.Client) {
-	collection := mongodb.Database("deepeye").Collection("swap")
-
-	filter := bson.M{"name": "your_collection_name"}
-	_, err := collection.Database().ListCollectionNames(context.Background(), filter)
-	if err != nil {
-		log.Fatal("[ InitTables] ListCollectionNames err: ", err)
-		return
-	}
-
-	if err == mongo.ErrNilDocument {
-		// 说明是新表, 则创建索引
-		_, err = collection.Indexes().CreateMany(context.Background(), SwapIndexModel)
-		if err != nil {
-			log.Printf("[ InitTables ] collection.Indexes().CreateMany error: %v\n", err)
-			return
-		}
-
-		log.Printf("[ InitTables ] collection.Indexes().CreateMany success\n")
-	} else {
-		log.Printf("[ InitTables ] swap table exist, pass...")
-	}
 }

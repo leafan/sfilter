@@ -1,9 +1,12 @@
 package schema
 
 import (
-	"log"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Transaction struct {
@@ -27,15 +30,29 @@ const (
 
 )
 
-// debug
-func PrintOneBlock(block *Block) {
-	log.Println("Number        : ", block.Block.Number())
-	log.Println("Hash            : ", block.Block.Hash().Hex())
+// 该表的目的是确认是否已经被处理, 防止重复
+type BlockProceeded struct {
+	BlockNo int64
+	Hash    string
+	Status  int // reserved, no use now..
 
-	for i, tx := range block.Transactions {
-		log.Printf("tx %d hash: %v\n", i, tx.OriginTx.Hash())
-		log.Printf("tx %d log count: %d \n", i, len(tx.Receipt.Logs))
+	CreatedAt time.Time
+}
 
-		log.Printf("tx %d log[0]: %v\n", i, tx.Receipt.Logs[0])
-	}
+// const blockProceededSaveTime = 60 * 60 * 24 * 30 // 30d
+const blockProceededSaveTime = 10
+
+var BlockProceededIndexModel = []mongo.IndexModel{
+	{
+		Keys:    bson.D{{Key: "createdat", Value: -1}},
+		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(blockProceededSaveTime),
+	},
+	{
+		Keys:    bson.D{{Key: "hash", Value: 1}},
+		Options: options.Index().SetName("hash_index").SetUnique(true),
+	},
+	{
+		Keys:    bson.D{{Key: "blockno", Value: 1}},
+		Options: options.Index().SetName("blockno_index"),
+	},
 }
