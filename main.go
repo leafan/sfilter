@@ -9,9 +9,7 @@ package main
 import (
 	"context"
 	"log"
-	"math/big"
 	"os"
-	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -29,7 +27,7 @@ import (
 
 func test() {
 	chain.TEST_PAIR()
-	chain.TEST_TOKEN()
+	// chain.TEST_TOKEN()
 
 	os.Exit(0)
 }
@@ -61,24 +59,8 @@ func _init() (*ethclient.Client, *mongo.Client) {
 	return client, mongodb
 }
 
-// 每次启动往回回溯3天的区块
-// 防止某一次未处理
-func retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
-	curBlkNo, err := client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		log.Fatal("[ retrive_old_blocks ] HeaderByNumber err: ", err)
-	}
-
-	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
-	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
-		go handler.HandleBlock(big.NewInt((i)), client, mongodb)
-		time.Sleep(20 * time.Millisecond)
-	}
-
-}
-
 func loop(client *ethclient.Client, mongodb *mongo.Client) {
-	go retrive_old_blocks(client, mongodb) // 先回溯
+	go handler.Retrive_old_blocks(client, mongodb) // 先回溯
 
 	headers := make(chan *types.Header)
 	sub, err := client.SubscribeNewHead(context.Background(), headers)

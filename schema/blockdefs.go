@@ -20,6 +20,7 @@ type Transaction struct {
 
 type Block struct {
 	Block        *types.Block
+	EthPrice     float64
 	Transactions []*Transaction
 }
 
@@ -35,7 +36,11 @@ const (
 type BlockProceeded struct {
 	BlockNo int64
 	Hash    string
-	Status  int // reserved, no use now..
+
+	BlockTime uint64  // 区块打包时间
+	EthPrice  float64 // eth价格 by usd. 不需要非常精准，就根据少数几个交易对更新即可
+
+	Status int // reserved, no use atm..
 
 	CreatedAt time.Time
 }

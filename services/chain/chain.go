@@ -1,18 +1,23 @@
 package chain
 
 import (
+	"context"
 	"log"
+	"math/big"
 	"sfilter/config"
 	"strings"
 
 	"github.com/cloudfresco/ethblocks"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 // 本地使用的全局变量, low...
 var chainStaticAbi *abi.ABI
 var staticClient *ethclient.Client
+var infuraClient *ethclient.Client
 
 func getAbi() *abi.ABI {
 	if chainStaticAbi == nil {
@@ -38,6 +43,44 @@ func getClient() *ethclient.Client {
 	}
 
 	return staticClient
+}
+
+func getInfuraClient() *ethclient.Client {
+	if infuraClient == nil {
+		cli, err := ethblocks.GetClient(config.INFURA_KEY_ADDR)
+		if err != nil {
+			log.Fatal("infuraClient error! err: ", err)
+		}
+
+		infuraClient = cli
+	}
+
+	return infuraClient
+}
+
+func getSingleProp(address, info string, client *ethclient.Client, height *big.Int) (interface{}, error) {
+	abi := getAbi()
+	contractAddr := common.HexToAddress(address)
+	bytes, _ := abi.Pack(info)
+	msg := ethereum.CallMsg{
+		From: common.Address{},
+		To:   &contractAddr,
+		Data: bytes,
+	}
+
+	ret, err := client.CallContract(context.Background(), msg, height)
+	if err != nil {
+		log.Printf("[ getSingleProp ] CallContract error. addr: %v, err: %v\n", address, err)
+		return "", err
+	}
+
+	intr, err := abi.Methods[info].Outputs.UnpackValues(ret)
+	if err != nil {
+		log.Printf("[ getSingleProp ] UnpackValues error. addr: %v, err: %v\n", address, err)
+		return "", err
+	}
+
+	return intr[0], err
 }
 
 const ChainAbiJson = `[{
@@ -548,7 +591,9 @@ const ChainAbiJson = `[{
 	"payable": false,
 	"stateMutability": "view",
 	"type": "function"
-}, {
+},
+
+{
 	"constant": true,
 	"inputs": [],
 	"name": "totalSupply",
@@ -560,7 +605,46 @@ const ChainAbiJson = `[{
 	"payable": false,
 	"stateMutability": "view",
 	"type": "function"
-}, {
+}, 
+
+{
+	"inputs": [],
+	"name": "slot0",
+	"outputs": [{
+		"internalType": "uint160",
+		"name": "sqrtPriceX96",
+		"type": "uint160"
+	}, {
+		"internalType": "int24",
+		"name": "tick",
+		"type": "int24"
+	}, {
+		"internalType": "uint16",
+		"name": "observationIndex",
+		"type": "uint16"
+	}, {
+		"internalType": "uint16",
+		"name": "observationCardinality",
+		"type": "uint16"
+	}, {
+		"internalType": "uint16",
+		"name": "observationCardinalityNext",
+		"type": "uint16"
+	}, {
+		"internalType": "uint8",
+		"name": "feeProtocol",
+		"type": "uint8"
+	}, {
+		"internalType": "bool",
+		"name": "unlocked",
+		"type": "bool"
+	}],
+	"stateMutability": "view",
+	"type": "function"
+
+},
+
+{
 	"constant": false,
 	"inputs": [{
 		"internalType": "address",

@@ -1,9 +1,8 @@
-package handler
+package swap
 
 import (
 	"fmt"
 	"sfilter/schema"
-	service_swap "sfilter/services/swap"
 
 	"time"
 
@@ -44,9 +43,9 @@ func Swap_handler(block *schema.Block, mongodb *mongo.Client) {
 }
 
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	go service_swap.UpdateKline(swap, mongodb)
-	go service_swap.UpdateTxTrends(swap, mongodb)
-	go service_swap.UpdateKOLTxTrends(swap, mongodb)
+	go UpdateKline(swap, mongodb)
+	go UpdateTxTrends(swap, mongodb)
+	go UpdateKOLTxTrends(swap, mongodb)
 
-	go service_swap.SaveSwapTx(swap, mongodb)
+	go SaveSwapTx(swap, mongodb)
 }
