@@ -14,7 +14,7 @@ func SaveSwapTx(swap *schema.Swap, mongodb *mongo.Client) {
 
 	_, err := collection.InsertOne(context.Background(), swap)
 	if err != nil {
-		log.Printf("[ saveSwapTx ] InsertOne error: %v, swap tx: %v\n", err, swap.Tx)
+		log.Printf("[ saveSwapTx ] InsertOne error: %v, swap tx: %v\n", err, swap.TxHash)
 		return
 	}
 

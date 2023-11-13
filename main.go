@@ -10,6 +10,8 @@ import (
 	"context"
 	"log"
 	"math/big"
+	"os"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -19,29 +21,36 @@ import (
 	"sfilter/config"
 	"sfilter/handler"
 	"sfilter/schema"
+	"sfilter/services/chain"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var ws_addr = "ws://127.0.0.1:8546"
-var mongo_addr = "mongodb://127.0.0.1:27017"
+func test() {
+	chain.TEST_PAIR()
+	chain.TEST_TOKEN()
+
+	os.Exit(0)
+}
 
 func main() {
 	client, mongodb := _init()
+
+	// test()
 
 	loop(client, mongodb)
 }
 
 func _init() (*ethclient.Client, *mongo.Client) {
-	client, err := ethblocks.GetClient(ws_addr)
+	client, err := ethblocks.GetClient(config.WS_ADDR)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ctx := context.Background()
 
-	clientOptions := options.Client().ApplyURI(mongo_addr)
+	clientOptions := options.Client().ApplyURI(config.MONGO_ADDR)
 	mongodb, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Fatal(err)
@@ -62,7 +71,8 @@ func retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 
 	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
 	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
-		go handler.GetBlock(big.NewInt((i)), client, mongodb)
+		go handler.HandleBlock(big.NewInt((i)), client, mongodb)
+		time.Sleep(20 * time.Millisecond)
 	}
 
 }
@@ -85,7 +95,7 @@ func loop(client *ethclient.Client, mongodb *mongo.Client) {
 
 		case header := <-headers:
 			log.Printf("\n\n\n\n\n[ loop ] get new header now. number: %v\n\n\n", header.Number)
-			go handler.GetBlock(header.Number, client, mongodb)
+			go handler.HandleBlock(header.Number, client, mongodb)
 		}
 
 	}

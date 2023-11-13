@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client) {
+func HandleBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client) {
 	if services_block.IsBlockProceeded(blockNumber.Int64(), mongodb) {
 		return
 	}
@@ -30,7 +30,8 @@ func GetBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 	}
 	oneBlk.Block = block
 
-	// ethblocks.PrintTransaction(txs[0])
+	log.Printf("\n[ getBlock ] get block: %d now, tx num: %d, hash: %v\n", blockNumber, len(block.Transactions()), block.Hash())
+
 	for _, tx := range block.Transactions() {
 		receipt, err := ethblocks.GetTransactionReceipt(ctx, client, tx.Hash())
 		if err != nil {
@@ -47,7 +48,7 @@ func GetBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 
 	// schema.PrintOneBlock(oneBlk)
 
-	go handleBlock(oneBlk, mongodb)
+	go doHandleBlock(oneBlk, mongodb)
 
 	bps := &schema.BlockProceeded{
 		BlockNo: blockNumber.Int64(),
@@ -61,6 +62,9 @@ func GetBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 	log.Printf("[ getBlock ] finished block: %d, time elapsed: % v\n\n", blockNumber, time.Since(start))
 }
 
-func handleBlock(blk *schema.Block, mongodb *mongo.Client) {
-	go Swap_handle(blk, mongodb)
+func doHandleBlock(blk *schema.Block, mongodb *mongo.Client) {
+	go Swap_handler(blk, mongodb)
+
+	// todo
+	// go Transfer_handler(blk, mongodb)
 }

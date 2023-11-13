@@ -2,6 +2,7 @@ package schema
 
 import (
 	"math/big"
+	"sfilter/config"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,29 +11,45 @@ import (
 )
 
 type Swap struct {
-	Tx        string // 原始hash
-	Token     string // 买卖的token
-	Direction int    // 0买; 1卖
+	BlockNo  int64  // 区块号
+	TxHash   string // tx hash
+	TxIndex  uint32 // tx 在本区块中的序号
+	PairAddr string // pair addr
 
-	Operator string // msg.sender0
-	Receiver string //接收token的人，一般和operator相等, 但也可能为合约
+	Token0 string
+	Token1 string
 
-	Price         *big.Int
-	AmountInToken *big.Int
-	CreatedAt     time.Time
+	// 买卖的token
+	// 如果都是屌丝币, 以Token0为主token, token1为quote币
+	// 如果都是quote币, 则当屌丝币分析
+	MainToken int // 0表示token0; 1表示token1
+	Direction int // 0买; 1卖
+
+	Operator      string // msg.sender
+	OperatorNonce uint64 // msg.sender 当时的nonce
+
+	Sender    string // event中记录的sender
+	Recipient string // event中记录的sender
+
+	Price             *big.Int // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
+	AmountOfMainToken *big.Int // main token amount / decimal
+
+	LogIndexWithTx string // tx hash 以及 log 在本区块中的序号，以作为唯一标识
+	CreatedAt      time.Time
 }
-
-const swapSaveTime = 60 * 60 * 24 * 7 // 7d
-// const swapSaveTime = 10
 
 var SwapIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "createdat", Value: -1}},
-		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(swapSaveTime),
+		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(config.SwapSaveTime),
 	},
 	{
-		Keys:    bson.D{{Key: "tx", Value: 1}},
-		Options: options.Index().SetName("tx_index").SetUnique(true),
+		Keys:    bson.D{{Key: "txhash", Value: 1}},
+		Options: options.Index().SetName("txhash_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "logindexwithtx", Value: 1}},
+		Options: options.Index().SetName("logindexwithtx_index").SetUnique(true),
 	},
 	{
 		Keys:    bson.D{{Key: "receiver", Value: 1}},

@@ -11,17 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SaveBlockProceeded(bps *schema.BlockProceeded, mongodb *mongo.Client) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
-
-	_, err := collection.InsertOne(context.Background(), bps)
-	if err != nil {
-		log.Printf("[ SaveBlockProceeded ] InsertOne error: %v, block no: %v\n", err, bps.BlockNo)
-		return
-	}
-
-}
-
 func IsBlockProceeded(blkNo int64, mongodb *mongo.Client) bool {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
 
@@ -41,4 +30,15 @@ func IsBlockProceeded(blkNo int64, mongodb *mongo.Client) bool {
 
 	// log.Println("[ isBlockProceeded ] FindOne result 1...")
 	return true
+}
+
+func SaveBlockProceeded(bps *schema.BlockProceeded, mongodb *mongo.Client) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
+
+	_, err := collection.InsertOne(context.Background(), bps)
+	if err != nil {
+		log.Printf("[ SaveBlockProceeded ] InsertOne error: %v, block no: %v\n", err, bps.BlockNo)
+		return
+	}
+
 }

@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"sfilter/config"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -39,13 +40,10 @@ type BlockProceeded struct {
 	CreatedAt time.Time
 }
 
-// const blockProceededSaveTime = 60 * 60 * 24 * 30 // 30d
-const blockProceededSaveTime = 10
-
 var BlockProceededIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "createdat", Value: -1}},
-		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(blockProceededSaveTime),
+		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(config.BlockProceededSaveTime),
 	},
 	{
 		Keys:    bson.D{{Key: "hash", Value: 1}},
@@ -53,6 +51,6 @@ var BlockProceededIndexModel = []mongo.IndexModel{
 	},
 	{
 		Keys:    bson.D{{Key: "blockno", Value: 1}},
-		Options: options.Index().SetName("blockno_index"),
+		Options: options.Index().SetName("blockno_index").SetUnique(true),
 	},
 }

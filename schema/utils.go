@@ -33,73 +33,39 @@ func isUniswapSwapV2Event(topics []common.Hash) bool {
 
 func isUniswapSwapV3Event(topics []common.Hash) bool {
 	if len(topics) == 3 {
-		return strings.EqualFold(topics[0].String(), "0xbeee1e6e7fe307ddcf84b0a16137a4430ad5e2480fc4f4a8e250ab56ccd7630d")
+		return strings.EqualFold(topics[0].String(), "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67")
 	}
 
 	return false
 }
 
 func InitTables(mongodb *mongo.Client) {
-	initSwapTable(mongodb)
-	initBlockProceededTable(mongodb)
+	doInitTable(config.SwapTableName, SwapIndexModel, mongodb)
+	doInitTable(config.BlockProceededTableName, BlockProceededIndexModel, mongodb)
+
+	doInitTable(config.TokenTableName, TokenIndexModel, mongodb)
+	doInitTable(config.PairTableName, PairIndexModel, mongodb)
 }
 
-func initBlockProceededTable(mongodb *mongo.Client) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
+func doInitTable(collectionName string, index []mongo.IndexModel, mongodb *mongo.Client) {
+	collection := mongodb.Database(config.DatabaseName).Collection(collectionName)
 
-	filter := bson.M{"name": config.BlockProceededTableName}
-	_, err := collection.Database().ListCollectionNames(context.Background(), filter)
+	filter := bson.M{"name": collectionName}
+	cols, err := collection.Database().ListCollectionNames(context.Background(), filter)
 	if err != nil {
 		log.Fatal("[ InitTables] ListCollectionNames err: ", err)
 	}
 
-	if err == mongo.ErrNilDocument {
+	if len(cols) == 0 {
 		// 说明是新表, 则创建索引
-		_, err = collection.Indexes().CreateMany(context.Background(), SwapIndexModel)
+		_, err = collection.Indexes().CreateMany(context.Background(), index)
 		if err != nil {
-			log.Fatal("[ InitTables ] collection.Indexes().CreateMany error: ", err)
+			log.Fatalf("[ InitTables ] collection.Indexes().CreateMany error. name: % v, err: %v\n", collectionName, err)
 			return
 		}
 
-		log.Printf("[ InitTables ] collection.Indexes().CreateMany success\n")
+		log.Printf("[ InitTables ] collection.Indexes().CreateMany for table: %v success\n", collectionName)
 	} else {
-		log.Printf("[ InitTables ] BlockProceeded table exist, pass...")
-	}
-}
-
-// 如果不存在表, 则创建索引
-func initSwapTable(mongodb *mongo.Client) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
-
-	filter := bson.M{"name": config.SwapTableName}
-	_, err := collection.Database().ListCollectionNames(context.Background(), filter)
-	if err != nil {
-		log.Fatal("[ InitTables] ListCollectionNames err: ", err)
-	}
-
-	if err == mongo.ErrNilDocument {
-		// 说明是新表, 则创建索引
-		_, err = collection.Indexes().CreateMany(context.Background(), SwapIndexModel)
-		if err != nil {
-			log.Fatal("[ InitTables ] collection.Indexes().CreateMany error: ", err)
-			return
-		}
-
-		log.Printf("[ InitTables ] collection.Indexes().CreateMany success\n")
-	} else {
-		log.Printf("[ InitTables ] swap table exist, pass...")
-	}
-}
-
-// debug
-func PrintOneBlock(block *Block) {
-	log.Println("Number        : ", block.Block.Number())
-	log.Println("Hash            : ", block.Block.Hash().Hex())
-
-	for i, tx := range block.Transactions {
-		log.Printf("tx %d hash: %v\n", i, tx.OriginTx.Hash())
-		log.Printf("tx %d log count: %d \n", i, len(tx.Receipt.Logs))
-
-		log.Printf("tx %d log[0]: %v\n", i, tx.Receipt.Logs[0])
+		log.Printf("[ InitTables ] table exist, pass... collections: %v\n", cols)
 	}
 }

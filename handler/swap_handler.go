@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"sfilter/schema"
 	service_swap "sfilter/services/swap"
 
@@ -9,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Swap_handle(block *schema.Block, mongodb *mongo.Client) {
+func Swap_handler(block *schema.Block, mongodb *mongo.Client) {
 	for _, tx := range block.Transactions {
 		if len(tx.Receipt.Logs) > 0 {
 			for _, _log := range tx.Receipt.Logs {
@@ -29,6 +30,8 @@ func Swap_handle(block *schema.Block, mongodb *mongo.Client) {
 						}
 
 						if swap != nil {
+							// 更多处理
+							swap.LogIndexWithTx = fmt.Sprintf("%s_%d", _log.TxHash.String(), _log.Index)
 							swap.CreatedAt = time.Now()
 							handleOneSwap(swap, mongodb)
 						}
