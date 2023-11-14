@@ -1,15 +1,16 @@
-package swap
+package handler
 
 import (
 	"fmt"
 	"sfilter/schema"
+	service_swap "sfilter/services/swap"
 
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Swap_handler(block *schema.Block, mongodb *mongo.Client) {
+func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 	for _, tx := range block.Transactions {
 		if len(tx.Receipt.Logs) > 0 {
 			for _, _log := range tx.Receipt.Logs {
@@ -43,9 +44,9 @@ func Swap_handler(block *schema.Block, mongodb *mongo.Client) {
 }
 
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	go UpdateKline(swap, mongodb)
-	go UpdateTxTrends(swap, mongodb)
-	go UpdateKOLTxTrends(swap, mongodb)
+	go service_swap.UpdateKline(swap, mongodb)
+	go service_swap.UpdateTxTrends(swap, mongodb)
+	go service_swap.UpdateKOLTxTrends(swap, mongodb)
 
-	go SaveSwapTx(swap, mongodb)
+	go service_swap.SaveSwapTx(swap, mongodb)
 }

@@ -1,4 +1,4 @@
-package swap
+package handler
 
 import (
 	"sfilter/schema"

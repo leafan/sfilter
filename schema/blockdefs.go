@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"sfilter/config"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -47,8 +46,9 @@ type BlockProceeded struct {
 
 var BlockProceededIndexModel = []mongo.IndexModel{
 	{
-		Keys:    bson.D{{Key: "createdat", Value: -1}},
-		Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(config.BlockProceededSaveTime),
+		Keys: bson.D{{Key: "createdat", Value: -1}},
+		// Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(config.BlockProceededSaveTime),
+		Options: options.Index().SetName("createdat_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "hash", Value: 1}},

@@ -76,7 +76,7 @@ func loop(client *ethclient.Client, mongodb *mongo.Client) {
 			return
 
 		case header := <-headers:
-			log.Printf("\n\n\n\n\n[ loop ] get new header now. number: %v\n\n\n", header.Number)
+			log.Printf("[ loop ] get new header now. number: %v\n\n\n", header.Number)
 			go handler.HandleBlock(header.Number, client, mongodb)
 		}
 
