@@ -11,10 +11,14 @@ import (
 )
 
 type Swap struct {
-	BlockNo  int64  // 区块号
-	TxHash   string // tx hash
-	TxIndex  uint32 // tx 在本区块中的序号
-	PairAddr string // pair addr
+	BlockNo         uint64  // 区块号
+	TxHash          string  // tx hash
+	Position        uint    // tx 在本区块中的序号
+	PairAddr        string  // pair addr
+	CurrentEthPrice float64 // 当前区块(时间)的eth价格in usd
+
+	GasPrice string // 使用的gas price
+	GasInEth string // 消耗的gas值
 
 	Token0 string
 	Token1 string

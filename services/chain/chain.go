@@ -12,12 +12,17 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // 本地使用的全局变量, low...
 var chainStaticAbi *abi.ABI
+
 var staticClient *ethclient.Client
 var infuraClient *ethclient.Client
+
+var mongoClient *mongo.Client
 
 func getAbi() *abi.ABI {
 	if chainStaticAbi == nil {
@@ -30,6 +35,20 @@ func getAbi() *abi.ABI {
 	}
 
 	return chainStaticAbi
+}
+
+func getMongo() *mongo.Client {
+	if mongoClient == nil {
+		clientOptions := options.Client().ApplyURI(config.MONGO_ADDR)
+		mongodb, err := mongo.Connect(context.Background(), clientOptions)
+		if err != nil {
+			log.Fatal("getMongo error! err: ", err)
+		}
+
+		mongoClient = mongodb
+	}
+
+	return mongoClient
 }
 
 func getClient() *ethclient.Client {
@@ -81,6 +100,40 @@ func getSingleProp(address, info string, client *ethclient.Client, height *big.I
 	}
 
 	return intr[0], err
+}
+
+// 获取eth价格,
+// 如果配置了height, 需要client支持archive查询功能, 可以用infura
+func GetEthPrice(client *ethclient.Client, height *big.Int) float64 {
+	if height != nil {
+		client = getInfuraClient() // 当指定高度时, 则需要去infura上获取
+	}
+
+	const ETH_UNI_POOL = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
+	priceSqrt, err := getSingleProp(ETH_UNI_POOL, "slot0", client, height)
+
+	if err != nil {
+		log.Printf("[ GetEthPrice ] getSingleProp error: %v, height: %v\n", err, height)
+		return 0
+	}
+
+	price := priceSqrt.(*big.Int)
+	price = price.Mul(price, price)
+	price = price.Mul(price, big.NewInt(1e18))
+
+	newPrice := new(big.Float).SetInt(price)
+	newPrice = newPrice.Quo(newPrice, new(big.Float).SetFloat64(1<<192))
+
+	// 还需要处理decimal问题, 这里由于是固定eth价格且固定交易对, 直接写死了
+	newPrice = newPrice.Quo(newPrice, new(big.Float).SetFloat64(1e30))
+	newPrice = newPrice.Quo(new(big.Float).SetFloat64(1), newPrice)
+
+	ret, _ := newPrice.Float64()
+
+	ret = float64(int(ret*100)) / 100
+
+	log.Printf("[ GetEthPrice ] block height: %v, price: %v\n\n", height, ret)
+	return ret
 }
 
 const ChainAbiJson = `[{

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/big"
 
@@ -29,10 +28,11 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
 
 	ethPrice := chain.GetEthPrice(client, big.NewInt(startBlock))
+	times := 0
+
 	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
-		if i%10 == 0 {
-			fmt.Println("Retrive_old_blocks debug i: ", i)
-			ethPrice = chain.GetEthPrice(client, big.NewInt(i))
+		if service_block.IsBlockProceeded(i, mongodb) {
+			continue
 		}
 
 		go func(i int64, ethPrice float64) {
@@ -41,6 +41,11 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 				handleOneBlock(block, mongodb)
 			}
 		}(i, ethPrice)
+
+		times++
+		if times%10 == 0 {
+			ethPrice = chain.GetEthPrice(client, big.NewInt(i))
+		}
 
 		time.Sleep(20 * time.Millisecond)
 	}

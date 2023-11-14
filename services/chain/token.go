@@ -12,8 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
+func GetTokenInfo(address string) (*schema.Token, error) {
+	collection := getMongo().Database(config.DatabaseName).Collection(config.TokenTableName)
 
 	filter := bson.D{{Key: "address", Value: address}}
 
@@ -38,7 +38,7 @@ func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) 
 			result.Symbol = symbol.(string)
 
 			// 存入mongo, 不判断错误, 只打印
-			saveTokenInfo(&result, mongodb)
+			saveTokenInfo(&result, getMongo())
 
 		} else {
 			log.Printf("[ GetTokenInfo ] FindOne error: %v, token addr: %v\n", err, address)

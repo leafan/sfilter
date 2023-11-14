@@ -1,10 +1,18 @@
 package handler
 
 import (
+	"log"
+	"math/big"
 	"sfilter/schema"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/ethereum/go-ethereum/common/math"
 )
+
+// v2 addr: https://etherscan.io/address/0x42d52847be255eacee8c3f96b3b223c0b3cc0438
+// v3 addr: https://etherscan.io/address/0xea05d862e4c5cd0d3e660e0fcb2045c8dd4d7912
 
 func CheckExistString(target string, str_array []string) bool {
 	for _, element := range str_array {
@@ -15,14 +23,19 @@ func CheckExistString(target string, str_array []string) bool {
 	return false
 }
 
-func handleUniV2Swap(_log *types.Log, tx *schema.Transaction) *schema.Swap {
-	swap := &schema.Swap{
-		TxHash:        tx.OriginTx.Hash().Hex(),
-		OperatorNonce: tx.OriginTx.Nonce(),
-		// Operator: tx.OriginTx.From(),
-	}
+func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
+	// 解析event中的sender和recipient
+	swap.Sender = common.HexToAddress(_log.Topics[1].Hex()).String()
+	swap.Recipient = common.HexToAddress(_log.Topics[2].Hex()).String()
 
-	swap.PairAddr = _log.Address.String()
+	// 获取event中的4个amount
+	amount0In := new(big.Int).SetBytes(_log.Data[:32])
+	amount1In := new(big.Int).SetBytes(_log.Data[32:64])
+	amount0Out := new(big.Int).SetBytes(_log.Data[64:96])
+	amount1Out := new(big.Int).SetBytes(_log.Data[96:128])
+
+	log.Printf("\n\n[ updateUniV2Swap ] debug... tx: %v, amount0In: %v, amount1In: %v, amount0Out: %v, amount1Out: %v\n\n", _log.TxHash, amount0In, amount1In, amount0Out, amount1Out)
+
 	/*
 		swap.Token0,swap.Token1 = getPairInfo(swap.PairAddr) //获取pair的token信息
 		if CheckExistString(swap.Token0,QuoteCoinList) {
@@ -66,16 +79,24 @@ func handleUniV2Swap(_log *types.Log, tx *schema.Transaction) *schema.Swap {
 
 	// log.Printf("[ handleUniV2Log ] swap: %v\n", swap)
 
-	return swap
 }
 
-func handleUniV3Swap(_log *types.Log, tx *schema.Transaction) *schema.Swap {
-	swap := &schema.Swap{
-		TxHash: tx.OriginTx.Hash().Hex(),
-		// Operator: tx.OriginTx.From(),
-	}
+func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
+	swap.Sender = common.HexToAddress(l.Topics[1].Hex()).String()
+	swap.Recipient = common.HexToAddress(l.Topics[2].Hex()).String()
 
-	// log.Printf("[ handleUniV3Log ] swap: %v\n", swap)
+	// 获取event中的4个amount
+	amount0 := new(big.Int).SetBytes(l.Data[0:32])
+	amount1 := new(big.Int).SetBytes(l.Data[32:64])
+	sqrtPriceX96 := new(big.Int).SetBytes(l.Data[64:96])
+	liquidity := new(big.Int).SetBytes(l.Data[96:128])
+	tick := new(big.Int).SetBytes(l.Data[128:])
 
-	return swap
+	// 使用ethereum官方库判断正负数
+	amount0 = math.S256(amount0)
+	amount1 = math.S256(amount1)
+	tick = math.S256(tick)
+
+	log.Printf("\n\n[ updateUniV3Swap ] debug... tx: %v amount0: %v, amount1In: %v, sqrtPriceX96: %v, liquidity: %v, tick: %v\n\n", l.TxHash, amount0, amount1, sqrtPriceX96, liquidity, tick)
+
 }
