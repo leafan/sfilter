@@ -3,6 +3,7 @@ package block
 import (
 	"context"
 	"log"
+	"time"
 
 	"sfilter/config"
 	"sfilter/schema"
@@ -34,6 +35,8 @@ func IsBlockProceeded(blkNo int64, mongodb *mongo.Client) bool {
 
 func SaveBlockProceeded(bps *schema.BlockProceeded, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
+
+	bps.CreatedAt = time.Now()
 
 	_, err := collection.InsertOne(context.Background(), bps)
 	if err != nil {

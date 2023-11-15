@@ -18,8 +18,9 @@ func HandleBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.
 }
 
 func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
+	go HandlePairCreated(blk, mongodb)
+
 	go HandleSwap(blk, mongodb)
 
 	// todo
-	// go Transfer_handler(blk, mongodb)
 }

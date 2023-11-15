@@ -32,30 +32,27 @@ const (
 )
 
 // 该表的目的是确认是否已经被处理, 防止重复
+
 type BlockProceeded struct {
-	BlockNo int64
-	Hash    string
-
-	BlockTime uint64  // 区块打包时间
-	EthPrice  float64 // eth价格 by usd. 不需要非常精准，就根据少数几个交易对更新即可
-
-	Status int // reserved, no use atm..
-
-	CreatedAt time.Time
+	BlockNo   int64     `json:"blockNo" bson:"blockNo"`     // 区块号
+	Hash      string    `json:"hash" bson:"hash"`           // 哈希
+	BlockTime uint64    `json:"blockTime" bson:"blockTime"` // 区块打包时间
+	EthPrice  float64   `json:"ethPrice" bson:"ethPrice"`   // eth价格 by usd. 每个区块从usdc/eth v3 pool中获取
+	Status    int       `json:"status" bson:"status"`       // 状态，目前未使用
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
 }
 
 var BlockProceededIndexModel = []mongo.IndexModel{
 	{
-		Keys: bson.D{{Key: "createdat", Value: -1}},
-		// Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(config.BlockProceededSaveTime),
-		Options: options.Index().SetName("createdat_index"),
+		Keys:    bson.D{{Key: "createdAt", Value: -1}},
+		Options: options.Index().SetName("createdAt_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "hash", Value: 1}},
 		Options: options.Index().SetName("hash_index").SetUnique(true),
 	},
 	{
-		Keys:    bson.D{{Key: "blockno", Value: 1}},
-		Options: options.Index().SetName("blockno_index").SetUnique(true),
+		Keys:    bson.D{{Key: "blockNo", Value: 1}},
+		Options: options.Index().SetName("blockNo_index").SetUnique(true),
 	},
 }

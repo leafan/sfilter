@@ -6,6 +6,7 @@ import (
 	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/services/pair"
 
 	"github.com/ethereum/go-ethereum/common"
 	"go.mongodb.org/mongo-driver/bson"
@@ -35,7 +36,7 @@ func GetPairInfo(address string) (*schema.Pair, error) {
 			result.Token1 = token1.(common.Address).String()
 
 			// 存入mongo, 不判断错误, 只打印
-			savePairInfo(&result, getMongo())
+			pair.SavePairInfo(&result, getMongo())
 
 		} else {
 			log.Printf("[ GetPairInfo ] FindOne error: %v, pair addr: %v\n", err, address)
@@ -49,24 +50,17 @@ func GetPairInfo(address string) (*schema.Pair, error) {
 	return &result, nil
 }
 
-func savePairInfo(pair *schema.Pair, mongodb *mongo.Client) {
-	log.Printf("[ savePairInfo ] InsertOne now. pair: %v\n", pair.Address)
-
-	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
-
-	_, err := collection.InsertOne(context.Background(), pair)
-	if err != nil {
-		// 冲突挺多，不打印了
-		// log.Printf("[ savePairInfo ] InsertOne error: %v, token: %v\n", err, pair.Address)
-		return
-	}
-
-}
-
 func TEST_PAIR() {
 	pair1, _ := GetPairInfo("0x1901733a0b47eF6B4039D8b6451807660A5C85e4")
 	pair2, _ := GetPairInfo("0x8802345e6b2b87fFa0290F799C84d00c6Eac5bb9")
 
 	fmt.Printf("\n\n[ TEST ] pair1: %v, pair2: %v\n\n\n", pair1, pair2)
+
+	pairx := &schema.Pair{
+		Address: "0x1901733a0b47eF6B4039D8b6451807660A5C85e4",
+		Token1:  "leafan",
+	}
+
+	pair.UpSertPairInfo(pairx, getMongo())
 
 }

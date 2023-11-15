@@ -43,11 +43,11 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 		}(i, ethPrice)
 
 		times++
-		if times%10 == 0 {
+		if times%config.GetPriceIntervalForRetrive == 0 {
 			ethPrice = chain.GetEthPrice(client, big.NewInt(i))
 		}
 
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(config.SleepIntervalforRetrive * time.Millisecond)
 	}
 
 }
@@ -99,8 +99,6 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 		BlockTime: block.Time(),
 
 		EthPrice: ethPrice,
-
-		CreatedAt: time.Now(),
 	}
 
 	service_block.SaveBlockProceeded(bps, mongodb)

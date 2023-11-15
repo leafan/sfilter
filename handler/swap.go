@@ -7,7 +7,6 @@ import (
 	"sfilter/schema"
 	"sfilter/services/chain"
 	service_swap "sfilter/services/swap"
-
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,13 +18,14 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 		if len(tx.Receipt.Logs) > 0 {
 			for _, _log := range tx.Receipt.Logs {
 				if len(_log.Topics) > 0 {
-					_type := schema.CheckSwapEvent(_log.Topics)
+					_type := checkSwapEvent(_log.Topics)
 
 					// 发现有swap交易
 					if _type > 0 {
 						// log.Printf("[ Swap_handle ] swap tx now. type: %v, tx: %v\n\n", _type, tx.OriginTx.Hash())
 
 						swap := newSwapStruct(block, _log, tx)
+						swap.SwapType = _type
 
 						if _type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
 							updateUniV2Swap(swap, _log)
@@ -33,11 +33,7 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 							updateUniV3Swap(swap, _log)
 						}
 
-						if swap != nil {
-							// 更多处理
-
-							handleOneSwap(swap, mongodb)
-						}
+						handleOneSwap(swap, mongodb)
 					}
 				}
 
@@ -57,6 +53,8 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 		GasPrice: tx.Receipt.EffectiveGasPrice.String(),
 
 		OperatorNonce: tx.OriginTx.Nonce(),
+
+		SwapTime: time.Unix(int64(block.Block.Time()), 0),
 	}
 
 	effectiveGasPrice := big.NewInt(int64(tx.Receipt.GasUsed))
@@ -79,9 +77,6 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 	}
 
 	swap.LogIndexWithTx = fmt.Sprintf("%s_%d", _log.TxHash.String(), _log.Index)
-
-	swap.CreatedAt = time.Now()
-
 	swap.CurrentEthPrice = block.EthPrice
 
 	return &swap

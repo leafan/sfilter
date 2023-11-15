@@ -9,7 +9,6 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -29,7 +28,7 @@ func test() {
 	chain.TEST_PAIR()
 	// chain.TEST_TOKEN()
 
-	os.Exit(0)
+	// os.Exit(0)
 }
 
 func main() {

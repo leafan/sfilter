@@ -24,6 +24,10 @@ var infuraClient *ethclient.Client
 
 var mongoClient *mongo.Client
 
+func GetMongo() *mongo.Client {
+	return getMongo()
+}
+
 func getAbi() *abi.ABI {
 	if chainStaticAbi == nil {
 		abi, err := abi.JSON(strings.NewReader(ChainAbiJson))
