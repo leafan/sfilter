@@ -21,7 +21,7 @@ func parsePairCreatedEvent(block *schema.Block, l *types.Log) *schema.Pair {
 			Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
 
 			Type:               schema.SWAP_EVENT_UNISWAPV2_LIKE,
-			PairCreatedTime:    time.Unix(int64(block.Block.Time()), 0),
+			PairCreatedTime:    int64(block.Block.Time()),
 			PairCreatedBlockNo: l.BlockNumber,
 
 			CreatedAt: time.Now(),
@@ -37,7 +37,7 @@ func parsePairCreatedEvent(block *schema.Block, l *types.Log) *schema.Pair {
 			Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
 
 			Type:               schema.SWAP_EVENT_UNISWAPV3_LIKE,
-			PairCreatedTime:    time.Unix(int64(block.Block.Time()), 0),
+			PairCreatedTime:    int64(block.Block.Time()),
 			PairCreatedBlockNo: l.BlockNumber,
 
 			CreatedAt: time.Now(),

@@ -27,18 +27,6 @@ func SavePairInfo(pair *schema.Pair, mongodb *mongo.Client) {
 	}
 }
 
-/**
- * reference:
-update := bson.D{
-        {Key: "$set", Value: bson.D{
-            {Key: "field1", Value: pair.Field1}, //更新部分字段
-            {Key: "field2", Value: pair.Field2},
-            // 添加其他需要更新的字段
-        }},
-        {Key: "$setOnInsert", Value: pair}, // 如果文档不存在，则插入整个数据
-    }
-*/
-
 // 如果存在就更新, 不存在就插入
 func UpSertPairInfo(pair *schema.Pair, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)

@@ -1,13 +1,8 @@
-/**
-* 优秀参考对象:
- 1. https://github.com/mellaught/ethereum-blocks/blob/master/src/ethereum/blocks.go
- 2. https://github.com/Orochyy/blockchainETH-MongoDb/blob/main/modules/main.go
-*/
-
 package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,24 +13,27 @@ import (
 	"sfilter/config"
 	"sfilter/handler"
 	"sfilter/schema"
-	"sfilter/services/chain"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func test() {
-	chain.TEST_PAIR()
+	fmt.Printf("\n\n\t****** debug start ******\n\n")
+
+	// chain.TEST_PAIR()
 	// chain.TEST_TOKEN()
+	// swap.TEST_KLINE()
+
+	fmt.Printf("\t****** debug end ******\n\n\n\n")
 
 	// os.Exit(0)
 }
 
 func main() {
+	test()
+
 	client, mongodb := _init()
-
-	// test()
-
 	loop(client, mongodb)
 }
 

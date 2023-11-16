@@ -62,7 +62,7 @@ func GetTokenInfo(address string) (*schema.Token, error) {
 }
 
 func TEST_TOKEN() {
-	token, _ := GetTokenInfo("0x180EFC1349A69390aDE25667487a826164C9c6E4")
+	token, _ := GetTokenInfo("0x1Ac12d2E3913D5acf83e62eC70a2e44792EE60a2")
 
 	log.Printf("\n\n[ TEST ] token: %v,\n\n\n", token)
 

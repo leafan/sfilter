@@ -37,7 +37,7 @@ type Swap struct {
 
 	LogIndexWithTx string `json:"logIndexWithTx" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
 
-	SwapTime time.Time `json:"swapTime" bson:"swapTime"`
+	SwapTime int64 `json:"swapTime" bson:"swapTime"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
 }

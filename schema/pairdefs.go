@@ -15,8 +15,8 @@ type Pair struct {
 
 	Type int `json:"type" bson:"type"` // 类型是uniswap v2还是v3等
 
-	PairCreatedBlockNo uint64    `json:"pairCreatedBlockNo" bson:"pairCreatedBlockNo"`
-	PairCreatedTime    time.Time `json:"pairCreatedTime" bson:"pairCreatedTime"`
+	PairCreatedBlockNo uint64 `json:"pairCreatedBlockNo" bson:"pairCreatedBlockNo"`
+	PairCreatedTime    int64  `json:"pairCreatedTime" bson:"pairCreatedTime"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
 }

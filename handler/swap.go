@@ -7,7 +7,6 @@ import (
 	"sfilter/schema"
 	"sfilter/services/chain"
 	service_swap "sfilter/services/swap"
-	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,6 +41,14 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 	}
 }
 
+func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
+	go service_swap.UpdateKline(swap, mongodb)
+	go service_swap.UpdateTxTrends(swap, mongodb)
+	go service_swap.UpdateKOLTxTrends(swap, mongodb)
+
+	go service_swap.SaveSwapTx(swap, mongodb)
+}
+
 func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction) *schema.Swap {
 	swap := schema.Swap{
 		BlockNo:  _log.BlockNumber,
@@ -54,7 +61,7 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 
 		OperatorNonce: tx.OriginTx.Nonce(),
 
-		SwapTime: time.Unix(int64(block.Block.Time()), 0),
+		SwapTime: int64(block.Block.Time()),
 	}
 
 	effectiveGasPrice := big.NewInt(int64(tx.Receipt.GasUsed))
@@ -80,12 +87,4 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 	swap.CurrentEthPrice = block.EthPrice
 
 	return &swap
-}
-
-func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	go service_swap.UpdateKline(swap, mongodb)
-	go service_swap.UpdateTxTrends(swap, mongodb)
-	go service_swap.UpdateKOLTxTrends(swap, mongodb)
-
-	go service_swap.SaveSwapTx(swap, mongodb)
 }

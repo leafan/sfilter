@@ -99,6 +99,7 @@ func getSingleProp(address, info string, client *ethclient.Client, height *big.I
 
 	intr, err := abi.Methods[info].Outputs.UnpackValues(ret)
 	if err != nil {
+		// 有时候由于不是标准的erc20, 他会unpack失败, 不用处理
 		log.Printf("[ getSingleProp ] UnpackValues error. addr: %v, err: %v\n", address, err)
 		return "", err
 	}

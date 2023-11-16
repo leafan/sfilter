@@ -5,7 +5,6 @@ import (
 	"log"
 	"math/big"
 
-	"sfilter/config"
 	"sfilter/schema"
 	service_block "sfilter/services/block"
 	"sfilter/services/chain"
@@ -16,41 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-// 每次启动往回回溯n个区块, 防止某一次未处理
-// 回溯的时候, eth价格通过infura获取, 每10个区块更新一次价格
-func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
-	curBlkNo, err := client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		log.Fatal("[ Retrive_old_blocks ] HeaderByNumber err: ", err)
-	}
-
-	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
-
-	ethPrice := chain.GetEthPrice(client, big.NewInt(startBlock))
-	times := 0
-
-	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
-		if service_block.IsBlockProceeded(i, mongodb) {
-			continue
-		}
-
-		go func(i int64, ethPrice float64) {
-			block := getBlock(big.NewInt(i), client, mongodb, ethPrice)
-			if block != nil {
-				handleOneBlock(block, mongodb)
-			}
-		}(i, ethPrice)
-
-		times++
-		if times%config.GetPriceIntervalForRetrive == 0 {
-			ethPrice = chain.GetEthPrice(client, big.NewInt(i))
-		}
-
-		time.Sleep(config.SleepIntervalforRetrive * time.Millisecond)
-	}
-
-}
 
 func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client, ethPrice float64) *schema.Block {
 	if service_block.IsBlockProceeded(blockNumber.Int64(), mongodb) {
@@ -93,17 +57,7 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 
 	// schema.PrintOneBlock(oneBlk)
 
-	bps := &schema.BlockProceeded{
-		BlockNo:   blockNumber.Int64(),
-		Hash:      block.Hash().String(),
-		BlockTime: block.Time(),
-
-		EthPrice: ethPrice,
-	}
-
-	service_block.SaveBlockProceeded(bps, mongodb)
-
-	log.Printf("[ getBlock ] finished block: %d, time elapsed: % v\n\n", blockNumber, time.Since(start))
+	log.Printf("[ getBlock ] get block: %d finished, time elapsed: % v\n\n", blockNumber, time.Since(start))
 
 	return oneBlk
 }

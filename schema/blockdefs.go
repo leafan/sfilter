@@ -36,7 +36,7 @@ const (
 type BlockProceeded struct {
 	BlockNo   int64     `json:"blockNo" bson:"blockNo"`     // 区块号
 	Hash      string    `json:"hash" bson:"hash"`           // 哈希
-	BlockTime uint64    `json:"blockTime" bson:"blockTime"` // 区块打包时间
+	BlockTime int64     `json:"blockTime" bson:"blockTime"` // 区块打包时间
 	EthPrice  float64   `json:"ethPrice" bson:"ethPrice"`   // eth价格 by usd. 每个区块从usdc/eth v3 pool中获取
 	Status    int       `json:"status" bson:"status"`       // 状态，目前未使用
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间

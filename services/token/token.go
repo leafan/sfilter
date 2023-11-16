@@ -9,6 +9,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func SaveTokenInfo(token *schema.Token, mongodb *mongo.Client) {
@@ -28,21 +29,21 @@ func SaveTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 func UpdateTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
 
-	filter := bson.D{{Key: "address", Value: token.Address}}
-	update := bson.D{
-		{Key: "$set", Value: bson.D{
-			{Key: "updatedat", Value: time.Now()},
-		}},
-	}
-
 	token.UpdatedAt = time.Now()
 
-	_, err := collection.UpdateOne(context.Background(), filter, update)
+	filter := bson.D{{Key: "address", Value: token.Address}}
+	opt := options.Update().SetUpsert(true)
+
+	update := bson.M{
+		"$set": token,
+	}
+
+	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
-		log.Printf("[ SaveTokenInfo ] UpdateOne error: %v, token: %v\n", err, token.Address)
+		log.Printf("[ UpdateTokenInfo ] UpdateOne error: %v, token: %v\n", err, token.Address)
 		return
 	} else {
-		log.Printf("[ SaveTokenInfo ] UpdateOne success. token: %v\n", token.Address)
+		log.Printf("[ UpdateTokenInfo ] UpdateOne success. token: %v\n", token.Address)
 	}
 
 }
