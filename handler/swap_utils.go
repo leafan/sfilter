@@ -59,7 +59,7 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 		swap.MainToken = swap.Token0
 	}
 
-	if amount0In.Cmp(big.NewInt(0)) == 0 && amount1Out.Cmp(big.NewInt(0)) == 0 && amount1In.Cmp(big.NewInt(0)) > 0 && amount0Out.Cmp(big.NewInt(0)) > 0 {
+	if (amount0In.Cmp(big.NewInt(0)) == 0 || amount1Out.Cmp(big.NewInt(0)) == 0) && amount1In.Cmp(big.NewInt(0)) > 0 && amount0Out.Cmp(big.NewInt(0)) > 0 {
 		token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
 		token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.Decimal)), nil)
 		if swap.MainToken == swap.Token0 {
@@ -87,7 +87,7 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 		}
 	}
 
-	if amount1In.Cmp(big.NewInt(0)) == 0 && amount0Out.Cmp(big.NewInt(0)) == 0 && amount0In.Cmp(big.NewInt(0)) > 0 && amount1Out.Cmp(big.NewInt(0)) > 0 {
+	if (amount1In.Cmp(big.NewInt(0)) == 0 || amount0Out.Cmp(big.NewInt(0)) == 0) && amount0In.Cmp(big.NewInt(0)) > 0 && amount1Out.Cmp(big.NewInt(0)) > 0 {
 		token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
 		token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.Decimal)), nil)
 		if swap.MainToken == swap.Token0 {
@@ -128,13 +128,13 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
 	amount1 := new(big.Int).SetBytes(l.Data[32:64])
 	// sqrtPriceX96 := new(big.Int).SetBytes(l.Data[64:96])
 	// liquidity := new(big.Int).SetBytes(l.Data[96:128])
-	tick := new(big.Int).SetBytes(l.Data[128:])
+	// tick := new(big.Int).SetBytes(l.Data[128:])
 
 	// 使用ethereum官方库判断正负数
 	amount0 = math.S256(amount0)
 	amount1 = math.S256(amount1)
 	// log.Println("\n\n[ updateUniV3Swap ] debug... ", amount0, amount1)
-	tick = math.S256(tick)
+	// tick = math.S256(tick)
 
 	// log.Printf("\n\n[ updateUniV3Swap ] debug... tx: %v amount0: %v, amount1In: %v, sqrtPriceX96: %v, liquidity: %v, tick: %v\n\n", l.TxHash, amount0, amount1, sqrtPriceX96, liquidity, tick)
 

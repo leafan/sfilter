@@ -1,7 +1,7 @@
 package config
 
-const creat_debug = true // for creat....
-// const creat_debug = false // for creat....
+// const CREAT_DEBUG = true // for creat....
+const CREAT_DEBUG = false // for creat....
 
 const BlocksPerDay = 250 * 24
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
@@ -18,7 +18,7 @@ var (
 
 func init() {
 	// 重置 参数..
-	if creat_debug {
+	if CREAT_DEBUG {
 		RetriveOldBlockNum = (BlocksPerDay * 180)
 		GetPriceIntervalForRetrive = 100
 		SwapSaveTime = int32(60 * 60 * 24 * 365)
@@ -31,11 +31,11 @@ const SwapTableName = "swap"
 const PairTableName = "pair"
 const TokenTableName = "token"
 
-const Kline5MinTableName = "kline5min"
-const Kline5MinTableSaveTime = (60 * 60 * 24 * 14) // 存14天的5min日志数据
+const Kline1MinTableName = "kline1min"
+const Kline1MinTableSaveTime = (60 * 60 * 24 * 14)
 
 const Kline1DayTableName = "kline1d"
-const Kline1DayTableSaveTime = (60 * 60 * 24 * 365 * 10) // 暂定10..
+const Kline1DayTableSaveTime = (60 * 60 * 24 * 365 * 3)
 
 const NeverExpireTime = 0
 

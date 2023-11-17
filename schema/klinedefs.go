@@ -9,13 +9,49 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+/*
+	分钟线方案
+
+ 	目前全网的 pair 在30w级别, 假设最近2周活跃(否则被删除了)的 pair 为 5w
+
+	方案1: 5min一个点, 一小时12个点(约 12*40 = 480B = 0.5KB); 一天最多288个点;
+			 每天一行记录; 设置autodelete, 只存最近14天数据; 也就是最多为 14 * 5w 条记录
+			 对于每天来说, 一共24个字段, 每小时一个字段
+
+	方案2: 1min 一个点. 每小时一行记录, 则每天24行, 10天240行; 预计240*5w=1200w条记录
+			 对于每小时来说, 最多一共60个点, 也就是 60*40=2.4KB大小
+
+	由于1min可组装5min、15min等所有数据, 总行数也可接受, 因此采纳方案2 - 1min方案
+*/
+
+/*
+	日线方案
+
+	假设全网最终的有效pair(一年无交易的pair清除)在 50w 规模,
+
+	方案1: 每年一行记录; 一行里面存12个月份字段; 暂时定为3年. 最终总行数在 150w 级别
+
+	方案2: 每月一行记录; 假设存3年, 则总行数预计在 50*12*3 = 1800w 级别
+			  每行记录存储最多 30或31根柱子, 也就是 30*40 = 1.2KB
+
+	由于1d实际规模不会到50w, 而且千万级别数据可承受, 因此采纳方案2
+
+*/
+
 // Kline 基础结构体，只包含 高开低收
 type KLine struct {
 	OpenPrice  float64 `bson:"openPrice" json:"openPrice"`
 	ClosePrice float64 `bson:"closePrice" json:"closePrice"`
 	HighPrice  float64 `bson:"highPrice" json:"highPrice"`
 	LowPrice   float64 `bson:"lowPrice" json:"lowPrice"`
-	Volume     float64 `bson:"volume" json:"volume"`
+
+	Volume string `bson:"volume" json:"volume"`
+
+	// 作用: 由于为了节省表行数, 因此一个字段有多个k线数据
+	// 因此增加一个 时间 表示当前KLine表述时间
+	// 由于每次udpate的时候, 发现柱子已过期, 会清空当前小时内的所有柱子
+	// 所以只要本KLine内有值, 则一定是同一分钟内的update
+	UnixTime int64 `bson:"unixTime" json:"unixTime"`
 }
 
 type KLinePairInfo struct {
@@ -24,51 +60,27 @@ type KLinePairInfo struct {
 	QuoteToken string `bson:"quoteToken" json:"quoteToken"` // quote计价币, 对应为 WETH
 }
 
-// 5min一个点, 一小时12个点(约 12*40 = 480B = 0.5KB); 一天最多288个点;
-// 每天一行记录; 设置autodelete, 只存最近14天数据; 也就是最多为 14 * tokenNum 条记录
-// 对于每天来说, 一共24个字段, 每小时一个字段
-// KLine5Min 结构体
+type KLineCreatTime struct {
+	// 实际最后update时间; 如果回溯, 也为回溯时间
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
 
-type KLines []*KLine
+	// 这个Timestamp不表示创建时间, 而是他代表的周期时间
+	// 每一次有交易来的时候, 都会更新成其区块时间
+	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
+}
 
-type KLines5Min struct {
+type KLinesForHour [60]KLine  // 小时K线，60根
+type KLinesForMonth [31]KLine // 月K线, 最多31根
+
+type KLines1Min struct {
 	KLinePairInfo `bson:",inline"` // inline表示内连展开存储
 
 	// Symbol_Day组合; 以 symbol 与 day 联合查询到行更新
-	SymbolDay string `json:"symbolDay" bson:"symbolDay"`
+	SymbolDayHour string `json:"symbolDayHour" bson:"symbolDayHour"`
 
-	// 一小时一个数组
-	Hour0 KLines `json:"hour0" bson:"hour0"`
-	Hour1 KLines `json:"hour1" bson:"hour1"`
-	Hour2 KLines `json:"hour2" bson:"hour2"`
-	Hour3 KLines `json:"hour3" bson:"hour3"`
-	Hour4 KLines `json:"hour4" bson:"hour4"`
-	Hour5 KLines `json:"hour5" bson:"hour5"`
-	Hour6 KLines `json:"hour6" bson:"hour6"`
-	Hour7 KLines `json:"hour7" bson:"hour7"`
-	Hour8 KLines `json:"hour8" bson:"hour8"`
-	Hour9 KLines `json:"hour9" bson:"hour9"`
+	Kline KLinesForHour `json:"klines" bson:"klines"`
 
-	Hour10 KLines `json:"hour10" bson:"hour10"`
-	Hour11 KLines `json:"hour11" bson:"hour11"`
-	Hour12 KLines `json:"hour12" bson:"hour12"`
-	Hour13 KLines `json:"hour13" bson:"hour13"`
-	Hour14 KLines `json:"hour14" bson:"hour14"`
-	Hour15 KLines `json:"hour15" bson:"hour15"`
-	Hour16 KLines `json:"hour16" bson:"hour16"`
-	Hour17 KLines `json:"hour17" bson:"hour17"`
-	Hour18 KLines `json:"hour18" bson:"hour18"`
-	Hour19 KLines `json:"hour19" bson:"hour19"`
-
-	Hour20 KLines `json:"hour20" bson:"hour20"`
-	Hour21 KLines `json:"hour21" bson:"hour21"`
-	Hour22 KLines `json:"hour22" bson:"hour22"`
-	Hour23 KLines `json:"hour23" bson:"hour23"`
-
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
-
-	// 这个createdAt不表示创建时间, 而是他代表的周期时间
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	KLineCreatTime `bson:",inline"`
 }
 
 // 日线, 每年一行记录; 暂时不考虑自动删除
@@ -76,63 +88,37 @@ type KLines1Day struct {
 	KLinePairInfo `bson:",inline"` // inline表示内连展开存储
 
 	// 年份; 通过 symbol与year 查找到具体的行
-	SymbolYear string `json:"symbolYear" bson:"symbolYear"`
+	SymbolYearMonth string `json:"symbolYearMonth" bson:"symbolYearMonth"`
 
-	// 每月一个数组, 每个字段最多 31*40 = 1.2KB
-	Month1  KLines `json:"month1" bson:"month1"`
-	Month2  KLines `json:"month2" bson:"month2"`
-	Month3  KLines `json:"month3" bson:"month3"`
-	Month4  KLines `json:"month4" bson:"month4"`
-	Month5  KLines `json:"month5" bson:"month5"`
-	Month6  KLines `json:"month6" bson:"month6"`
-	Month7  KLines `json:"month7" bson:"month7"`
-	Month8  KLines `json:"month8" bson:"month8"`
-	Month9  KLines `json:"month9" bson:"month9"`
-	Month10 KLines `json:"month10" bson:"month10"`
+	Kline KLinesForMonth `json:"klines" bson:"klines"`
 
-	Month11 KLines `json:"month11" bson:"month11"`
-	Month12 KLines `json:"month12" bson:"month12"`
+	KLineCreatTime `bson:",inline"`
 }
 
-// 0为read; 1为write
-func Get5MinFieldByHour(klines *KLines5Min, hour int) KLines {
-	switch hour {
-	case 0:
-		return klines.Hour0
-	case 10:
-		return klines.Hour10
-
-	default:
-
-	}
-
-	return klines.Hour23
-}
-
-var Kline5MinIndexModel = []mongo.IndexModel{
+var Kline1MinIndexModel = []mongo.IndexModel{
 	{
-		Keys:    bson.D{{Key: "createdAt", Value: -1}},
-		Options: options.Index().SetName("createdAt_index").SetExpireAfterSeconds(config.Kline5MinTableSaveTime),
+		Keys:    bson.D{{Key: "timestamp", Value: -1}},
+		Options: options.Index().SetName("timestamp_index").SetExpireAfterSeconds(config.Kline1MinTableSaveTime),
 	},
 	{
 		Keys:    bson.D{{Key: "symbol", Value: 1}},
 		Options: options.Index().SetName("symbol_index"),
 	},
 	{
-		Keys:    bson.D{{Key: "symbolDay", Value: 1}},
-		Options: options.Index().SetName("symbolDay_index").SetUnique(true),
+		Keys:    bson.D{{Key: "symbolDayHour", Value: 1}},
+		Options: options.Index().SetName("symbolDayHour_index").SetUnique(true),
 	},
 	{
 		// base token也就是main token, 需要查询. quoteToken就算了
 		Keys:    bson.D{{Key: "baseToken", Value: 1}},
-		Options: options.Index().SetName("baseToken_index").SetUnique(true),
+		Options: options.Index().SetName("baseToken_index"),
 	},
 }
 
 var Kline1DayIndexModel = []mongo.IndexModel{
 	{
-		Keys:    bson.D{{Key: "createdAt", Value: -1}},
-		Options: options.Index().SetName("createdAt_index").SetExpireAfterSeconds(config.Kline1DayTableSaveTime),
+		Keys:    bson.D{{Key: "timestamp", Value: -1}},
+		Options: options.Index().SetName("timestamp_index").SetExpireAfterSeconds(config.Kline1DayTableSaveTime),
 	},
 	{
 		// symbol 应该是唯一的
@@ -141,12 +127,12 @@ var Kline1DayIndexModel = []mongo.IndexModel{
 	},
 	{
 		// symbol 应该是唯一的
-		Keys:    bson.D{{Key: "symbolYear", Value: 1}},
-		Options: options.Index().SetName("symbolYear_index").SetUnique(true),
+		Keys:    bson.D{{Key: "symbolYearMonth", Value: 1}},
+		Options: options.Index().SetName("symbolYearMonth_index").SetUnique(true),
 	},
 	{
 		// base token也就是main token, 需要查询. quoteToken就算了
 		Keys:    bson.D{{Key: "baseToken", Value: 1}},
-		Options: options.Index().SetName("baseToken_index").SetUnique(true),
+		Options: options.Index().SetName("baseToken_index"),
 	},
 }

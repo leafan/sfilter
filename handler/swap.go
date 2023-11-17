@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
 	service_swap "sfilter/services/swap"
@@ -47,9 +48,11 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 }
 
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	// go service_swap.UpdateKline(swap, mongodb)
-	// go service_swap.UpdateTxTrends(swap, mongodb)
-	// go service_swap.UpdateKOLTxTrends(swap, mongodb)
+	if !config.CREAT_DEBUG {
+		go service_swap.UpdateKline(swap, mongodb)
+		go service_swap.UpdateTxTrends(swap, mongodb)
+		go service_swap.UpdateKOLTxTrends(swap, mongodb)
+	}
 
 	go service_swap.SaveSwapTx(swap, mongodb)
 }
