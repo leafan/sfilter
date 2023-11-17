@@ -1,39 +1,41 @@
 package config
 
+const creat_debug = true // for creat....
+// const creat_debug = false // for creat....
+
 const BlocksPerDay = 250 * 24
-
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
+var (
+	RetriveOldBlockNum = 10 // 如果要回溯多一些区块, 修改这个字段
 
-// const (
-// 	// const RetriveOldBlockNum = BlocksPerDay * 3
-// 	RetriveOldBlockNum = 1000 // 如果要回溯多一些区块, 修改这个字段
+	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
 
-// 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
+	// swap表保存多久, 单位 seconds; 如果要保存久一些, 修改这里
+	SwapSaveTime = int32(60 * 60 * 24 * 7) // 7d
 
-// 	// swap表保存多久, 单位 seconds; 如果要保存久一些, 修改这里
-// 	SwapSaveTime = 60 * 60 * 24 * 7 // 7d
-
-// 	DatabaseName = "deepeye"
-// )
-
-// for creat
-
-const (
-	RetriveOldBlockNum         = BlocksPerDay * 180
-	GetPriceIntervalForRetrive = 100
-	SwapSaveTime               = 60 * 60 * 24 * 365
-	DatabaseName               = "creat"
+	DatabaseName = "deepeye"
 )
 
-// for creat end..
+func init() {
+	// 重置 参数..
+	if creat_debug {
+		RetriveOldBlockNum = (BlocksPerDay * 180)
+		GetPriceIntervalForRetrive = 100
+		SwapSaveTime = int32(60 * 60 * 24 * 365)
+		DatabaseName = "creat"
+	}
+}
 
 const BlockProceededTableName = "block"
 const SwapTableName = "swap"
 const PairTableName = "pair"
 const TokenTableName = "token"
-const Kline5MinTableName = "kline5min"
 
-// const SwapSaveTime = 10
+const Kline5MinTableName = "kline5min"
+const Kline5MinTableSaveTime = (60 * 60 * 24 * 14) // 存14天的5min日志数据
+
+const Kline1DayTableName = "kline1d"
+const Kline1DayTableSaveTime = (60 * 60 * 24 * 365 * 10) // 暂定10..
 
 const NeverExpireTime = 0
 

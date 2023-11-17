@@ -18,6 +18,7 @@ import (
 
 // 本地使用的全局变量, low...
 var chainStaticAbi *abi.ABI
+var chainStaticBackupAbi *abi.ABI
 
 var staticClient *ethclient.Client
 var infuraClient *ethclient.Client
@@ -39,6 +40,19 @@ func getAbi() *abi.ABI {
 	}
 
 	return chainStaticAbi
+}
+
+func getBackupAbi() *abi.ABI {
+	if chainStaticBackupAbi == nil {
+		abi, err := abi.JSON(strings.NewReader(ChainAbiJsonBackup))
+		if err != nil {
+			log.Fatal("getBackupAbi error! err: ", err)
+		}
+
+		chainStaticBackupAbi = &abi
+	}
+
+	return chainStaticBackupAbi
 }
 
 func getMongo() *mongo.Client {
@@ -81,8 +95,7 @@ func getInfuraClient() *ethclient.Client {
 	return infuraClient
 }
 
-func getSingleProp(address, info string, client *ethclient.Client, height *big.Int) (interface{}, error) {
-	abi := getAbi()
+func _getSingleProp(abi *abi.ABI, address, info string, client *ethclient.Client, height *big.Int) (interface{}, error) {
 	contractAddr := common.HexToAddress(address)
 	bytes, _ := abi.Pack(info)
 	msg := ethereum.CallMsg{
@@ -94,17 +107,26 @@ func getSingleProp(address, info string, client *ethclient.Client, height *big.I
 	ret, err := client.CallContract(context.Background(), msg, height)
 	if err != nil {
 		log.Printf("[ getSingleProp ] CallContract error. addr: %v, err: %v\n", address, err)
-		return "", err
+		return nil, err
 	}
 
 	intr, err := abi.Methods[info].Outputs.UnpackValues(ret)
 	if err != nil {
-		// 有时候由于不是标准的erc20, 他会unpack失败, 不用处理
-		log.Printf("[ getSingleProp ] UnpackValues error. addr: %v, err: %v\n", address, err)
-		return "", err
+		// log.Printf("[ getSingleProp ] UnpackValues error. addr: %v, err: %v\n", address, err)
+		return nil, err
 	}
 
 	return intr[0], err
+}
+
+func getSingleProp(address, info string, client *ethclient.Client, height *big.Int) (interface{}, error) {
+	abi := getAbi()
+	return _getSingleProp(abi, address, info, client, height)
+}
+
+func getSingleBackupProp(address, info string, client *ethclient.Client, height *big.Int) (interface{}, error) {
+	abi := getBackupAbi()
+	return _getSingleProp(abi, address, info, client, height)
 }
 
 // 获取eth价格,
@@ -1345,3 +1367,5 @@ const ChainAbiJson = `[{
 }
 
 ]`
+
+const ChainAbiJsonBackup = `[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"stop","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"guy","type":"address"},{"name":"wad","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"owner_","type":"address"}],"name":"setOwner","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"src","type":"address"},{"name":"dst","type":"address"},{"name":"wad","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"base","type":"uint256"},{"name":"exponent","type":"uint256"}],"name":"pow","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"pure","type":"function"},{"constant":true,"inputs":[{"name":"src","type":"address"}],"name":"isOwner","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"guy","type":"address"},{"name":"wad","type":"uint256"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"name_","type":"bytes32"}],"name":"setName","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"src","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"stopped","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"authority_","type":"address"}],"name":"setAuthority","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"guy","type":"address"},{"name":"wad","type":"uint256"}],"name":"burn","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"guy","type":"address"}],"name":"approvex","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"dst","type":"address"},{"name":"wad","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"start","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"authority","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"src","type":"address"},{"name":"guy","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[{"name":"symbol_","type":"bytes32"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"authority","type":"address"}],"name":"LogSetAuthority","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"}],"name":"LogSetOwner","type":"event"},{"anonymous":true,"inputs":[{"indexed":true,"name":"sig","type":"bytes4"},{"indexed":true,"name":"guy","type":"address"},{"indexed":true,"name":"foo","type":"bytes32"},{"indexed":true,"name":"bar","type":"bytes32"},{"indexed":false,"name":"wad","type":"uint256"},{"indexed":false,"name":"fax","type":"bytes"}],"name":"LogNote","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":true,"name":"guy","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":true,"name":"dst","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Transfer","type":"event"}]`

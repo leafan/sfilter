@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sfilter/config"
@@ -14,6 +15,11 @@ import (
 )
 
 func GetPairInfo(address string) (*schema.Pair, error) {
+	if address == "" {
+		log.Printf("[ GetPairInfo ] error! empty address. address!")
+		return nil, errors.New("empty address")
+	}
+
 	collection := getMongo().Database(config.DatabaseName).Collection(config.PairTableName)
 
 	filter := bson.M{"address": address}

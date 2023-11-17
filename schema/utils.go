@@ -16,7 +16,8 @@ func InitTables(mongodb *mongo.Client) {
 	doInitTable(config.TokenTableName, TokenIndexModel, mongodb)
 	doInitTable(config.PairTableName, PairIndexModel, mongodb)
 
-	doInitTable(config.Kline5MinTableName, KlineIndexModel, mongodb)
+	doInitTable(config.Kline5MinTableName, Kline5MinIndexModel, mongodb)
+	doInitTable(config.Kline1DayTableName, Kline1DayIndexModel, mongodb)
 }
 
 func doInitTable(collectionName string, index []mongo.IndexModel, mongodb *mongo.Client) {

@@ -27,6 +27,10 @@ func SaveTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 
 // 更新 token
 func UpdateTokenInfo(token *schema.Token, mongodb *mongo.Client) {
+	if token == nil {
+		return
+	}
+
 	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
 
 	token.UpdatedAt = time.Now()

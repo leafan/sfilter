@@ -1,7 +1,9 @@
 package chain
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"log"
 	"math/big"
 	"sfilter/config"
@@ -13,6 +15,11 @@ import (
 )
 
 func GetTokenInfo(address string) (*schema.Token, error) {
+	if address == "" {
+		log.Printf("[ GetTokenInfo ] error! address %v\n", address)
+		return nil, errors.New("address is empty")
+	}
+
 	collection := getMongo().Database(config.DatabaseName).Collection(config.TokenTableName)
 
 	filter := bson.D{{Key: "address", Value: address}}
@@ -24,47 +31,69 @@ func GetTokenInfo(address string) (*schema.Token, error) {
 			// 不存在，去链上查并返回
 			result.Address = address
 
-			var err1, err2 error
-			var decimals, symbol interface{}
-			decimals, err1 = getSingleProp(address, "decimals", getClient(), nil)
-			symbol, err2 = getSingleProp(address, "symbol", getClient(), nil)
+			decimals, err1 := getSingleProp(address, "decimals", getClient(), nil)
+			if err1 != nil {
+				log.Printf("[ GetTokenInfo ] get decimals error. set to 0 now. address: %v, err1: %v\n", address, err1)
+				result.Decimal = 0
+			} else {
+				result.Decimal = decimals.(uint8)
+			}
+
+			symbol, err2 := getSingleProp(address, "symbol", getClient(), nil)
+			if err2 != nil {
+				// log.Printf("[ GetTokenInfo ] get symbol error. address: %v,  err2: %v\n", address, err2)
+
+				// 再取一次, 还失败就不要了
+				symbol, err2 := getSingleBackupProp(address, "symbol", getClient(), nil)
+				if err2 == nil {
+					symbol2 := symbol.([32]byte)
+					result.Symbol = string(bytes.TrimRight(symbol2[:], "\x00"))
+				}
+			} else {
+				result.Symbol = symbol.(string)
+			}
 
 			// name和totalsupply没取到也没事
 			name, err3 := getSingleProp(address, "name", getClient(), nil)
-			totalsupply, err4 := getSingleProp(address, "totalSupply", getClient(), nil)
+			if err3 != nil {
+				// log.Printf("[ GetTokenInfo ] get name error. address: %v,  err2: %v\n", address, err3)
 
-			if err1 != nil || err2 != nil {
-				log.Printf("[ GetTokenInfo ] get chainInfo error. address: %v, err1: %v, err2: %v\n", address, err1, err2)
-				return nil, err2
-			}
-			result.Decimal = decimals.(uint8)
-			result.Name = name.(string)
-
-			if err3 != nil || err4 != nil {
-				log.Printf("[ GetTokenInfo ] get chainInfo error. address: %v, err3: %v, err4: %v\n", address, err3, err4)
-				// 不退出
+				name, err3 = getSingleBackupProp(address, "name", getClient(), nil)
+				if err3 == nil {
+					name2 := name.([32]byte)
+					result.Name = string(bytes.TrimRight(name2[:], "\x00"))
+				}
 			} else {
-				result.Symbol = symbol.(string)
+				result.Name = name.(string)
+			}
+
+			totalsupply, err4 := getSingleProp(address, "totalSupply", getClient(), nil)
+			if err4 != nil {
+				result.TotalSupply = big.NewInt(0).String()
+			} else {
 				result.TotalSupply = totalsupply.(*big.Int).String()
 			}
 
+			// save...
 			service_token.SaveTokenInfo(&result, getMongo())
 		} else {
 			log.Printf("[ GetTokenInfo ] FindOne error: %v, token addr: %v\n", err, address)
 			return nil, err
 		}
 
-	} else {
-		// log.Printf("[ GetTokenInfo ] FindOne success, token addr: %v\n", address)
 	}
 
 	return &result, nil
 }
 
 func TEST_TOKEN() {
-	token, _ := GetTokenInfo("0x1Ac12d2E3913D5acf83e62eC70a2e44792EE60a2")
+	token, _ := GetTokenInfo("0xC19B6A4Ac7C7Cc24459F08984Bbd09664af17bD1")
 
 	log.Printf("\n\n[ TEST ] token: %v,\n\n\n", token)
 
-	service_token.UpdateTokenInfo(token, getMongo())
+	// service_token.UpdateTokenInfo(token, getMongo())
+
+	token2, _ := GetTokenInfo("0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0")
+	log.Printf("\n\n[ TEST ] token2: %v,\n\n\n", token2)
+
 }

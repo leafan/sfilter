@@ -73,7 +73,7 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 			swap.Direction = 0
 
 			//log.Println("[ updateUniV2Swap ] debug... price : ", amount0Out, amount1In, token0Exponent, token1Exponent, calculatePrice)
-		} else {
+		} else if amount1In.Cmp(big.NewInt(0)) > 0 {
 			calculatePrice := new(big.Int).Mul(amount0Out, token1Exponent)
 			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
 			calculatePrice.Div(calculatePrice, token0Exponent)
@@ -101,7 +101,7 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 			swap.Direction = 1
 
 			// log.Println("[ updateUniV2Swap ] debug... price :\n\n", amount0Out, amount1In, token0Exponent, token1Exponent, calculatePrice)
-		} else {
+		} else if amount1Out.Cmp(big.NewInt(0)) > 0 {
 			calculatePrice := new(big.Int).Mul(amount0In, token1Exponent)
 			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
 			calculatePrice.Div(calculatePrice, token0Exponent)
@@ -126,17 +126,17 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
 	// 获取event中的data
 	amount0 := new(big.Int).SetBytes(l.Data[0:32])
 	amount1 := new(big.Int).SetBytes(l.Data[32:64])
-	sqrtPriceX96 := new(big.Int).SetBytes(l.Data[64:96])
-	liquidity := new(big.Int).SetBytes(l.Data[96:128])
+	// sqrtPriceX96 := new(big.Int).SetBytes(l.Data[64:96])
+	// liquidity := new(big.Int).SetBytes(l.Data[96:128])
 	tick := new(big.Int).SetBytes(l.Data[128:])
 
 	// 使用ethereum官方库判断正负数
 	amount0 = math.S256(amount0)
 	amount1 = math.S256(amount1)
-	log.Println("\n\n[ updateUniV3Swap ] debug... ", amount0, amount1)
+	// log.Println("\n\n[ updateUniV3Swap ] debug... ", amount0, amount1)
 	tick = math.S256(tick)
 
-	log.Printf("\n\n[ updateUniV3Swap ] debug... tx: %v amount0: %v, amount1In: %v, sqrtPriceX96: %v, liquidity: %v, tick: %v\n\n", l.TxHash, amount0, amount1, sqrtPriceX96, liquidity, tick)
+	// log.Printf("\n\n[ updateUniV3Swap ] debug... tx: %v amount0: %v, amount1In: %v, sqrtPriceX96: %v, liquidity: %v, tick: %v\n\n", l.TxHash, amount0, amount1, sqrtPriceX96, liquidity, tick)
 
 	// 取出token0和token1的decimals
 	token0, err0 := chain.GetTokenInfo(swap.Token0)
@@ -191,7 +191,7 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
 			swap.Price = calculatePrice.String()
 			swap.AmountOfMainToken = amount1.String()
 			swap.Direction = 0
-		} else if amount0.Cmp(big.NewInt(0)) < 0 && amount1.Cmp(big.NewInt(0)) > 0  {
+		} else if amount0.Cmp(big.NewInt(0)) < 0 && amount1.Cmp(big.NewInt(0)) > 0 {
 
 			amount0 = new(big.Int).Sub(big.NewInt(0), amount0)
 			calculatePrice := new(big.Int).Mul(amount0, token1Exponent)
@@ -205,7 +205,7 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
 		}
 	}
 
-	log.Println("[ updateUniV3Swap ] MainToken success!", swap.Price, swap.AmountOfMainToken, swap.Direction, l.TxHash)
+	// log.Println("[ updateUniV3Swap ] update success!", swap.Price, swap.AmountOfMainToken, swap.Direction, l.TxHash)
 
 }
 

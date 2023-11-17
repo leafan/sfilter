@@ -24,6 +24,11 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 						// log.Printf("[ Swap_handle ] swap tx now. type: %v, tx: %v\n\n", _type, tx.OriginTx.Hash())
 
 						swap := newSwapStruct(block, _log, tx)
+						if swap == nil {
+							// new有错误, continue掉
+							continue
+						}
+
 						swap.SwapType = _type
 
 						if _type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
@@ -42,9 +47,9 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 }
 
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	go service_swap.UpdateKline(swap, mongodb)
-	go service_swap.UpdateTxTrends(swap, mongodb)
-	go service_swap.UpdateKOLTxTrends(swap, mongodb)
+	// go service_swap.UpdateKline(swap, mongodb)
+	// go service_swap.UpdateTxTrends(swap, mongodb)
+	// go service_swap.UpdateKOLTxTrends(swap, mongodb)
 
 	go service_swap.SaveSwapTx(swap, mongodb)
 }
@@ -81,6 +86,9 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 	if err == nil {
 		swap.Token0 = pair.Token0
 		swap.Token1 = pair.Token1
+	} else {
+		log.Printf("[ newSwapStruct ] wrong pair here. addr: %v, tx: %v\n", swap.PairAddr, swap.TxHash)
+		return nil
 	}
 
 	swap.LogIndexWithTx = fmt.Sprintf("%s_%d", _log.TxHash.String(), _log.Index)

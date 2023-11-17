@@ -34,7 +34,7 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 
 	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
 
-	ethPrice := chain.GetEthPrice(client, big.NewInt(startBlock))
+	var ethPrice float64
 	times := 0
 
 	// 控制并发执行的协程数量
@@ -44,6 +44,10 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
 		if service_block.IsBlockProceeded(i, mongodb) {
 			continue
+		}
+
+		if times%config.GetPriceIntervalForRetrive == 0 {
+			ethPrice = chain.GetEthPrice(client, big.NewInt(i))
 		}
 
 		ch <- struct{}{} // 当协程处理不过来的时候, 这里会阻塞，写不进去
@@ -63,9 +67,6 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 		}(i, ethPrice)
 
 		times++
-		if times%config.GetPriceIntervalForRetrive == 0 {
-			ethPrice = chain.GetEthPrice(client, big.NewInt(i))
-		}
 
 		time.Sleep(config.SleepIntervalforRetrive * time.Millisecond)
 	}
@@ -79,7 +80,9 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 
 	go HandleSwap(blk, mongodb)
 
-	// todo
+	// etc.. todo
+
+	// record the proceeded block.
 	setBlockToProceeded(blk, mongodb)
 }
 

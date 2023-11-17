@@ -15,7 +15,7 @@ import (
 func IsBlockProceeded(blkNo int64, mongodb *mongo.Client) bool {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
 
-	filter := bson.M{"blockno": blkNo}
+	filter := bson.M{"blockNo": blkNo}
 
 	var result bson.M
 	err := collection.FindOne(context.Background(), filter).Decode(&result)
