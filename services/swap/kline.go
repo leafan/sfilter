@@ -19,7 +19,7 @@ import (
 
 var kline1minLock sync.Mutex
 
-func UpdateKline(swap *schema.Swap, mongodb *mongo.Client) {
+func UpdateKlines(swap *schema.Swap, mongodb *mongo.Client) {
 	update1MinKline(swap, mongodb)
 	update1DayKline(swap, mongodb)
 }

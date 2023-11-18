@@ -57,7 +57,7 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) int {
 
 // 本来都是协程进来, 这里不开协程了
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	service_swap.UpdateKline(swap, mongodb)
+	service_swap.UpdateKlines(swap, mongodb)
 
 	service_swap.UpdateKOLTxTrends(swap, mongodb)
 

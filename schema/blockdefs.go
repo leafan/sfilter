@@ -53,6 +53,6 @@ var BlockProceededIndexModel = []mongo.IndexModel{
 	},
 	{
 		Keys:    bson.D{{Key: "blockNo", Value: 1}},
-		Options: options.Index().SetName("blockNo_index").SetUnique(true),
+		Options: options.Index().SetName("blockNo_index"),
 	},
 }

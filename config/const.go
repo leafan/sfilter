@@ -31,6 +31,9 @@ const SwapTableName = "swap"
 const PairTableName = "pair"
 const TokenTableName = "token"
 
+const TransferTableName = "transfer"
+const TransferTableSavetime = (60 * 60 * 24 * 7)
+
 const Kline1MinTableName = "kline1min"
 const Kline1MinTableSaveTime = (60 * 60 * 24 * 7)
 

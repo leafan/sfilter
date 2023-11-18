@@ -36,10 +36,10 @@ var PairIndexModel = []mongo.IndexModel{
 	},
 	{
 		Keys:    bson.D{{Key: "token1", Value: 1}},
-		Options: options.Index().SetName("token1_index").SetUnique(true),
+		Options: options.Index().SetName("token1_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "pairCreatedBlockNo", Value: 1}},
-		Options: options.Index().SetName("pairCreatedBlockNo_index").SetUnique(true),
+		Options: options.Index().SetName("pairCreatedBlockNo_index"),
 	},
 }

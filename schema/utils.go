@@ -18,6 +18,8 @@ func InitTables(mongodb *mongo.Client) {
 
 	doInitTable(config.Kline1MinTableName, Kline1MinIndexModel, mongodb)
 	doInitTable(config.Kline1DayTableName, Kline1DayIndexModel, mongodb)
+
+	doInitTable(config.TransferTableName, TransferIndexModel, mongodb)
 }
 
 func doInitTable(collectionName string, index []mongo.IndexModel, mongodb *mongo.Client) {

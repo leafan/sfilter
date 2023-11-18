@@ -81,14 +81,16 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 
 	HandlePairCreated(blk, mongodb)
 
-	swapNum := HandleSwap(blk, mongodb)
+	HandleSwap(blk, mongodb)
+
+	HandleTransfer(blk, mongodb)
 
 	// etc.. todo
 
 	// record the proceeded block.
 	setBlockToProceeded(blk, mongodb)
 
-	log.Printf("[ handleOneBlock ] handle block: %d finished, swapNum: %v, time elapsed: % v\n\n", blk.Block.NumberU64(), swapNum, time.Since(start))
+	log.Printf("[ handleOneBlock ] handle block: %d finished, time elapsed: % v\n\n", blk.Block.NumberU64(), time.Since(start))
 }
 
 func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {
