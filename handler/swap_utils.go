@@ -51,9 +51,9 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 
 	// log.Printf("[ updateUniV2Swap ] GetTokenInfo success! decimal0: %v, decimal1: %v\n", token0.Decimal, token1.Decimal)
 
-	if checkExistString(swap.Token0, config.UCoinList) {
+	if checkExistString(swap.Token0, config.QuoteUsdCoinList) {
 		swap.MainToken = swap.Token1
-	} else if checkExistString(swap.Token0, config.QuoteCoinList) {
+	} else if checkExistString(swap.Token0, config.QuoteEthCoinList) {
 		swap.MainToken = swap.Token1
 	} else {
 		swap.MainToken = swap.Token0
@@ -145,9 +145,9 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
 		log.Printf("[ updateUniV3Swap ] GetTokenInfo error! err0: %v, err1: %v\n", err0, err1)
 		return
 	}
-	if checkExistString(swap.Token0, config.UCoinList) {
+	if checkExistString(swap.Token0, config.QuoteUsdCoinList) {
 		swap.MainToken = swap.Token1
-	} else if checkExistString(swap.Token0, config.QuoteCoinList) {
+	} else if checkExistString(swap.Token0, config.QuoteEthCoinList) {
 		swap.MainToken = swap.Token1
 	} else {
 		swap.MainToken = swap.Token0

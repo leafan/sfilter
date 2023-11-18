@@ -23,12 +23,19 @@ type Token struct {
 
 var TokenIndexModel = []mongo.IndexModel{
 	{
-		Keys: bson.D{{Key: "createdAt", Value: -1}},
-		// Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(config.NeverExpireTime),
-		Options: options.Index().SetName("createdat_index"),
+		Keys:    bson.D{{Key: "createdAt", Value: -1}},
+		Options: options.Index().SetName("createdAt_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "address", Value: 1}},
 		Options: options.Index().SetName("address_index").SetUnique(true),
+	},
+	{
+		Keys:    bson.D{{Key: "name", Value: 1}},
+		Options: options.Index().SetName("name_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "symbol", Value: 1}},
+		Options: options.Index().SetName("symbol_index"),
 	},
 }

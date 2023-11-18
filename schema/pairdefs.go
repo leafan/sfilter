@@ -23,12 +23,23 @@ type Pair struct {
 
 var PairIndexModel = []mongo.IndexModel{
 	{
-		Keys: bson.D{{Key: "createdAt", Value: -1}},
-		// Options: options.Index().SetName("createdat_index").SetExpireAfterSeconds(config.NeverExpireTime),
+		Keys:    bson.D{{Key: "createdAt", Value: -1}},
 		Options: options.Index().SetName("createdAt_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "address", Value: 1}},
 		Options: options.Index().SetName("address_index").SetUnique(true),
+	},
+	{
+		Keys:    bson.D{{Key: "token0", Value: 1}},
+		Options: options.Index().SetName("token0_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "token1", Value: 1}},
+		Options: options.Index().SetName("token1_index").SetUnique(true),
+	},
+	{
+		Keys:    bson.D{{Key: "pairCreatedBlockNo", Value: 1}},
+		Options: options.Index().SetName("pairCreatedBlockNo_index").SetUnique(true),
 	},
 }

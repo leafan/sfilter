@@ -34,6 +34,7 @@ type Swap struct {
 	Recipient         string `json:"recipient" bson:"recipient"`                 // 接收者
 	Price             string `json:"price" bson:"price"`                         // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
 	AmountOfMainToken string `json:"amountOfMainToken" bson:"amountOfMainToken"` // 主代币数量
+	VolumeInUsd       string ` json:"volumeInUsd" bson:"volumeInUsd"`            // 本次交易以Usd计价金额
 
 	LogIndexWithTx string `json:"logIndexWithTx" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
 
@@ -50,6 +51,10 @@ var SwapIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "blockNo", Value: 1}},
 		Options: options.Index().SetName("blockNo_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "txHash", Value: 1}},
+		Options: options.Index().SetName("txHash_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "logIndexWithTx", Value: 1}},

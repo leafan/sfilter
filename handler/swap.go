@@ -8,12 +8,15 @@ import (
 	"sfilter/schema"
 	"sfilter/services/chain"
 	service_swap "sfilter/services/swap"
+	"sfilter/utils"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
+func HandleSwap(block *schema.Block, mongodb *mongo.Client) int {
+	swapNum := 0
+
 	for _, tx := range block.Transactions {
 		if len(tx.Receipt.Logs) > 0 {
 			for _, _log := range tx.Receipt.Logs {
@@ -29,7 +32,6 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 							// new有错误, continue掉
 							continue
 						}
-
 						swap.SwapType = _type
 
 						if _type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
@@ -38,23 +40,54 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) {
 							updateUniV3Swap(swap, _log)
 						}
 
+						updateExtraInfo(swap)
+
 						handleOneSwap(swap, mongodb)
+
+						swapNum++
 					}
 				}
 
 			}
 		}
 	}
+
+	return swapNum
 }
 
+// 本来都是协程进来, 这里不开协程了
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	if !config.CREAT_DEBUG {
-		go service_swap.UpdateKline(swap, mongodb)
-		go service_swap.UpdateTxTrends(swap, mongodb)
-		go service_swap.UpdateKOLTxTrends(swap, mongodb)
+	service_swap.UpdateKline(swap, mongodb)
+
+	service_swap.UpdateKOLTxTrends(swap, mongodb)
+
+	service_swap.SaveSwapTx(swap, mongodb)
+}
+
+func updateExtraInfo(swap *schema.Swap) {
+	// 找到quoteToken, 更新 VolumeInUsd.
+	// 如果quoteToken为eth, 则乘以区块中eth价格; 如果为u, 直接加; 其他情况为0
+	quoteToken := swap.Token1
+	if swap.MainToken == swap.Token1 {
+		quoteToken = swap.Token0
 	}
 
-	go service_swap.SaveSwapTx(swap, mongodb)
+	volume := utils.GetBigIntOrZero(swap.AmountOfMainToken)
+	volumeInUsd := volume.Mul(volume, utils.GetBigIntOrZero(swap.Price))
+
+	// price有乘以1e18, 要去掉
+	volumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e18))
+
+	if checkExistString(quoteToken, config.QuoteUsdCoinList) {
+		swap.VolumeInUsd = volumeInUsd.String()
+	} else if checkExistString(quoteToken, config.QuoteEthCoinList) {
+		ethPrice := big.NewInt(int64(swap.CurrentEthPrice * 1e8)) // float转成int, 乘以1e8防止丢精度
+		volumeInUsd = volumeInUsd.Mul(volumeInUsd, ethPrice)      // 乘以eth价格
+
+		swap.VolumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e8)).String()
+	} else {
+		swap.VolumeInUsd = "0"
+	}
 }
 
 func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction) *schema.Swap {

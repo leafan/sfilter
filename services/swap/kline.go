@@ -8,6 +8,8 @@ import (
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/utils"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,12 +17,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var kline1minLock sync.Mutex
+
 func UpdateKline(swap *schema.Swap, mongodb *mongo.Client) {
 	update1MinKline(swap, mongodb)
 	update1DayKline(swap, mongodb)
 }
 
 func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
+	// 防止同时写入的时候, 查询时覆盖
+	// 简单实现, 实际上应该是给 行加读写锁, 这里直接给整个加锁了..
+
 	if swap.Price == "" {
 		log.Printf("[ update1MinKline ] wrong price. swap: %v, tx: %v\n", swap, swap.LogIndexWithTx)
 		return
@@ -37,11 +44,17 @@ func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 
 	_time := time.Unix(swap.SwapTime, 0) // 以交易(区块)时间为准, 而不是当前时间
 	key := fmt.Sprintf("%v_%v_%v", symbol, _time.Day(), _time.Hour())
-	// log.Printf("[ update1MinKline ] symbolDayHour key: %v\n", key)
+
+	// log.Printf("[ update1MinKline ] come here key: %v, minute: %v, swap: %v\n", key, _time.Minute(), swap)
 
 	filter := bson.M{"symbolDayHour": key}
 
 	var kline schema.KLines1Min
+
+	// 直接整体加锁吧, 没啥性能问题
+	kline1minLock.Lock()
+	defer kline1minLock.Unlock()
+
 	err := collection.FindOne(context.Background(), filter).Decode(&kline)
 	if err != nil && err != mongo.ErrNoDocuments {
 		log.Printf("[ update1MinKline ] FindOne error: %v, swap tx: %v\n", err, swap.LogIndexWithTx)
@@ -77,6 +90,8 @@ func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 }
 
 func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
+	// log.Printf("[ updateKLineWithNewData ] before update.. price: %v, volume: %v, kline: %v\n", swap.Price, swap.AmountOfMainToken, kline)
+
 	bigPrice, ok := new(big.Float).SetString(swap.Price)
 	if !ok {
 		log.Printf("[ updateKLineWithNewData ] wrong price. price: %v, tx: %v\n", swap.Price, swap.LogIndexWithTx)
@@ -111,14 +126,19 @@ func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
 	volume, ok := new(big.Int).SetString(swap.AmountOfMainToken, 10)
 	if !ok {
 		log.Printf("[ updateKLineWithNewData ] wrong volume. AmountOfMainToken: %v, tx: %v\n", swap.AmountOfMainToken, swap.LogIndexWithTx)
-		return
+		// volume = big.NewInt(0)
+		return // volume都为0了, 没必要计算tx啥的了
 	}
+	kline.Volume = volume.Add(volume, utils.GetBigIntOrZero(kline.Volume)).String()
 
-	oldVolume, ok := new(big.Int).SetString(kline.Volume, 10)
-	if !ok {
-		oldVolume = big.NewInt(0)
-	}
-	kline.Volume = volume.Add(volume, oldVolume).String()
+	// 更新 deepeye info
+	kline.TxNum++
+
+	oldUsdVolume := utils.GetBigIntOrZero(kline.VolumeInUsd)
+	volumeInUsd := utils.GetBigIntOrZero(swap.VolumeInUsd)
+	kline.VolumeInUsd = oldUsdVolume.Add(oldUsdVolume, volumeInUsd).String()
+
+	// log.Printf("[ updateKLineWithNewData ] debug.. after update, kline: %v\n", kline)
 }
 
 func update1DayKline(swap *schema.Swap, mongodb *mongo.Client) {

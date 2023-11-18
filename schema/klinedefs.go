@@ -52,6 +52,8 @@ type KLine struct {
 	// 由于每次udpate的时候, 发现柱子已过期, 会清空当前小时内的所有柱子
 	// 所以只要本KLine内有值, 则一定是同一分钟内的update
 	UnixTime int64 `bson:"unixTime" json:"unixTime"`
+
+	DeepEyeInfo `bson:",inline"`
 }
 
 type KLinePairInfo struct {
@@ -67,6 +69,12 @@ type KLineCreatTime struct {
 	// 这个Timestamp不表示创建时间, 而是他代表的周期时间
 	// 每一次有交易来的时候, 都会更新成其区块时间
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
+}
+
+// deepeye专属额外字段
+type DeepEyeInfo struct {
+	TxNum       uint64 `json:"txNum" bson:"txNum"`             // 该周期内的交易数
+	VolumeInUsd string `bson:"volumeInUsd" json:"volumeInUsd"` // 以usd计价的volume
 }
 
 type KLinesForHour [60]KLine  // 小时K线，60根
