@@ -38,7 +38,7 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	times := 0
 
 	// 控制并发执行的协程数量
-	ch := make(chan struct{}, config.MaxRoutineNums)
+	ch := make(chan struct{}, config.MaxConcurrentRoutineNums)
 	var wg sync.WaitGroup
 
 	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
@@ -75,22 +75,24 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	wg.Wait()
 }
 
-// 线性处理
+// 串行处理即可, 因为跑到这里来的都是协程
 func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	start := time.Now()
 
 	HandlePairCreated(blk, mongodb)
 
-	HandleSwap(blk, mongodb)
+	swaps := HandleSwap(blk, mongodb)
 
 	HandleTransfer(blk, mongodb)
+
+	HandleTokenInfo(blk, mongodb, swaps)
 
 	// etc.. todo
 
 	// record the proceeded block.
 	setBlockToProceeded(blk, mongodb)
 
-	log.Printf("[ handleOneBlock ] handle block: %d finished, time elapsed: % v\n\n", blk.Block.NumberU64(), time.Since(start))
+	log.Printf("[ handleOneBlock ] handle block: %d finished, swap num: %v, time elapsed: % v\n\n", blk.Block.NumberU64(), len(swaps), time.Since(start))
 }
 
 func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {

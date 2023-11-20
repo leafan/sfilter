@@ -24,7 +24,7 @@ type Transfer struct {
 
 	LogIndexWithTx string `json:"logIndexWithTx" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
 
-	Timestamp int64 `json:"timestamp" bson:"timestamp"` // transfer时间
+	Timestamp time.Time `json:"timestamp" bson:"timestamp"` // transfer时间
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }

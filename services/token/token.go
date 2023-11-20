@@ -47,7 +47,7 @@ func UpdateTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 		log.Printf("[ UpdateTokenInfo ] UpdateOne error: %v, token: %v\n", err, token.Address)
 		return
 	} else {
-		log.Printf("[ UpdateTokenInfo ] UpdateOne success. token: %v\n", token.Address)
+		// log.Printf("[ UpdateTokenInfo ] UpdateOne success. token: %v\n", token.Address)
 	}
 
 }

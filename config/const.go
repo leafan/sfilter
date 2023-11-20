@@ -1,48 +1,55 @@
 package config
 
-const CREAT_DEBUG = true // for creat....
-// const CREAT_DEBUG = false
+// const GET_VERY_OLD_DATA_DEBUG = true // for creat....
+const GET_VERY_OLD_DATA_DEBUG = false
+
+const SecondsForOneDay = (60 * 60 * 24)
+const SecondsForOneWeek = (SecondsForOneDay * 7)
+const SecondsForOneMonth = (SecondsForOneDay * 30)
+const SecondsForOneYear = (SecondsForOneMonth * 12)
 
 const BlocksPerDay = 250 * 24
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
+
 var (
 	RetriveOldBlockNum = 1000 // 如果要回溯多一些区块, 修改这个字段
 
 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
-
-	// swap表保存多久, 单位 seconds; 如果要保存久一些, 修改这里
-	SwapSaveTime = int32(60 * 60 * 24 * 7) // 7d
 
 	DatabaseName = "deepeye"
 )
 
 func init() {
 	// 重置 参数..
-	if CREAT_DEBUG {
-		RetriveOldBlockNum = (BlocksPerDay * 180)
+	if GET_VERY_OLD_DATA_DEBUG {
+		RetriveOldBlockNum = (BlocksPerDay * 90)
 		GetPriceIntervalForRetrive = 100
-		SwapSaveTime = int32(60 * 60 * 24 * 365)
 		DatabaseName = "creat"
 	}
 }
 
 const BlockProceededTableName = "block"
+
 const SwapTableName = "swap"
+const SwapSaveTime = int32(SecondsForOneMonth * 3)
+
 const PairTableName = "pair"
+
 const TokenTableName = "token"
+const TokenTableSavetime = SecondsForOneYear
 
 const TransferTableName = "transfer"
-const TransferTableSavetime = (60 * 60 * 24 * 7)
+const TransferTableSavetime = int32(SecondsForOneMonth * 3)
 
 const Kline1MinTableName = "kline1min"
-const Kline1MinTableSaveTime = (60 * 60 * 24 * 7)
+const Kline1MinTableSaveTime = SecondsForOneWeek
 
 const Kline1DayTableName = "kline1d"
-const Kline1DayTableSaveTime = (60 * 60 * 24 * 365 * 3)
+const Kline1DayTableSaveTime = SecondsForOneYear
 
 const NeverExpireTime = 0
 
-const MaxRoutineNums = 10
+const MaxConcurrentRoutineNums = 10
 
 const WS_ADDR = "ws://127.0.0.1:8546"
 const MONGO_ADDR = "mongodb://127.0.0.1:27017"

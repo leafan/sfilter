@@ -57,7 +57,7 @@ type KLine struct {
 }
 
 type KLinePairInfo struct {
-	Symbol     string `bson:"symbol" json:"symbol"`         // 交易对, 如 PEPE/WETH, 大写
+	Pair       string `bson:"pair" json:"pair"`             // 交易对pair地址
 	BaseToken  string `bson:"baseToken" json:"baseToken"`   // base 币, 对应为 PEPE
 	QuoteToken string `bson:"quoteToken" json:"quoteToken"` // quote计价币, 对应为 WETH
 }
@@ -83,8 +83,8 @@ type KLinesForMonth [31]KLine // 月K线, 最多31根
 type KLines1Min struct {
 	KLinePairInfo `bson:",inline"` // inline表示内连展开存储
 
-	// Symbol_Day组合; 以 symbol 与 day 联合查询到行更新
-	SymbolDayHour string `json:"symbolDayHour" bson:"symbolDayHour"`
+	// Pair_Day组合; 以 Pair 与 day 联合查询到行更新
+	PairDayHour string `json:"pairDayHour" bson:"pairDayHour"`
 
 	Kline KLinesForHour `json:"klines" bson:"klines"`
 
@@ -95,8 +95,8 @@ type KLines1Min struct {
 type KLines1Day struct {
 	KLinePairInfo `bson:",inline"` // inline表示内连展开存储
 
-	// 年份; 通过 symbol与year 查找到具体的行
-	SymbolYearMonth string `json:"symbolYearMonth" bson:"symbolYearMonth"`
+	// 年份; 通过 pairl与year 查找到具体的行
+	PairYearMonth string `json:"pairYearMonth" bson:"pairYearMonth"`
 
 	Kline KLinesForMonth `json:"klines" bson:"klines"`
 
@@ -109,12 +109,12 @@ var Kline1MinIndexModel = []mongo.IndexModel{
 		Options: options.Index().SetName("timestamp_index").SetExpireAfterSeconds(config.Kline1MinTableSaveTime),
 	},
 	{
-		Keys:    bson.D{{Key: "symbol", Value: 1}},
-		Options: options.Index().SetName("symbol_index"),
+		Keys:    bson.D{{Key: "pair", Value: 1}},
+		Options: options.Index().SetName("pair_index"),
 	},
 	{
-		Keys:    bson.D{{Key: "symbolDayHour", Value: 1}},
-		Options: options.Index().SetName("symbolDayHour_index").SetUnique(true),
+		Keys:    bson.D{{Key: "pairDayHour", Value: 1}},
+		Options: options.Index().SetName("pairDayHour_index").SetUnique(true),
 	},
 	{
 		// base token也就是main token, 需要查询. quoteToken就算了
@@ -129,14 +129,12 @@ var Kline1DayIndexModel = []mongo.IndexModel{
 		Options: options.Index().SetName("timestamp_index").SetExpireAfterSeconds(config.Kline1DayTableSaveTime),
 	},
 	{
-		// symbol 应该是唯一的
-		Keys:    bson.D{{Key: "symbol", Value: 1}},
-		Options: options.Index().SetName("symbol_index"),
+		Keys:    bson.D{{Key: "pair", Value: 1}},
+		Options: options.Index().SetName("pair_index"),
 	},
 	{
-		// symbol 应该是唯一的
-		Keys:    bson.D{{Key: "symbolYearMonth", Value: 1}},
-		Options: options.Index().SetName("symbolYearMonth_index").SetUnique(true),
+		Keys:    bson.D{{Key: "pairYearMonth", Value: 1}},
+		Options: options.Index().SetName("pairYearMonth_index").SetUnique(true),
 	},
 	{
 		// base token也就是main token, 需要查询. quoteToken就算了

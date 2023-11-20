@@ -7,6 +7,7 @@ import (
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/services/kline"
 	service_swap "sfilter/services/swap"
 	"sfilter/utils"
 
@@ -14,8 +15,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleSwap(block *schema.Block, mongodb *mongo.Client) int {
-	swapNum := 0
+func HandleSwap(block *schema.Block, mongodb *mongo.Client) []*schema.Swap {
+	var swaps []*schema.Swap
 
 	for _, tx := range block.Transactions {
 		if len(tx.Receipt.Logs) > 0 {
@@ -44,7 +45,7 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) int {
 
 						handleOneSwap(swap, mongodb)
 
-						swapNum++
+						swaps = append(swaps, swap)
 					}
 				}
 
@@ -52,12 +53,12 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) int {
 		}
 	}
 
-	return swapNum
+	return swaps
 }
 
 // 本来都是协程进来, 这里不开协程了
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	service_swap.UpdateKlines(swap, mongodb)
+	kline.UpdateKlines(swap, mongodb)
 
 	service_swap.UpdateKOLTxTrends(swap, mongodb)
 
@@ -78,9 +79,9 @@ func updateExtraInfo(swap *schema.Swap) {
 	// price有乘以1e18, 要去掉
 	volumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e18))
 
-	if checkExistString(quoteToken, config.QuoteUsdCoinList) {
+	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
 		swap.VolumeInUsd = volumeInUsd.String()
-	} else if checkExistString(quoteToken, config.QuoteEthCoinList) {
+	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
 		ethPrice := big.NewInt(int64(swap.CurrentEthPrice * 1e8)) // float转成int, 乘以1e8防止丢精度
 		volumeInUsd = volumeInUsd.Mul(volumeInUsd, ethPrice)      // 乘以eth价格
 

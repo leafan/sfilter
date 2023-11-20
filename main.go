@@ -13,6 +13,7 @@ import (
 	"sfilter/config"
 	"sfilter/handler"
 	"sfilter/schema"
+	"sfilter/services/kline"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -24,6 +25,8 @@ func test() {
 	// chain.TEST_PAIR()
 	// chain.TEST_TOKEN()
 	// swap.TEST_KLINE()
+
+	kline.TEST_KLINE_DB()
 
 	fmt.Printf("\t****** debug end ******\n\n\n\n")
 

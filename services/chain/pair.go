@@ -61,10 +61,13 @@ func TEST_PAIR() {
 	pair2, _ := GetPairInfo("0x8802345e6b2b87fFa0290F799C84d00c6Eac5bb9")
 
 	fmt.Printf("\n\n[ TEST ] pair1: %v, pair2: %v\n\n\n", pair1, pair2)
+	pair2.Address = "xx"
 
 	pairx := &schema.Pair{
-		Address: "0x1901733a0b47eF6B4039D8b6451807660A5C85e4",
-		Token1:  "leafan",
+		InfoOnChain: schema.InfoOnChain{
+			Address:  "0x1901733a0b47eF6B4039D8b6451807660A5C85e4",
+			PairName: "pepe/eth",
+		},
 	}
 
 	pair.UpSertPairInfo(pairx, getMongo())

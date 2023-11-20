@@ -1,4 +1,4 @@
-package swap
+package kline
 
 import (
 	"context"
@@ -7,14 +7,12 @@ import (
 	"math/big"
 	"sfilter/config"
 	"sfilter/schema"
-	"sfilter/services/chain"
 	"sfilter/utils"
 	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var kline1minLock sync.Mutex
@@ -35,19 +33,18 @@ func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 
 	collection := mongodb.Database(config.DatabaseName).Collection(config.Kline1MinTableName)
 
-	symbol := fmt.Sprintf("%v/%v", swap.Token0, swap.Token1)
+	pair := swap.PairAddr
 	quoteToken := swap.Token1
 	if swap.MainToken == swap.Token1 {
-		symbol = fmt.Sprintf("%v/%v", swap.Token1, swap.Token0)
 		quoteToken = swap.Token0
 	}
 
 	_time := time.Unix(swap.SwapTime, 0) // 以交易(区块)时间为准, 而不是当前时间
-	key := fmt.Sprintf("%v_%v_%v", symbol, _time.Day(), _time.Hour())
+	key := fmt.Sprintf("%v_%v_%v", pair, _time.Day(), _time.Hour())
 
 	// log.Printf("[ update1MinKline ] come here key: %v, minute: %v, swap: %v\n", key, _time.Minute(), swap)
 
-	filter := bson.M{"symbolDayHour": key}
+	filter := bson.M{"pairDayHour": key}
 
 	var kline schema.KLines1Min
 
@@ -61,13 +58,13 @@ func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 		return
 	}
 
-	if kline.SymbolDayHour == "" {
+	if kline.PairDayHour == "" {
 		// 说明没有这条k线, 需要新建; 填充基础信息
-		kline.Symbol = symbol
+		kline.Pair = pair
 		kline.BaseToken = swap.MainToken
 		kline.QuoteToken = quoteToken
 
-		kline.SymbolDayHour = key
+		kline.PairDayHour = key
 
 		kline.Timestamp = _time
 	} else {
@@ -145,41 +142,6 @@ func update1DayKline(swap *schema.Swap, mongodb *mongo.Client) {
 
 }
 
-func SaveUpsert1MinKline(kline *schema.KLines1Min, mongodb *mongo.Client) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.Kline1MinTableName)
-
-	kline.UpdatedAt = time.Now()
-
-	filter := bson.D{{Key: "symbolDayHour", Value: kline.SymbolDayHour}}
-	update := bson.D{{Key: "$set", Value: kline}}
-	opt := options.Update().SetUpsert(true)
-
-	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
-	if err != nil {
-		log.Printf("[ SaveUpsert1MinKline ] InsertOne error: %v, kline: %v\n", err, kline)
-		return
-	} else {
-		// log.Printf("[ SaveUpsert1MinKline ] InsertOne success, kline: %v\n", kline)
-	}
-}
-
 func TEST_KLINE() {
-	var pair = schema.KLinePairInfo{
-		Symbol:     "pepe/weth",
-		BaseToken:  "PEPE",
-		QuoteToken: "WETH",
-	}
-	var k5min = schema.KLines1Min{
-		KLinePairInfo: pair,
-	}
 
-	// SaveKline(&k5min, chain.GetMongo())
-
-	filter := bson.M{"symbol": "pepe/weth"}
-	collection := chain.GetMongo().Database(config.DatabaseName).Collection(config.Kline1MinTableName)
-
-	err := collection.FindOne(context.Background(), filter).Decode(&k5min)
-
-	log.Printf("err: %v, k5min: %v\n", err, k5min)
-	log.Println("debug, symbol: ", k5min.Symbol)
 }

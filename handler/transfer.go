@@ -7,6 +7,7 @@ import (
 	"sfilter/schema"
 	"sfilter/services/transfer"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -51,7 +52,7 @@ func parseTransferEvent(block *schema.Block, l *types.Log) *schema.Transfer {
 			TxHash:   l.TxHash.String(),
 			Position: l.Index,
 
-			Timestamp: int64(block.Block.Time()),
+			Timestamp: time.Unix(int64(block.Block.Time()), 0),
 		}
 
 		transfer.LogIndexWithTx = fmt.Sprintf("%s_%d", transfer.TxHash, transfer.Position)

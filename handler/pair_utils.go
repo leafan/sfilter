@@ -16,13 +16,15 @@ func parsePairCreatedEvent(block *schema.Block, l *types.Log) *schema.Pair {
 	// refer: https://etherscan.io/tx/0x0b8fd248b6ed148d87995d990bf5031da2398ae8370fae798959fa4ce7249804#eventlog
 	if len(l.Topics) == 3 && strings.EqualFold(l.Topics[0].String(), "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9") {
 		pair = &schema.Pair{
-			Address: common.BytesToAddress(l.Data[0:32]).String(),
-			Token0:  common.HexToAddress(l.Topics[1].Hex()).String(),
-			Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
+			InfoOnChain: schema.InfoOnChain{
+				Address: common.BytesToAddress(l.Data[0:32]).String(),
+				Token0:  common.HexToAddress(l.Topics[1].Hex()).String(),
+				Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
 
-			Type:               schema.SWAP_EVENT_UNISWAPV2_LIKE,
-			PairCreatedTime:    int64(block.Block.Time()),
-			PairCreatedBlockNo: l.BlockNumber,
+				Type:               schema.SWAP_EVENT_UNISWAPV2_LIKE,
+				PairCreatedTime:    int64(block.Block.Time()),
+				PairCreatedBlockNo: l.BlockNumber,
+			},
 
 			CreatedAt: time.Now(),
 		}
@@ -32,13 +34,15 @@ func parsePairCreatedEvent(block *schema.Block, l *types.Log) *schema.Pair {
 		// uniswap v3
 		// refer: https://etherscan.io/tx/0xb9bc7e088ea5cd41398ff4e6a50c725a1065b653f365aaab702b7dbd85a107cd#eventlog
 		pair = &schema.Pair{
-			Address: common.BytesToAddress(l.Data[32:64]).String(),
-			Token0:  common.HexToAddress(l.Topics[1].Hex()).String(),
-			Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
+			InfoOnChain: schema.InfoOnChain{
+				Address: common.BytesToAddress(l.Data[32:64]).String(),
+				Token0:  common.HexToAddress(l.Topics[1].Hex()).String(),
+				Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
 
-			Type:               schema.SWAP_EVENT_UNISWAPV3_LIKE,
-			PairCreatedTime:    int64(block.Block.Time()),
-			PairCreatedBlockNo: l.BlockNumber,
+				Type:               schema.SWAP_EVENT_UNISWAPV3_LIKE,
+				PairCreatedTime:    int64(block.Block.Time()),
+				PairCreatedBlockNo: l.BlockNumber,
+			},
 
 			CreatedAt: time.Now(),
 		}
