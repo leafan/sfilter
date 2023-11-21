@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -20,7 +21,7 @@ import (
 // v2 addr: https://etherscan.io/address/0x42d52847be255eacee8c3f96b3b223c0b3cc0438
 // v3 addr: https://etherscan.io/address/0xea05d862e4c5cd0d3e660e0fcb2045c8dd4d7912
 
-func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
+func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) {
 	// 解析event中的sender和recipient
 	swap.Sender = common.HexToAddress(_log.Topics[1].Hex()).String()
 	swap.Recipient = common.HexToAddress(_log.Topics[2].Hex()).String()
@@ -34,8 +35,8 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 	// log.Printf("\n\n[ updateUniV2Swap ] debug... tx: %v, amount0In: %v, amount1In: %v, amount0Out: %v, amount1Out: %v\n\n", _log.TxHash, amount0In, amount1In, amount0Out, amount1Out)
 
 	// 取出token0和token1的decimals
-	token0, err0 := chain.GetTokenInfo(swap.Token0)
-	token1, err1 := chain.GetTokenInfo(swap.Token1)
+	token0, err0 := chain.GetTokenInfo(swap.Token0, mongodb)
+	token1, err1 := chain.GetTokenInfo(swap.Token1, mongodb)
 	if err0 != nil || err1 != nil {
 		log.Printf("[ updateUniV2Swap ] GetTokenInfo error! err0: %v, err1: %v\n", err0, err1)
 		return
@@ -50,6 +51,9 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 	} else {
 		swap.MainToken = swap.Token0
 	}
+
+	swap.Decimal0 = token0.Decimal
+	swap.Decimal1 = token1.Decimal
 
 	if (amount0In.Cmp(big.NewInt(0)) == 0 || amount1Out.Cmp(big.NewInt(0)) == 0) && amount1In.Cmp(big.NewInt(0)) > 0 && amount0Out.Cmp(big.NewInt(0)) > 0 {
 		token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
@@ -111,7 +115,7 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log) {
 
 }
 
-func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
+func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 	swap.Sender = common.HexToAddress(l.Topics[1].Hex()).String()
 	swap.Recipient = common.HexToAddress(l.Topics[2].Hex()).String()
 
@@ -131,12 +135,13 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
 	// log.Printf("\n\n[ updateUniV3Swap ] debug... tx: %v amount0: %v, amount1In: %v, sqrtPriceX96: %v, liquidity: %v, tick: %v\n\n", l.TxHash, amount0, amount1, sqrtPriceX96, liquidity, tick)
 
 	// 取出token0和token1的decimals
-	token0, err0 := chain.GetTokenInfo(swap.Token0)
-	token1, err1 := chain.GetTokenInfo(swap.Token1)
+	token0, err0 := chain.GetTokenInfo(swap.Token0, mongodb)
+	token1, err1 := chain.GetTokenInfo(swap.Token1, mongodb)
 	if err0 != nil || err1 != nil {
 		log.Printf("[ updateUniV3Swap ] GetTokenInfo error! err0: %v, err1: %v\n", err0, err1)
 		return
 	}
+
 	if utils.CheckExistString(swap.Token0, config.QuoteUsdCoinList) {
 		swap.MainToken = swap.Token1
 	} else if utils.CheckExistString(swap.Token0, config.QuoteEthCoinList) {
@@ -144,6 +149,10 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log) {
 	} else {
 		swap.MainToken = swap.Token0
 	}
+
+	swap.Decimal0 = token0.Decimal
+	swap.Decimal1 = token1.Decimal
+
 	token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
 	token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.Decimal)), nil)
 	if swap.MainToken == swap.Token0 {

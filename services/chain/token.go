@@ -14,13 +14,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetTokenInfo(address string) (*schema.Token, error) {
+// 主要用于Test，自己获取mongo玩
+func GetTokenInfoForRead(address string) (*schema.Token, error) {
+	mongodb := getMongo()
+	return GetTokenInfo(address, mongodb)
+}
+
+func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) {
 	if address == "" {
 		log.Printf("[ GetTokenInfo ] error! address %v\n", address)
 		return nil, errors.New("address is empty")
 	}
 
-	collection := getMongo().Database(config.DatabaseName).Collection(config.TokenTableName)
+	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
 
 	filter := bson.D{{Key: "address", Value: address}}
 
@@ -75,7 +81,7 @@ func GetTokenInfo(address string) (*schema.Token, error) {
 			}
 
 			// save...
-			service_token.SaveTokenInfo(&result, getMongo())
+			service_token.SaveTokenInfo(&result, mongodb)
 		} else {
 			log.Printf("[ GetTokenInfo ] FindOne error: %v, token addr: %v\n", err, address)
 			return nil, err
@@ -87,13 +93,13 @@ func GetTokenInfo(address string) (*schema.Token, error) {
 }
 
 func TEST_TOKEN() {
-	token, _ := GetTokenInfo("0xC19B6A4Ac7C7Cc24459F08984Bbd09664af17bD1")
+	token, _ := GetTokenInfoForRead("0xC19B6A4Ac7C7Cc24459F08984Bbd09664af17bD1")
 
 	log.Printf("\n\n[ TEST ] token: %v,\n\n\n", token)
 
 	// service_token.UpdateTokenInfo(token, getMongo())
 
-	token2, _ := GetTokenInfo("0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0")
+	token2, _ := GetTokenInfoForRead("0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0")
 	log.Printf("\n\n[ TEST ] token2: %v,\n\n\n", token2)
 
 }

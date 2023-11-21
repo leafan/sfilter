@@ -13,6 +13,7 @@ type Pair struct {
 
 	TradeInfoForPair `bson:",inline"`
 
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"` // 创建时间
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
 }
 
@@ -32,10 +33,10 @@ type InfoOnChain struct {
 // 注意搜索排序的时候要带上 UpdateAt 信息
 type TradeInfoForPair struct {
 	// 1h 内tx数, 用于排序等
-	TxNumIn1h uint32 `json:"txNumIn1h" bson:"txNumIn1h"`
+	TxNumIn1h int `json:"txNumIn1h" bson:"txNumIn1h"`
 
 	// 24h 内tx数
-	TxNumIn24h uint32 `json:"txNumIn24h" bson:"txNumIn24h"`
+	TxNumIn24h int `json:"txNumIn24h" bson:"txNumIn24h"`
 
 	// 最近1h相对于上一个小时, tx的增减比例
 	TxNumChangeIn1h float32 `json:"txNumChangeIn1h" bson:"txNumChangeIn1h"`
@@ -50,8 +51,7 @@ type TradeInfoForPair struct {
 	PriceChangeIn24h float32 `json:"priceChangeIn24h" bson:"priceChangeIn24h"`
 
 	// 直接float存储, 毕竟这里只是展示, 不需要高精度计算
-	// K线能计算就更新, 否则为0(比如pair为2个屌丝币)
-	PriceInUsd float64 `json:"priceInUsd" bson:"priceInUsd"`
+	Price float64 `json:"price" bson:"price"`
 
 	// 1h内的交易金额(usd); float64足够存储, 毕竟 1亿 就已经很大了
 	VolumeByUsdIn1h float64 `json:"volumeByUsdIn1h" bson:"volumeByUsdIn1h"`
@@ -64,6 +64,10 @@ var PairIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "createdAt", Value: -1}},
 		Options: options.Index().SetName("createdAt_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "updatedAt", Value: -1}},
+		Options: options.Index().SetName("updatedAt_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "address", Value: 1}},
@@ -84,5 +88,44 @@ var PairIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "pairName", Value: 1}},
 		Options: options.Index().SetName("pairName_index"),
+	},
+
+	//  数值加索引方便排序？
+	{
+		Keys:    bson.D{{Key: "txNumIn1h", Value: 1}},
+		Options: options.Index().SetName("txNumIn1h_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "txNumIn24h", Value: 1}},
+		Options: options.Index().SetName("txNumIn24h_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "txNumChangeIn1h", Value: 1}},
+		Options: options.Index().SetName("txNumChangeIn1h_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "txNumChangeIn24h", Value: 1}},
+		Options: options.Index().SetName("txNumChangeIn24h_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "priceChangeIn1h", Value: 1}},
+		Options: options.Index().SetName("priceChangeIn1h_index"),
+	},
+
+	{
+		Keys:    bson.D{{Key: "priceChangeIn24h", Value: 1}},
+		Options: options.Index().SetName("priceChangeIn24h_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "price", Value: 1}},
+		Options: options.Index().SetName("price_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "volumeByUsdIn1h", Value: 1}},
+		Options: options.Index().SetName("volumeByUsdIn1h_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "volumeByUsdIn24h", Value: 1}},
+		Options: options.Index().SetName("volumeByUsdIn24h_index"),
 	},
 }

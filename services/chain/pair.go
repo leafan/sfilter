@@ -14,13 +14,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetPairInfo(address string) (*schema.Pair, error) {
+func GetPairInfoForRead(address string) (*schema.Pair, error) {
+	mongodb := getMongo()
+	return GetPairInfo(address, mongodb)
+}
+
+func GetPairInfo(address string, mongodb *mongo.Client) (*schema.Pair, error) {
 	if address == "" {
 		log.Printf("[ GetPairInfo ] error! empty address. address!")
 		return nil, errors.New("empty address")
 	}
 
-	collection := getMongo().Database(config.DatabaseName).Collection(config.PairTableName)
+	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
 
 	filter := bson.M{"address": address}
 
@@ -42,7 +47,7 @@ func GetPairInfo(address string) (*schema.Pair, error) {
 			result.Token1 = token1.(common.Address).String()
 
 			// 存入mongo, 不判断错误, 只打印
-			pair.SavePairInfo(&result, getMongo())
+			pair.SavePairInfo(&result, mongodb)
 
 		} else {
 			log.Printf("[ GetPairInfo ] FindOne error: %v, pair addr: %v\n", err, address)
@@ -57,8 +62,8 @@ func GetPairInfo(address string) (*schema.Pair, error) {
 }
 
 func TEST_PAIR() {
-	pair1, _ := GetPairInfo("0x1901733a0b47eF6B4039D8b6451807660A5C85e4")
-	pair2, _ := GetPairInfo("0x8802345e6b2b87fFa0290F799C84d00c6Eac5bb9")
+	pair1, _ := GetPairInfoForRead("0x1901733a0b47eF6B4039D8b6451807660A5C85e4")
+	pair2, _ := GetPairInfoForRead("0x8802345e6b2b87fFa0290F799C84d00c6Eac5bb9")
 
 	fmt.Printf("\n\n[ TEST ] pair1: %v, pair2: %v\n\n\n", pair1, pair2)
 	pair2.Address = "xx"

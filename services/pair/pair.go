@@ -17,6 +17,7 @@ func SavePairInfo(pair *schema.Pair, mongodb *mongo.Client) {
 
 	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
 
+	pair.UpdatedAt = time.Now()
 	pair.CreatedAt = time.Now()
 
 	_, err := collection.InsertOne(context.Background(), pair)
@@ -30,6 +31,8 @@ func SavePairInfo(pair *schema.Pair, mongodb *mongo.Client) {
 // 如果存在就更新, 不存在就插入
 func UpSertPairInfo(pair *schema.Pair, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
+
+	pair.UpdatedAt = time.Now()
 
 	filter := bson.D{{Key: "address", Value: pair.Address}}
 	update := bson.D{{Key: "$set", Value: pair}}

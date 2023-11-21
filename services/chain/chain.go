@@ -29,6 +29,10 @@ func GetMongo() *mongo.Client {
 	return getMongo()
 }
 
+func GetEthClient() *ethclient.Client {
+	return getClient()
+}
+
 func getAbi() *abi.ABI {
 	if chainStaticAbi == nil {
 		abi, err := abi.JSON(strings.NewReader(ChainAbiJson))

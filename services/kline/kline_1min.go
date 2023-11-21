@@ -2,6 +2,7 @@ package kline
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -9,7 +10,6 @@ import (
 	"sfilter/schema"
 	"sfilter/utils"
 	"sync"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,12 +17,7 @@ import (
 
 var kline1minLock sync.Mutex
 
-func UpdateKlines(swap *schema.Swap, mongodb *mongo.Client) {
-	update1MinKline(swap, mongodb)
-	update1DayKline(swap, mongodb)
-}
-
-func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
+func Update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 	// 防止同时写入的时候, 查询时覆盖
 	// 简单实现, 实际上应该是给 行加读写锁, 这里直接给整个加锁了..
 
@@ -39,7 +34,7 @@ func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 		quoteToken = swap.Token0
 	}
 
-	_time := time.Unix(swap.SwapTime, 0) // 以交易(区块)时间为准, 而不是当前时间
+	_time := swap.SwapTime // 以交易(区块)时间为准, 而不是当前时间
 	key := fmt.Sprintf("%v_%v_%v", pair, _time.Day(), _time.Hour())
 
 	// log.Printf("[ update1MinKline ] come here key: %v, minute: %v, swap: %v\n", key, _time.Minute(), swap)
@@ -87,16 +82,11 @@ func update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 }
 
 func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
-	// log.Printf("[ updateKLineWithNewData ] before update.. price: %v, volume: %v, kline: %v\n", swap.Price, swap.AmountOfMainToken, kline)
-
-	bigPrice, ok := new(big.Float).SetString(swap.Price)
-	if !ok {
+	curPrice, err := getPriceToFloat64(swap.Price)
+	if err != nil {
 		log.Printf("[ updateKLineWithNewData ] wrong price. price: %v, tx: %v\n", swap.Price, swap.LogIndexWithTx)
 		return
 	}
-
-	bigPrice = bigPrice.Quo(bigPrice, new(big.Float).SetFloat64(config.PriceBaseFactor))
-	curPrice, _ := bigPrice.Float64()
 
 	kline.ClosePrice = curPrice // 不管新老柱子, 先更新close
 
@@ -117,7 +107,7 @@ func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
 		}
 	}
 
-	kline.UnixTime = swap.SwapTime
+	kline.UnixTime = swap.SwapTime.Unix()
 
 	// volume啥都不用考虑, 直接加
 	volume, ok := new(big.Int).SetString(swap.AmountOfMainToken, 10)
@@ -130,18 +120,19 @@ func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
 
 	// 更新 deepeye info
 	kline.TxNum++
-
-	oldUsdVolume := utils.GetBigIntOrZero(kline.VolumeInUsd)
-	volumeInUsd := utils.GetBigIntOrZero(swap.VolumeInUsd)
-	kline.VolumeInUsd = oldUsdVolume.Add(oldUsdVolume, volumeInUsd).String()
+	kline.VolumeInUsd += swap.VolumeInUsd
 
 	// log.Printf("[ updateKLineWithNewData ] debug.. after update, kline: %v\n", kline)
 }
 
-func update1DayKline(swap *schema.Swap, mongodb *mongo.Client) {
+func getPriceToFloat64(_price string) (float64, error) {
+	bigPrice, ok := new(big.Float).SetString(_price)
+	if !ok {
+		return 0, errors.New("to big float wrong")
+	}
 
-}
+	bigPrice = bigPrice.Quo(bigPrice, new(big.Float).SetFloat64(config.PriceBaseFactor))
+	curPrice, _ := bigPrice.Float64()
 
-func TEST_KLINE() {
-
+	return curPrice, nil
 }

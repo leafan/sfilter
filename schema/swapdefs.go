@@ -22,31 +22,40 @@ type Swap struct {
 	GasPrice string `json:"gasPrice" bson:"gasPrice"` // 使用的gas price
 	GasInEth string `json:"gasInEth" bson:"gasInEth"` // 消耗的gas值
 
-	Token0    string `json:"token0" bson:"token0"`       // 代币0
-	Token1    string `json:"token1" bson:"token1"`       // 代币1
+	Token0 string `json:"token0" bson:"token0"` // 代币0
+	Token1 string `json:"token1" bson:"token1"` // 代币1
+
 	MainToken string `json:"mainToken" bson:"mainToken"` // 主token的地址，方便索引
 	Direction int    `json:"direction" bson:"direction"` // 买卖方向，0表示买，1表示卖
 
 	Operator      string `json:"operator" bson:"operator"`           // msg.sender, 默认当成买卖操作者
 	OperatorNonce uint64 `json:"operatorNonce" bson:"operatorNonce"` // 操作者nonce
 
-	Sender            string `json:"sender" bson:"sender"`                       // 发送者
-	Recipient         string `json:"recipient" bson:"recipient"`                 // 接收者
-	Price             string `json:"price" bson:"price"`                         // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
-	AmountOfMainToken string `json:"amountOfMainToken" bson:"amountOfMainToken"` // 主代币数量
-	VolumeInUsd       string ` json:"volumeInUsd" bson:"volumeInUsd"`            // 本次交易以Usd计价金额
+	Sender            string  `json:"sender" bson:"sender"`                       // 发送者
+	Recipient         string  `json:"recipient" bson:"recipient"`                 // 接收者
+	Price             string  `json:"price" bson:"price"`                         // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
+	AmountOfMainToken string  `json:"amountOfMainToken" bson:"amountOfMainToken"` // 主代币数量
+	VolumeInUsd       float64 ` json:"volumeInUsd" bson:"volumeInUsd"`            // 本次交易以Usd计价金额
 
 	LogIndexWithTx string `json:"logIndexWithTx" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
 
-	SwapTime int64 `json:"swapTime" bson:"swapTime"`
+	SwapTime time.Time `json:"swapTime" bson:"swapTime"`
+
+	SwapOmitFields `bson:",inline"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
 }
 
+// 临时变量, 不存入db
+type SwapOmitFields struct {
+	Decimal0 uint8 `json:"-" bson:"-"`
+	Decimal1 uint8 `json:"-" bson:"-"`
+}
+
 var SwapIndexModel = []mongo.IndexModel{
 	{
-		Keys:    bson.D{{Key: "createdAt", Value: -1}},
-		Options: options.Index().SetName("createdAt_index").SetExpireAfterSeconds(config.SwapSaveTime),
+		Keys:    bson.D{{Key: "swapTime", Value: -1}},
+		Options: options.Index().SetName("swapTime_index").SetExpireAfterSeconds(config.SwapSaveTime),
 	},
 	{
 		Keys:    bson.D{{Key: "blockNo", Value: 1}},

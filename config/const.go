@@ -17,39 +17,45 @@ var (
 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
 
 	DatabaseName = "deepeye"
+
+	SwapSaveTime          = int32(SecondsForOneWeek)
+	TransferTableSavetime = int32(SecondsForOneWeek)
+
+	Kline1MinTableSaveTime  = int32(SecondsForOneWeek)
+	Kline1HourTableSaveTime = int32(SecondsForOneMonth * 6)
+
+	TokenTableSavetime = int32(SecondsForOneYear)
 )
 
 func init() {
 	// 重置 参数..
 	if GET_VERY_OLD_DATA_DEBUG {
-		RetriveOldBlockNum = (BlocksPerDay * 90)
-		GetPriceIntervalForRetrive = 100
 		DatabaseName = "creat"
+
+		RetriveOldBlockNum = (BlocksPerDay * 180)
+		GetPriceIntervalForRetrive = 100
+
+		SwapSaveTime = int32(SecondsForOneMonth * 6)
+		TransferTableSavetime = int32(SecondsForOneMonth * 6)
 	}
 }
 
 const BlockProceededTableName = "block"
-
 const SwapTableName = "swap"
-const SwapSaveTime = int32(SecondsForOneMonth * 3)
-
 const PairTableName = "pair"
-
 const TokenTableName = "token"
-const TokenTableSavetime = SecondsForOneYear
-
 const TransferTableName = "transfer"
-const TransferTableSavetime = int32(SecondsForOneMonth * 3)
-
 const Kline1MinTableName = "kline1min"
-const Kline1MinTableSaveTime = SecondsForOneWeek
-
+const Kline1HourTableName = "kline1hour"
 const Kline1DayTableName = "kline1d"
+
 const Kline1DayTableSaveTime = SecondsForOneYear
 
 const NeverExpireTime = 0
 
 const MaxConcurrentRoutineNums = 10
+
+const INFINITE_CHANGE = 10000
 
 const WS_ADDR = "ws://127.0.0.1:8546"
 const MONGO_ADDR = "mongodb://127.0.0.1:27017"

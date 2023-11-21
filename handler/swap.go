@@ -3,13 +3,14 @@ package handler
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/big"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
-	"sfilter/services/kline"
 	service_swap "sfilter/services/swap"
 	"sfilter/utils"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -36,9 +37,9 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) []*schema.Swap {
 						swap.SwapType = _type
 
 						if _type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
-							updateUniV2Swap(swap, _log)
+							updateUniV2Swap(swap, _log, mongodb)
 						} else if _type == schema.SWAP_EVENT_UNISWAPV3_LIKE {
-							updateUniV3Swap(swap, _log)
+							updateUniV3Swap(swap, _log, mongodb)
 						}
 
 						updateExtraInfo(swap)
@@ -58,19 +59,24 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) []*schema.Swap {
 
 // 本来都是协程进来, 这里不开协程了
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
-	kline.UpdateKlines(swap, mongodb)
+	// 应该先保存, 如果保存失败, 则说明不需要往后更新数据了
+	err := service_swap.SaveSwapTx(swap, mongodb)
 
-	service_swap.UpdateKOLTxTrends(swap, mongodb)
-
-	service_swap.SaveSwapTx(swap, mongodb)
+	if err == nil {
+		UpdateKlines(swap, mongodb)
+		service_swap.UpdateKOLTxTrends(swap, mongodb)
+	}
 }
 
 func updateExtraInfo(swap *schema.Swap) {
 	// 找到quoteToken, 更新 VolumeInUsd.
 	// 如果quoteToken为eth, 则乘以区块中eth价格; 如果为u, 直接加; 其他情况为0
 	quoteToken := swap.Token1
+	decimals := math.Pow(10, float64(swap.Decimal0))
+
 	if swap.MainToken == swap.Token1 {
 		quoteToken = swap.Token0
+		decimals = math.Pow(10, float64(swap.Decimal1))
 	}
 
 	volume := utils.GetBigIntOrZero(swap.AmountOfMainToken)
@@ -79,15 +85,15 @@ func updateExtraInfo(swap *schema.Swap) {
 	// price有乘以1e18, 要去掉
 	volumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e18))
 
-	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
-		swap.VolumeInUsd = volumeInUsd.String()
-	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
-		ethPrice := big.NewInt(int64(swap.CurrentEthPrice * 1e8)) // float转成int, 乘以1e8防止丢精度
-		volumeInUsd = volumeInUsd.Mul(volumeInUsd, ethPrice)      // 乘以eth价格
+	// 此时的volume是包含有 MainToken 的decimal的, 需要除掉
+	floatWithDecimal, _ := new(big.Float).SetInt(volumeInUsd).Float64()
 
-		swap.VolumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e8)).String()
+	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
+		swap.VolumeInUsd = floatWithDecimal / decimals
+	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
+		swap.VolumeInUsd = floatWithDecimal * swap.CurrentEthPrice / decimals
 	} else {
-		swap.VolumeInUsd = "0"
+		swap.VolumeInUsd = 0
 	}
 }
 
@@ -103,7 +109,7 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 
 		OperatorNonce: tx.OriginTx.Nonce(),
 
-		SwapTime: int64(block.Block.Time()),
+		SwapTime: time.Unix(int64(block.Block.Time()), 0),
 	}
 
 	effectiveGasPrice := big.NewInt(int64(tx.Receipt.GasUsed))
@@ -119,7 +125,7 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 	}
 
 	// 获取 token0, token1
-	pair, err := chain.GetPairInfo(swap.PairAddr)
+	pair, err := chain.GetPairInfoForRead(swap.PairAddr)
 	if err == nil {
 		swap.Token0 = pair.Token0
 		swap.Token1 = pair.Token1

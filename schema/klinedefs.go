@@ -25,6 +25,13 @@ import (
 */
 
 /*
+	小时线方案
+
+	假设全网每天活跃的pair在 1w, 每天一行记录; 存180天, 则总行数预计在 1*365 = 365w 级别
+	实际上每天活跃pair到不了 1w, 因此ok
+*/
+
+/*
 	日线方案
 
 	假设全网最终的有效pair(一年无交易的pair清除)在 50w 规模,
@@ -73,12 +80,14 @@ type KLineCreatTime struct {
 
 // deepeye专属额外字段
 type DeepEyeInfo struct {
-	TxNum       uint64 `json:"txNum" bson:"txNum"`             // 该周期内的交易数
-	VolumeInUsd string `bson:"volumeInUsd" json:"volumeInUsd"` // 以usd计价的volume
+	TxNum       int     `json:"txNum" bson:"txNum"`             // 该周期内的交易数
+	VolumeInUsd float64 `bson:"volumeInUsd" json:"volumeInUsd"` // 以usd计价的volume
 }
 
-type KLinesForHour [60]KLine  // 小时K线，60根
-type KLinesForMonth [31]KLine // 月K线, 最多31根
+type KLinesForHour [60]KLine // 分钟K线，1小时60根
+type KLinesForDay [24]KLine  // 小时K线, 一天24根
+
+type KLinesForMonth [31]KLine // 日K线, 一月最多31根
 
 type KLines1Min struct {
 	KLinePairInfo `bson:",inline"` // inline表示内连展开存储
@@ -87,6 +96,17 @@ type KLines1Min struct {
 	PairDayHour string `json:"pairDayHour" bson:"pairDayHour"`
 
 	Kline KLinesForHour `json:"klines" bson:"klines"`
+
+	KLineCreatTime `bson:",inline"`
+}
+
+// 小时线
+type KLines1Hour struct {
+	KLinePairInfo `bson:",inline"`
+
+	PairMonthDay string `json:"pairMonthDay" bson:"pairMonthDay"`
+
+	Kline KLinesForDay `json:"klines" bson:"klines"`
 
 	KLineCreatTime `bson:",inline"`
 }
@@ -115,6 +135,26 @@ var Kline1MinIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "pairDayHour", Value: 1}},
 		Options: options.Index().SetName("pairDayHour_index").SetUnique(true),
+	},
+	{
+		// base token也就是main token, 需要查询. quoteToken就算了
+		Keys:    bson.D{{Key: "baseToken", Value: 1}},
+		Options: options.Index().SetName("baseToken_index"),
+	},
+}
+
+var Kline1HourIndexModel = []mongo.IndexModel{
+	{
+		Keys:    bson.D{{Key: "timestamp", Value: -1}},
+		Options: options.Index().SetName("timestamp_index").SetExpireAfterSeconds(config.Kline1HourTableSaveTime),
+	},
+	{
+		Keys:    bson.D{{Key: "pair", Value: 1}},
+		Options: options.Index().SetName("pair_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "pairMonthDay", Value: 1}},
+		Options: options.Index().SetName("pairMonthDay_index").SetUnique(true),
 	},
 	{
 		// base token也就是main token, 需要查询. quoteToken就算了

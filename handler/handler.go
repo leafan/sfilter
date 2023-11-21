@@ -82,10 +82,13 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	HandlePairCreated(blk, mongodb)
 
 	swaps := HandleSwap(blk, mongodb)
+	blk.TxNums = len(swaps)
 
 	HandleTransfer(blk, mongodb)
 
-	HandleTokenInfo(blk, mongodb, swaps)
+	if !config.GET_VERY_OLD_DATA_DEBUG {
+		HandleTradeInfo(blk, mongodb, swaps)
+	}
 
 	// etc.. todo
 
@@ -100,10 +103,16 @@ func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {
 		BlockNo:   block.Block.Number().Int64(),
 		Hash:      block.Block.Hash().String(),
 		BlockTime: int64(block.Block.Time()),
+		TxNums:    block.TxNums,
 
 		EthPrice: block.EthPrice,
 	}
 
 	service_block.SaveBlockProceeded(bps, mongodb)
 
+}
+
+func TEST_HANDLER() {
+	blockNo := int64(18615952)
+	HandleBlock(big.NewInt(blockNo), chain.GetEthClient(), chain.GetMongo())
 }
