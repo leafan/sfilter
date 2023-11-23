@@ -82,12 +82,13 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	HandlePairLogic(blk, mongodb)
 	HandleLiquidityLogic(blk, mongodb)
 
-	maps := HandleTransfer(blk, mongodb)
+	transferMap := HandleTransfer(blk, mongodb)
 
-	swaps := HandleSwap(blk, maps, mongodb)
+	swaps := HandleSwapAndKline(blk, transferMap, mongodb)
 	blk.TxNums = len(swaps)
 
-	if !config.GET_VERY_OLD_DATA_DEBUG {
+	// trade info 是更新最近24h或7天的数据, 因此老数据就别掺和了
+	if time.Since(time.Unix(int64(blk.Block.Time()), 0)).Seconds() < config.SecondsForOneWeek {
 		HandleTradeInfo(blk, mongodb, swaps)
 	}
 
@@ -96,7 +97,7 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	// record the proceeded block.
 	setBlockToProceeded(blk, mongodb)
 
-	log.Printf("[ handleOneBlock ] handle block: %d finished, swap num: %v, time elapsed: % v\n\n", blk.Block.NumberU64(), len(swaps), time.Since(start))
+	log.Printf("[ handleOneBlock ] handle block: %d finished, swap num: %v, time elapsed: % v\n\n", blk.Block.NumberU64(), blk.TxNums, time.Since(start))
 }
 
 func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {

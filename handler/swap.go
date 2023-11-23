@@ -17,7 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleSwap(block *schema.Block, transferMap schema.TxTokenTransfersMap, mongodb *mongo.Client) []*schema.Swap {
+func HandleSwapAndKline(block *schema.Block, transferMap schema.TxTokenTransfersMap, mongodb *mongo.Client) []*schema.Swap {
 	var swaps []*schema.Swap
 
 	for _, tx := range block.Transactions {
@@ -47,7 +47,7 @@ func HandleSwap(block *schema.Block, transferMap schema.TxTokenTransfersMap, mon
 
 						updateTrader(swap, transferMap)
 
-						handleOneSwap(swap, mongodb)
+						handleOneSwapAndKline(swap, mongodb)
 
 						swaps = append(swaps, swap)
 					}
@@ -129,11 +129,12 @@ func updateTrader(swap *schema.Swap, transferMap schema.TxTokenTransfersMap) {
 }
 
 // 本来都是协程进来, 这里不开协程了
-func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
+func handleOneSwapAndKline(swap *schema.Swap, mongodb *mongo.Client) {
 	// 应该先保存, 如果保存失败, 则说明不需要往后更新数据了
 	err := service_swap.SaveSwapTx(swap, mongodb)
 
-	if err == nil {
+	// 数据为最近一周才update kline
+	if err == nil && (time.Since(swap.SwapTime).Seconds() < config.SecondsForOneWeek) {
 		UpdateKlines(swap, mongodb)
 		service_swap.UpdateKOLTxTrends(swap, mongodb)
 	}

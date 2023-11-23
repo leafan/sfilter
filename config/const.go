@@ -1,7 +1,7 @@
 package config
 
-// const GET_VERY_OLD_DATA_DEBUG = true // for creat....
-const GET_VERY_OLD_DATA_DEBUG = false
+const CREAT_DEBUG = true // for creat....
+// const CREAT_DEBUG = false
 
 const SecondsForOneDay = (60 * 60 * 24)
 const SecondsForOneWeek = (SecondsForOneDay * 7)
@@ -30,7 +30,7 @@ var (
 
 func init() {
 	// 重置 参数..
-	if GET_VERY_OLD_DATA_DEBUG {
+	if CREAT_DEBUG {
 		DatabaseName = "creat"
 
 		RetriveOldBlockNum = (BlocksPerDay * 30)
