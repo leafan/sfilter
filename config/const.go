@@ -12,11 +12,12 @@ const BlocksPerDay = 250 * 24
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
 
 var (
-	RetriveOldBlockNum = 1000 // 如果要回溯多一些区块, 修改这个字段
+	RetriveOldBlockNum = 10000 // 如果要回溯多一些区块, 修改这个字段
 
 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
 
 	DatabaseName = "deepeye"
+	// DatabaseName = "test"
 
 	SwapSaveTime          = int32(SecondsForOneWeek)
 	TransferTableSavetime = int32(SecondsForOneWeek)
@@ -32,11 +33,11 @@ func init() {
 	if GET_VERY_OLD_DATA_DEBUG {
 		DatabaseName = "creat"
 
-		RetriveOldBlockNum = (BlocksPerDay * 180)
+		RetriveOldBlockNum = (BlocksPerDay * 30)
 		GetPriceIntervalForRetrive = 100
 
-		SwapSaveTime = int32(SecondsForOneMonth * 6)
-		TransferTableSavetime = int32(SecondsForOneMonth * 6)
+		SwapSaveTime = int32(SecondsForOneMonth * 3)
+		TransferTableSavetime = int32(SecondsForOneMonth * 3)
 	}
 }
 
@@ -45,6 +46,10 @@ const SwapTableName = "swap"
 const PairTableName = "pair"
 const TokenTableName = "token"
 const TransferTableName = "transfer"
+
+const LiquidityEventTableName = "liquidity"
+const LiquidityEventSaveTime = int32(SecondsForOneYear)
+
 const Kline1MinTableName = "kline1min"
 const Kline1HourTableName = "kline1hour"
 const Kline1DayTableName = "kline1d"

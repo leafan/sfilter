@@ -5,6 +5,7 @@ import (
 	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,11 +13,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var tokenLock sync.Mutex
+
 func SaveTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
 
 	token.CreatedAt = time.Now()
 	token.UpdatedAt = time.Now()
+
+	tokenLock.Lock()
+	defer tokenLock.Unlock()
+
 	_, err := collection.InsertOne(context.Background(), token)
 	if err != nil {
 		log.Printf("[ SaveTokenInfo ] InsertOne error: %v, token: %v\n", err, token.Address)
@@ -42,12 +49,13 @@ func UpdateTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 		"$set": token,
 	}
 
+	tokenLock.Lock()
+	defer tokenLock.Unlock()
+
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
 		log.Printf("[ UpdateTokenInfo ] UpdateOne error: %v, token: %v\n", err, token.Address)
 		return
-	} else {
-		// log.Printf("[ UpdateTokenInfo ] UpdateOne success. token: %v\n", token.Address)
 	}
 
 }

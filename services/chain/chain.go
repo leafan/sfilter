@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/big"
 	"sfilter/config"
@@ -110,7 +111,7 @@ func _getSingleProp(abi *abi.ABI, address, info string, client *ethclient.Client
 
 	ret, err := client.CallContract(context.Background(), msg, height)
 	if err != nil {
-		log.Printf("[ getSingleProp ] CallContract error. addr: %v, err: %v\n", address, err)
+		// log.Printf("[ getSingleProp ] CallContract error. addr: %v, err: %v\n", address, err)
 		return nil, err
 	}
 
@@ -123,6 +124,10 @@ func _getSingleProp(abi *abi.ABI, address, info string, client *ethclient.Client
 	return intr[0], err
 }
 
+func GetSingleProp(address, info string) (interface{}, error) {
+	return getSingleProp(address, info, getClient(), nil)
+}
+
 func getSingleProp(address, info string, client *ethclient.Client, height *big.Int) (interface{}, error) {
 	abi := getAbi()
 	return _getSingleProp(abi, address, info, client, height)
@@ -131,6 +136,39 @@ func getSingleProp(address, info string, client *ethclient.Client, height *big.I
 func getSingleBackupProp(address, info string, client *ethclient.Client, height *big.Int) (interface{}, error) {
 	abi := getBackupAbi()
 	return _getSingleProp(abi, address, info, client, height)
+}
+
+// 判断是否是合约地址
+func IsContract(address string) bool {
+	const CHECK_CONTRACT = "0x4E013d527f23CD7Cb5b08f6A908de68ce6C57C3e"
+
+	abi := getAbi()
+	contractAddr := common.HexToAddress(CHECK_CONTRACT)
+
+	data, err := abi.Pack("isContract", common.HexToAddress(address))
+	if err != nil {
+		log.Printf("[ IsContract ] Pack data error. addr: %v, err: %v\n", address, err)
+		return false
+	}
+	msg := ethereum.CallMsg{
+		From: common.Address{},
+		To:   &contractAddr,
+		Data: data,
+	}
+
+	ret, err := getClient().CallContract(context.Background(), msg, nil)
+	if err != nil {
+		log.Printf("[ IsContract ] CallContract error. addr: %v, err: %v\n", address, err)
+		return false
+	}
+
+	intr, err := abi.Methods["isContract"].Outputs.UnpackValues(ret)
+	if err != nil {
+		log.Printf("[ IsContract ] UnpackValues error. addr: %v, err: %v\n", address, err)
+		return false
+	}
+
+	return intr[0].(bool)
 }
 
 // 获取eth价格,
@@ -165,6 +203,13 @@ func GetEthPrice(client *ethclient.Client, height *big.Int) float64 {
 
 	log.Printf("[ GetEthPrice ] block height: %v, price: %v\n\n", height, ret)
 	return ret
+}
+
+func TEST_CHAIN() {
+	addr1 := "0x4E013d527f23CD7Cb5b08f6A908de68ce6C57C3e"
+	addr2 := "0x1C0Aa8cCD568d90d61659F060D1bFb1e6f855A20"
+
+	fmt.Printf("[ TEST_CHAIN ] addr1 isContract: %v, addr2 isContract: %v\n", IsContract(addr1), IsContract(addr2))
 }
 
 const ChainAbiJson = `[{
@@ -1368,7 +1413,109 @@ const ChainAbiJson = `[{
 	"outputs": [],
 	"stateMutability": "nonpayable",
 	"type": "function"
+},
+
+
+
+{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"isContract","outputs":[{"internalType":"bool","name":"totally","type":"bool"}],"stateMutability":"view","type":"function"},
+
+
+{
+	"inputs": [{
+		"internalType": "uint256",
+		"name": "tokenId",
+		"type": "uint256"
+	}],
+	"name": "positions",
+	"outputs": [{
+		"internalType": "uint96",
+		"name": "nonce",
+		"type": "uint96"
+	}, {
+		"internalType": "address",
+		"name": "operator",
+		"type": "address"
+	}, {
+		"internalType": "address",
+		"name": "token0",
+		"type": "address"
+	}, {
+		"internalType": "address",
+		"name": "token1",
+		"type": "address"
+	}, {
+		"internalType": "uint24",
+		"name": "fee",
+		"type": "uint24"
+	}, {
+		"internalType": "int24",
+		"name": "tickLower",
+		"type": "int24"
+	}, {
+		"internalType": "int24",
+		"name": "tickUpper",
+		"type": "int24"
+	}, {
+		"internalType": "uint128",
+		"name": "liquidity",
+		"type": "uint128"
+	}, {
+		"internalType": "uint256",
+		"name": "feeGrowthInside0LastX128",
+		"type": "uint256"
+	}, {
+		"internalType": "uint256",
+		"name": "feeGrowthInside1LastX128",
+		"type": "uint256"
+	}, {
+		"internalType": "uint128",
+		"name": "tokensOwed0",
+		"type": "uint128"
+	}, {
+		"internalType": "uint128",
+		"name": "tokensOwed1",
+		"type": "uint128"
+	}],
+	"stateMutability": "view",
+	"type": "function"
+},
+{
+	"inputs": [],
+	"name": "factory",
+	"outputs": [{
+		"internalType": "address",
+		"name": "",
+		"type": "address"
+	}],
+	"stateMutability": "view",
+	"type": "function"
+},
+
+
+{
+	"inputs": [{
+		"internalType": "address",
+		"name": "",
+		"type": "address"
+	}, {
+		"internalType": "address",
+		"name": "",
+		"type": "address"
+	}, {
+		"internalType": "uint24",
+		"name": "",
+		"type": "uint24"
+	}],
+	"name": "getPool",
+	"outputs": [{
+		"internalType": "address",
+		"name": "",
+		"type": "address"
+	}],
+	"stateMutability": "view",
+	"type": "function"
 }
+
 
 ]`
 

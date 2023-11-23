@@ -9,6 +9,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const (
+	SWAP_EVENT_UNKNOWN int = iota
+
+	SWAP_EVENT_RESERVED_1
+	SWAP_EVENT_UNISWAPV2_LIKE // uniswapv2 like
+	SWAP_EVENT_UNISWAPV3_LIKE // uniswapv3 like
+
+)
+
+const (
+	DIRECTION_UNKNOWN int = iota
+
+	DIRECTION_BUY_OR_ADD       // 买 或者 加流动性 等
+	DIRECTION_SELL_OR_DECREASE // 卖 或者 减流动性等
+)
+
 type Swap struct {
 	BlockNo  uint64 `json:"blockNo" bson:"blockNo"`   // 区块号
 	TxHash   string `json:"txHash" bson:"txHash"`     // 交易哈希
@@ -26,10 +42,12 @@ type Swap struct {
 	Token1 string `json:"token1" bson:"token1"` // 代币1
 
 	MainToken string `json:"mainToken" bson:"mainToken"` // 主token的地址，方便索引
-	Direction int    `json:"direction" bson:"direction"` // 买卖方向，0表示买，1表示卖
+	Direction int    `json:"direction" bson:"direction"` // 买卖方向
 
-	Operator      string `json:"operator" bson:"operator"`           // msg.sender, 默认当成买卖操作者
+	Operator      string `json:"operator" bson:"operator"`           // msg.sender
 	OperatorNonce uint64 `json:"operatorNonce" bson:"operatorNonce"` // 操作者nonce
+
+	Trader string `json:"trader" bson:"trader"` // 交易者
 
 	Sender            string  `json:"sender" bson:"sender"`                       // 发送者
 	Recipient         string  `json:"recipient" bson:"recipient"`                 // 接收者
@@ -76,6 +94,10 @@ var SwapIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "operator", Value: 1}},
 		Options: options.Index().SetName("operator_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "trader", Value: 1}},
+		Options: options.Index().SetName("trader_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "mainToken", Value: 1}},

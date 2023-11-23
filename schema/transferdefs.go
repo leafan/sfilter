@@ -9,6 +9,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// 定义一个map, 以tx_token为key, value为该tx内该token的交易list
+// 目的: 用于swap的时候谁是真正的token受益方(操作方)
+type TxTokenTransfersMap map[string][]*Transfer
+
 type Transfer struct {
 	Token string `json:"token" bson:"token"` // 地址
 

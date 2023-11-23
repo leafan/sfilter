@@ -1,3 +1,0 @@
-package pair
-
-func todo() {}

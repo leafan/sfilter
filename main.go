@@ -21,12 +21,14 @@ import (
 func test() {
 	fmt.Printf("\n\n\t****** debug start ******\n\n")
 
-	// chain.TEST_PAIR()
+	// pair.TEST_PAIR()
 	// chain.TEST_TOKEN()
 	// kline.TEST_KLINE()
 	// handler.TEST_HANDLER()
 
 	// kline.TEST_KLINE_DB()
+	// chain.TEST_CHAIN()
+	// chain.TEST_POOL()
 
 	fmt.Printf("\t****** debug end ******\n\n\n\n")
 

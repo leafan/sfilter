@@ -8,6 +8,7 @@ import (
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/services/pair"
 	service_swap "sfilter/services/swap"
 	"sfilter/utils"
 	"time"
@@ -16,7 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleSwap(block *schema.Block, mongodb *mongo.Client) []*schema.Swap {
+func HandleSwap(block *schema.Block, transferMap schema.TxTokenTransfersMap, mongodb *mongo.Client) []*schema.Swap {
 	var swaps []*schema.Swap
 
 	for _, tx := range block.Transactions {
@@ -42,7 +43,9 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) []*schema.Swap {
 							updateUniV3Swap(swap, _log, mongodb)
 						}
 
-						updateExtraInfo(swap)
+						updateVolumeinfo(swap)
+
+						updateTrader(swap, transferMap)
 
 						handleOneSwap(swap, mongodb)
 
@@ -57,6 +60,74 @@ func HandleSwap(block *schema.Block, mongodb *mongo.Client) []*schema.Swap {
 	return swaps
 }
 
+/*
+找出真正的受益方或者trader
+
+if buy:
+
+	if Token.transfer.To == operator: (遍历该tx中的transfer记录)
+		trader = operator
+	else // 如使用1inch挂单, 第三方吃单
+		if Token.transfer.To 不为合约的地址:
+	trader = To // 第一个就作为To吧, 可能不精确; 另外如果是合约购买的情况，也忽略了
+
+else if sell:
+
+	if Token.transfer.From == operator: (遍历该tx中的transfer记录)
+		trader = operator
+	else
+		if Token.transfer.From 不为合约的地址:
+			trader = Token.transfer.From // 如果是操作, 肯定是合约之间流转
+
+如果上述没有找到，报错再分析，同时trader为null，表示作废
+*/
+func updateTrader(swap *schema.Swap, transferMap schema.TxTokenTransfersMap) {
+	if swap.Direction != schema.DIRECTION_BUY_OR_ADD && swap.Direction != schema.DIRECTION_SELL_OR_DECREASE {
+		return
+	}
+
+	key := fmt.Sprintf("%v_%v", swap.TxHash, swap.MainToken)
+
+	transfers, ok := transferMap[key]
+	if !ok {
+		return
+	}
+
+	for _, transfer := range transfers {
+		// log.Printf("[ updateTrader ] transfer: %v, key: %v\n", transfer, key)
+		if swap.Direction == schema.DIRECTION_BUY_OR_ADD {
+			if transfer.To == swap.Operator {
+				swap.Trader = swap.Operator
+				break
+			}
+		} else {
+			if transfer.From == swap.Operator {
+				swap.Trader = swap.Operator
+				break
+			}
+		}
+	}
+
+	// 如果还没找到, 则遍历该token的transfer地址, 找到第一个不为contract的地址
+	if swap.Trader == "" {
+		for _, transfer := range transfers {
+			address := transfer.To
+			if swap.Direction == schema.DIRECTION_SELL_OR_DECREASE {
+				address = transfer.From
+			}
+
+			if !chain.IsContract(address) {
+				swap.Trader = address
+
+				// log.Printf("[ updateTrader ] find on special swap! transfer: %v, key: %v, trader: %v\n\n", transfer, key, swap.Trader)
+				break
+			}
+
+		}
+	}
+
+}
+
 // 本来都是协程进来, 这里不开协程了
 func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
 	// 应该先保存, 如果保存失败, 则说明不需要往后更新数据了
@@ -68,7 +139,7 @@ func handleOneSwap(swap *schema.Swap, mongodb *mongo.Client) {
 	}
 }
 
-func updateExtraInfo(swap *schema.Swap) {
+func updateVolumeinfo(swap *schema.Swap) {
 	// 找到quoteToken, 更新 VolumeInUsd.
 	// 如果quoteToken为eth, 则乘以区块中eth价格; 如果为u, 直接加; 其他情况为0
 	quoteToken := swap.Token1
@@ -125,7 +196,7 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 	}
 
 	// 获取 token0, token1
-	pair, err := chain.GetPairInfoForRead(swap.PairAddr)
+	pair, err := pair.GetPairInfoForRead(swap.PairAddr)
 	if err == nil {
 		swap.Token0 = pair.Token0
 		swap.Token1 = pair.Token1

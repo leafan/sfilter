@@ -4,7 +4,6 @@ import (
 	"log"
 	"sfilter/config"
 	"sfilter/schema"
-	"sfilter/services/chain"
 	"sfilter/services/kline"
 	services_pair "sfilter/services/pair"
 	"time"
@@ -28,7 +27,7 @@ func HandleTradeInfo(block *schema.Block, mongodb *mongo.Client, swaps []*schema
 }
 
 func updatePairInfo(_pair string, mongodb *mongo.Client) {
-	pair, err := chain.GetPairInfo(_pair, mongodb)
+	pair, err := services_pair.GetPairInfo(_pair, mongodb)
 	if err != nil {
 		log.Printf("[ updatePairInfo ] GetTokenInfo wrong, return.. err: %v\n\n", err)
 		return
@@ -44,7 +43,7 @@ func updatePairInfo(_pair string, mongodb *mongo.Client) {
 	// log.Printf("\n\n\n[ updatePairInfo ] pair: %v, time is: %v, klines1Min: %v\n\n\n\n", pair.Address, now, klines1Min)
 
 	if len(klines1Min) != 120 { // 120根柱子
-		log.Printf("[updatePairInfo] kline 1min is empty, return.. pair: %v, len: %v\n", _pair, len(klines1Min))
+		// log.Printf("[updatePairInfo] kline 1min is empty, return.. pair: %v, len: %v\n", _pair, len(klines1Min))
 		return
 	}
 	updatePairTx1h(klines1Min, pair)
@@ -58,9 +57,9 @@ func updatePairInfo(_pair string, mongodb *mongo.Client) {
 	}
 
 	// update to db
-	services_pair.UpSertPairInfo(pair, mongodb)
+	services_pair.UpdateTradeInfo(pair, mongodb)
 
-	log.Printf("\n\n\n[ updatePairInfo ] update finished... pair: %v\n", _pair)
+	// log.Printf("\n\n\n[ updatePairInfo ] update finished... pair: %v\n", _pair)
 }
 
 func updatePairTx1h(klines1Min []schema.KLine, pair *schema.Pair) {

@@ -24,14 +24,6 @@ type Block struct {
 	Transactions []*Transaction
 }
 
-const (
-	SWAP_EVENT_UNKNOWN int = iota
-
-	SWAP_EVENT_UNISWAPV2_LIKE // uniswapv2 like
-	SWAP_EVENT_UNISWAPV3_LIKE // uniswapv3 like
-
-)
-
 // 该表的目的是确认是否已经被处理, 防止重复
 
 type BlockProceeded struct {

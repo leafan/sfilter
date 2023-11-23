@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"math/big"
 	"sfilter/schema"
 	"sfilter/services/transfer"
@@ -14,22 +13,30 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleTransfer(block *schema.Block, mongodb *mongo.Client) {
+func HandleTransfer(block *schema.Block, mongodb *mongo.Client) schema.TxTokenTransfersMap {
+	maps := make(schema.TxTokenTransfersMap)
+
 	for _, tx := range block.Transactions {
 		if len(tx.Receipt.Logs) > 0 {
 			for _, _log := range tx.Receipt.Logs {
 				if len(_log.Topics) > 0 {
 					transfer := parseTransferEvent(block, _log)
 					if transfer != nil {
-						log.Printf("[ HandleTransfer ] token addr: %v, txWithIndex: %v\n\n", transfer.Token, transfer.LogIndexWithTx)
+						// log.Printf("[ HandleTransfer ] token addr: %v, txWithIndex: %v\n\n", transfer.Token, transfer.LogIndexWithTx)
 
 						handleTransfer(transfer, mongodb)
+
+						// 保存进 map, 方便swap的时候查找
+						key := fmt.Sprintf("%v_%v", tx.OriginTx.Hash().String(), transfer.Token)
+						maps[key] = append(maps[key], transfer)
 					}
 				}
 			}
 
 		}
 	}
+
+	return maps
 }
 
 func handleTransfer(_transfer *schema.Transfer, mongodb *mongo.Client) {

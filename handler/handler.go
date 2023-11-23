@@ -79,12 +79,13 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	start := time.Now()
 
-	HandlePairCreated(blk, mongodb)
+	HandlePairLogic(blk, mongodb)
+	HandleLiquidityLogic(blk, mongodb)
 
-	swaps := HandleSwap(blk, mongodb)
+	maps := HandleTransfer(blk, mongodb)
+
+	swaps := HandleSwap(blk, maps, mongodb)
 	blk.TxNums = len(swaps)
-
-	HandleTransfer(blk, mongodb)
 
 	if !config.GET_VERY_OLD_DATA_DEBUG {
 		HandleTradeInfo(blk, mongodb, swaps)

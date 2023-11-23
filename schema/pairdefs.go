@@ -9,12 +9,35 @@ import (
 )
 
 type Pair struct {
-	InfoOnChain `bson:",inline"`
+	InfoOnChain       `bson:",inline"`
+	InfoOnPairCreated `bson:",inline"`
+	InfoOnPools       `bson:",inline"`
 
 	TradeInfoForPair `bson:",inline"`
 
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"` // 创建时间
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+}
+
+type AddOrRmLiquidEvent struct {
+}
+
+type InfoOnPairCreated struct {
+	Type int `json:"type" bson:"type"` // 类型是uniswap v2还是v3等
+
+	PairCreatedBlockNo uint64 `json:"pairCreatedBlockNo" bson:"pairCreatedBlockNo"`
+	PairCreatedHash    string `json:"pairCreatedHash" bson:"pairCreatedHash"`
+
+	PairFee int64 `json:"pairFee" bson:"pairFee"`
+}
+
+// add liquidity etc..
+type InfoOnPools struct {
+	// 相当于创建pair的时间了
+	FirstAddPoolBlockNo uint64    `json:"firstAddPoolBlockNo" bson:"firstAddPoolBlockNo"`
+	FirstAddPoolTime    time.Time `json:"firstAddPoolTime" bson:"firstAddPoolTime"`
+	FirstAddTxHash      string    `json:"firstAddTxHash" bson:"firstAddTxHash"`
+    FirstAddGasPrice    string    `json:"firstAddGasPrice" bson:"firstAddGasPrice"`
 }
 
 type InfoOnChain struct {
@@ -22,11 +45,6 @@ type InfoOnChain struct {
 	Token0   string `json:"token0" bson:"token0"`     // 代币0
 	Token1   string `json:"token1" bson:"token1"`     // 代币1
 	PairName string `json:"pairName" bson:"pairName"` // 如 pepe/weths
-
-	Type int `json:"type" bson:"type"` // 类型是uniswap v2还是v3等
-
-	PairCreatedBlockNo uint64 `json:"pairCreatedBlockNo" bson:"pairCreatedBlockNo"`
-	PairCreatedTime    int64  `json:"pairCreatedTime" bson:"pairCreatedTime"`
 }
 
 // 额外信息, 尤其与交易相关, 可以用于排序搜索
@@ -62,10 +80,6 @@ type TradeInfoForPair struct {
 
 var PairIndexModel = []mongo.IndexModel{
 	{
-		Keys:    bson.D{{Key: "createdAt", Value: -1}},
-		Options: options.Index().SetName("createdAt_index"),
-	},
-	{
 		Keys:    bson.D{{Key: "updatedAt", Value: -1}},
 		Options: options.Index().SetName("updatedAt_index"),
 	},
@@ -84,6 +98,14 @@ var PairIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "pairCreatedBlockNo", Value: 1}},
 		Options: options.Index().SetName("pairCreatedBlockNo_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "firstAddPoolBlockNo", Value: 1}},
+		Options: options.Index().SetName("firstAddPoolBlockNo_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "firstAddPoolTime", Value: 1}},
+		Options: options.Index().SetName("firstAddPoolTime_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "pairName", Value: 1}},

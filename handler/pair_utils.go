@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"math/big"
 	"sfilter/schema"
 	"strings"
 	"time"
@@ -20,10 +21,13 @@ func parsePairCreatedEvent(block *schema.Block, l *types.Log) *schema.Pair {
 				Address: common.BytesToAddress(l.Data[0:32]).String(),
 				Token0:  common.HexToAddress(l.Topics[1].Hex()).String(),
 				Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
+			},
 
+			InfoOnPairCreated: schema.InfoOnPairCreated{
 				Type:               schema.SWAP_EVENT_UNISWAPV2_LIKE,
-				PairCreatedTime:    int64(block.Block.Time()),
 				PairCreatedBlockNo: l.BlockNumber,
+				PairCreatedHash:    l.TxHash.String(),
+				PairFee:            3000,
 			},
 
 			CreatedAt: time.Now(),
@@ -38,14 +42,20 @@ func parsePairCreatedEvent(block *schema.Block, l *types.Log) *schema.Pair {
 				Address: common.BytesToAddress(l.Data[32:64]).String(),
 				Token0:  common.HexToAddress(l.Topics[1].Hex()).String(),
 				Token1:  common.HexToAddress(l.Topics[2].Hex()).String(),
+			},
 
+			InfoOnPairCreated: schema.InfoOnPairCreated{
 				Type:               schema.SWAP_EVENT_UNISWAPV3_LIKE,
-				PairCreatedTime:    int64(block.Block.Time()),
 				PairCreatedBlockNo: l.BlockNumber,
+
+				PairCreatedHash: l.TxHash.String(),
 			},
 
 			CreatedAt: time.Now(),
 		}
+
+		fee, _ := new(big.Int).SetString(l.Topics[3].Hex(), 0)
+		pair.PairFee = fee.Int64()
 	}
 
 	return pair
