@@ -13,9 +13,11 @@ const SecondsForOneYear = (SecondsForOneMonth * 12)
 const BlocksPerDay = 250 * 24
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
 
+const ApiListenAddrPort = "0.0.0.0:10086"
+
 var (
-	RetriveOldBlockNum = 100
-	// RetriveOldBlockNum = SecondsForOneDay * 3
+	// RetriveOldBlockNum = 100
+	RetriveOldBlockNum = SecondsForOneDay * 3
 
 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
 

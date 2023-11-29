@@ -25,8 +25,8 @@ type LiquidityEvent struct {
 	EventTxHash   string    `json:"eventTxHash" bson:"eventTxHash"`
 	EventGasPrice string    `json:"eventGasPrice" bson:"eventGasPrice"`
 
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	UpdatedAt time.Time `json:"-" bson:"updatedAt"`
+	CreatedAt time.Time `json:"-" bson:"createdAt"`
 }
 
 var LiquidityEventIndexModel = []mongo.IndexModel{

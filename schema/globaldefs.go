@@ -13,12 +13,12 @@ import (
 // 存到config 里面, 以key区分
 // 该key为: global_info
 type GlobalInfo struct {
-	ConfigKey string `json:"configKey" bson:"configKey"`
+	ConfigKey string `json:"-" bson:"configKey"`
 
 	TransactionInfo `bson:",inline"`
 	OnChainInfo     `bson:",inline"`
 
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
+	UpdatedAt time.Time `json:"-" bson:"updatedAt"`
 }
 
 type OnChainInfo struct {
@@ -52,7 +52,7 @@ type GlobalTrend struct {
 
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"` // 保存7天差不多了
 
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	CreatedAt time.Time `json:"-" bson:"createdAt"`
 }
 
 // 直接创建config表吧，用于自己的查询

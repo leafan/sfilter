@@ -33,8 +33,8 @@ type Token struct {
 
 	TokenInfoOn3rdParty `bson:",inline"`
 
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"` // 更新时间
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
+	UpdatedAt time.Time `json:"-" bson:"updatedAt"` // 更新时间
+	CreatedAt time.Time `json:"-" bson:"createdAt"` // 创建时间
 }
 
 var TokenIndexModel = []mongo.IndexModel{

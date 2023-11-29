@@ -55,13 +55,13 @@ type Swap struct {
 	AmountOfMainToken string  `json:"amountOfMainToken" bson:"amountOfMainToken"` // 主代币数量
 	VolumeInUsd       float64 ` json:"volumeInUsd" bson:"volumeInUsd"`            // 本次交易以Usd计价金额
 
-	LogIndexWithTx string `json:"logIndexWithTx" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
+	LogIndexWithTx string `json:"-" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
 
 	SwapTime time.Time `json:"swapTime" bson:"swapTime"`
 
 	SwapOmitFields `bson:",inline"`
 
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
+	CreatedAt time.Time `json:"-" bson:"createdAt"` // 创建时间
 }
 
 // 临时变量, 不存入db

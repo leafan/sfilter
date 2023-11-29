@@ -40,8 +40,8 @@ type BlockProceeded struct {
 	TxNums      int     `json:"txNums" bson:"txNums"`
 	VolumeByUsd float64 `json:"volumeByUsd" bson:"volumeByUsd"`
 
-	Status    int       `json:"status" bson:"status"`       // 状态，目前未使用
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
+	Status    int       `json:"status" bson:"status"` // 状态，目前未使用
+	CreatedAt time.Time `json:"-" bson:"createdAt"`   // 创建时间
 }
 
 var BlockProceededIndexModel = []mongo.IndexModel{

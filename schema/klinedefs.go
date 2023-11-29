@@ -71,7 +71,7 @@ type KLinePairInfo struct {
 
 type KLineCreatTime struct {
 	// 实际最后update时间; 如果回溯, 也为回溯时间
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
+	UpdatedAt time.Time `json:"-" bson:"updatedAt"`
 
 	// 这个Timestamp不表示创建时间, 而是他代表的周期时间
 	// 每一次有交易来的时候, 都会更新成其区块时间

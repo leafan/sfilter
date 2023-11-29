@@ -15,8 +15,8 @@ type Pair struct {
 
 	TradeInfoForPair `bson:",inline"`
 
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	UpdatedAt time.Time `json:"-" bson:"updatedAt"`
+	CreatedAt time.Time `json:"-" bson:"createdAt"`
 }
 
 type InfoOnPairCreated struct {

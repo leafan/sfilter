@@ -29,11 +29,11 @@ type Transfer struct {
 	TxHash   string `json:"txHash" bson:"txHash"`     // 交易哈希
 	Position uint   `json:"position" bson:"position"` // 交易在本区块中的序号
 
-	LogIndexWithTx string `json:"logIndexWithTx" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
+	LogIndexWithTx string `json:"-" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
 
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"` // transfer时间
 
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	CreatedAt time.Time `json:"-" bson:"createdAt"`
 }
 
 var TransferIndexModel = []mongo.IndexModel{
