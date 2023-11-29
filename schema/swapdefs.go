@@ -84,6 +84,10 @@ var SwapIndexModel = []mongo.IndexModel{
 		Options: options.Index().SetName("txHash_index"),
 	},
 	{
+		Keys:    bson.D{{Key: "position", Value: 1}},
+		Options: options.Index().SetName("position_index"),
+	},
+	{
 		Keys:    bson.D{{Key: "logIndexWithTx", Value: 1}},
 		Options: options.Index().SetName("logIndexWithTx_index").SetUnique(true),
 	},

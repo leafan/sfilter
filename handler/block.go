@@ -55,6 +55,9 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 	}
 	oneBlk.EthPrice = ethPrice
 
+	oneBlk.BlockNo = block.NumberU64()
+	oneBlk.BlockTime = time.Unix(int64(block.Time()), 0)
+
 	// schema.PrintOneBlock(oneBlk)
 
 	log.Printf("[ getBlock ] get block: %d finished, time elapsed: % v\n\n", blockNumber, time.Since(start))

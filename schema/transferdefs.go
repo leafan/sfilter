@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"math/big"
 	"sfilter/config"
 	"time"
 
@@ -19,7 +20,9 @@ type Transfer struct {
 	From string `json:"from" bson:"from"`
 	To   string `json:"to" bson:"to"`
 
-	Amount      string `json:"amount" bson:"amount"`
+	Amount       string   `json:"amount" bson:"amount"`
+	AmountBigInt *big.Int `json:"-" bson:"-"`
+
 	AmountInUsd string `json:"amountInUsd" bson:"amountInUsd"`
 
 	BlockNo  uint64 `json:"blockNo" bson:"blockNo"`   // 区块号

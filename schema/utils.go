@@ -19,9 +19,12 @@ func InitTables(mongodb *mongo.Client) {
 
 	doInitTable(config.Kline1MinTableName, Kline1MinIndexModel, mongodb)
 	doInitTable(config.Kline1HourTableName, Kline1HourIndexModel, mongodb)
-	doInitTable(config.Kline1DayTableName, Kline1DayIndexModel, mongodb)
 
 	doInitTable(config.TransferTableName, TransferIndexModel, mongodb)
+
+	doInitTable(config.ConfigTableName, ConfigIndexModel, mongodb)
+	doInitTable(config.GlobalTrendTableName, GlobalTrendIndexModel, mongodb)
+
 }
 
 func doInitTable(collectionName string, index []mongo.IndexModel, mongodb *mongo.Client) {

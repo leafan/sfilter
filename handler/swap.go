@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"log"
-	"math"
 	"math/big"
 	"sfilter/config"
 	"sfilter/schema"
@@ -49,6 +48,8 @@ func HandleSwapAndKline(block *schema.Block, transferMap schema.TxTokenTransfers
 
 						handleOneSwapAndKline(swap, mongodb)
 
+						updateBlockInfo(block, swap)
+
 						swaps = append(swaps, swap)
 					}
 				}
@@ -58,6 +59,11 @@ func HandleSwapAndKline(block *schema.Block, transferMap schema.TxTokenTransfers
 	}
 
 	return swaps
+}
+
+func updateBlockInfo(blk *schema.Block, swap *schema.Swap) {
+	blk.TxNums++
+	blk.VolumeByUsd += swap.VolumeInUsd
 }
 
 /*
@@ -108,19 +114,20 @@ func updateTrader(swap *schema.Swap, transferMap schema.TxTokenTransfersMap) {
 		}
 	}
 
-	// 如果还没找到, 则遍历该token的transfer地址, 找到第一个不为contract的地址
+	// 如果还没找到, 则遍历该token的transfer地址, 找到金额最大的不为contract的地址
 	if swap.Trader == "" {
+		biggestAmount := big.NewInt(0)
+
+		// 为了防止通缩币向个人转账导致误判, 这里找出转账金额最大的那个
 		for _, transfer := range transfers {
 			address := transfer.To
 			if swap.Direction == schema.DIRECTION_SELL_OR_DECREASE {
 				address = transfer.From
 			}
 
-			if !chain.IsContract(address) {
+			if !chain.IsContract(address) && transfer.AmountBigInt.Cmp(biggestAmount) > 0 {
 				swap.Trader = address
-
-				// log.Printf("[ updateTrader ] find on special swap! transfer: %v, key: %v, trader: %v\n\n", transfer, key, swap.Trader)
-				break
+				biggestAmount = transfer.AmountBigInt // 一直更新until找到最大的
 			}
 
 		}
@@ -144,11 +151,8 @@ func updateVolumeinfo(swap *schema.Swap) {
 	// 找到quoteToken, 更新 VolumeInUsd.
 	// 如果quoteToken为eth, 则乘以区块中eth价格; 如果为u, 直接加; 其他情况为0
 	quoteToken := swap.Token1
-	decimals := math.Pow(10, float64(swap.Decimal0))
-
 	if swap.MainToken == swap.Token1 {
 		quoteToken = swap.Token0
-		decimals = math.Pow(10, float64(swap.Decimal1))
 	}
 
 	volume := utils.GetBigIntOrZero(swap.AmountOfMainToken)
@@ -157,13 +161,16 @@ func updateVolumeinfo(swap *schema.Swap) {
 	// price有乘以1e18, 要去掉
 	volumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e18))
 
+	// amount 乘了1e36 的基数, 要去掉
+	volumeInUsd = volumeInUsd.Div(volumeInUsd, config.AmountBaseFactor1e36)
+
 	// 此时的volume是包含有 MainToken 的decimal的, 需要除掉
-	floatWithDecimal, _ := new(big.Float).SetInt(volumeInUsd).Float64()
+	floatWithoutDecimal, _ := new(big.Float).SetInt(volumeInUsd).Float64()
 
 	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
-		swap.VolumeInUsd = floatWithDecimal / decimals
+		swap.VolumeInUsd = floatWithoutDecimal
 	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
-		swap.VolumeInUsd = floatWithDecimal * swap.CurrentEthPrice / decimals
+		swap.VolumeInUsd = floatWithoutDecimal * swap.CurrentEthPrice
 	} else {
 		swap.VolumeInUsd = 0
 	}

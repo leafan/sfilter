@@ -42,19 +42,15 @@ func updatePairInfo(_pair string, mongodb *mongo.Client) {
 	klines1Hour := kline.Get1HourKlineWithFullGenerated(pair.Address, now, 2, mongodb)
 	// log.Printf("\n\n\n[ updatePairInfo ] pair: %v, time is: %v, klines1Min: %v\n\n\n\n", pair.Address, now, klines1Min)
 
-	if len(klines1Min) != 120 { // 120根柱子
+	if len(klines1Min) != 120 || len(klines1Hour) != 48 {
 		// log.Printf("[updatePairInfo] kline 1min is empty, return.. pair: %v, len: %v\n", _pair, len(klines1Min))
 		return
 	}
 	updatePairTx1h(klines1Min, pair)
 	updatePairPrice1h(klines1Min, pair)
 
-	if len(klines1Hour) == 48 {
-		updatePairTx24h(klines1Hour, pair)
-		updatePairPrice24h(klines1Hour, pair)
-	} else {
-		log.Printf("[updatePairInfo] kline 1hour is empty, return.. pair: %v, len: %v\n", _pair, len(klines1Hour))
-	}
+	updatePairTx24h(klines1Hour, pair)
+	updatePairPrice24h(klines1Hour, pair)
 
 	// update to db
 	services_pair.UpdateTradeInfo(pair, mongodb)

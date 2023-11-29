@@ -4,6 +4,7 @@ import (
 	"sfilter/schema"
 	"sfilter/services/liquidity"
 	"sfilter/services/pair"
+	"sfilter/utils"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -39,10 +40,28 @@ func handleAddLiquidity(block *schema.Block, tx *schema.Transaction, l *types.Lo
 		// 判断如果是第一次添加流动性, 则update pair的firstAdd字段
 		if event.Direction == schema.DIRECTION_BUY_OR_ADD {
 			_pair, err := pair.GetPairInfo(event.PoolAddress, mongodb)
+			if err != nil {
+				return
+			}
 
-			if err == nil {
-				// 同时需要确认我们也检测到了 pairCreat 事件, 否则可能是老pair
-				if _pair.PairCreatedBlockNo > 0 && _pair.FirstAddPoolBlockNo <= 0 {
+			// 同时需要确认我们也检测到了 pairCreat 事件, 否则可能是老pair
+			if _pair.PairCreatedBlockNo > 0 {
+				var update = false
+
+				if _pair.FirstAddPoolBlockNo <= 0 || _pair.FirstAddPoolBlockNo > event.EventBlockNo {
+					update = true
+				}
+
+				if _pair.FirstAddPoolBlockNo == event.EventBlockNo {
+					oldGas := utils.GetBigIntOrZero(_pair.FirstAddGasPrice)
+					newGas := utils.GetBigIntOrZero(event.EventGasPrice)
+
+					if oldGas.Cmp(newGas) < 0 {
+						update = true
+					}
+				}
+
+				if update {
 					info := &schema.InfoOnPools{
 						FirstAddPoolBlockNo: event.EventBlockNo,
 						FirstAddPoolTime:    event.EventTime,
@@ -53,7 +72,9 @@ func handleAddLiquidity(block *schema.Block, tx *schema.Transaction, l *types.Lo
 					// update
 					pair.UpdatePoolInfo(_pair.Address, info, mongodb)
 				}
+
 			}
+
 		}
 	}
 }

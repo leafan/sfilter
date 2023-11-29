@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/gob"
+	"sfilter/config"
 )
 
 func CheckExistString(target string, str_array []string) bool {
@@ -22,4 +23,15 @@ func DeepCopy(src, dst interface{}) error {
 	}
 
 	return gob.NewDecoder(&buffer).Decode(dst)
+}
+
+// 计算百分比
+func CalcChange(now, last float64) float32 {
+	if last == 0 {
+		return config.INFINITE_CHANGE
+	}
+
+	delta := now - last
+
+	return float32(delta / now)
 }

@@ -162,23 +162,3 @@ var Kline1HourIndexModel = []mongo.IndexModel{
 		Options: options.Index().SetName("baseToken_index"),
 	},
 }
-
-var Kline1DayIndexModel = []mongo.IndexModel{
-	{
-		Keys:    bson.D{{Key: "timestamp", Value: -1}},
-		Options: options.Index().SetName("timestamp_index").SetExpireAfterSeconds(config.Kline1DayTableSaveTime),
-	},
-	{
-		Keys:    bson.D{{Key: "pair", Value: 1}},
-		Options: options.Index().SetName("pair_index"),
-	},
-	{
-		Keys:    bson.D{{Key: "pairYearMonth", Value: 1}},
-		Options: options.Index().SetName("pairYearMonth_index").SetUnique(true),
-	},
-	{
-		// base token也就是main token, 需要查询. quoteToken就算了
-		Keys:    bson.D{{Key: "baseToken", Value: 1}},
-		Options: options.Index().SetName("baseToken_index"),
-	},
-}

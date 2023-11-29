@@ -55,6 +55,9 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 	swap.Decimal0 = token0.Decimal
 	swap.Decimal1 = token1.Decimal
 
+	// AmountOfMainToken 要除以其decimal, 相当于实际上的amount
+	// 为了考虑精度, 乘以1e36(有些屌丝token的decimal为30+..)
+
 	if (amount0In.Cmp(big.NewInt(0)) == 0 || amount1Out.Cmp(big.NewInt(0)) == 0) && amount1In.Cmp(big.NewInt(0)) > 0 && amount0Out.Cmp(big.NewInt(0)) > 0 {
 		token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
 		token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.Decimal)), nil)
@@ -65,7 +68,11 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 			calculatePrice.Div(calculatePrice, amount0Out)
 
 			swap.Price = calculatePrice.String()
+
+			amount0Out = amount0Out.Mul(amount0Out, config.AmountBaseFactor1e36)
+			amount0Out = amount0Out.Div(amount0Out, token0Exponent)
 			swap.AmountOfMainToken = amount0Out.String()
+
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 
 			//log.Println("[ updateUniV2Swap ] debug... price : ", amount0Out, amount1In, token0Exponent, token1Exponent, calculatePrice)
@@ -76,7 +83,11 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 			calculatePrice.Div(calculatePrice, amount1In)
 
 			swap.Price = calculatePrice.String()
+
+			amount1In = amount1In.Mul(amount1In, config.AmountBaseFactor1e36)
+			amount1In = amount1In.Div(amount1In, token1Exponent)
 			swap.AmountOfMainToken = amount1In.String()
+
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
 
 			//log.Println("[ updateUniV2Swap ] debug... price :\n\n", amount1In, amount0Out, token0Exponent, token1Exponent, calculatePrice)
@@ -93,7 +104,11 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 			calculatePrice.Div(calculatePrice, amount0In)
 
 			swap.Price = calculatePrice.String()
+
+			amount0In = amount0In.Mul(amount0In, config.AmountBaseFactor1e36)
+			amount0In = amount0In.Div(amount0In, token0Exponent)
 			swap.AmountOfMainToken = amount0In.String()
+
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
 
 			// log.Println("[ updateUniV2Swap ] debug... price :\n\n", amount0Out, amount1In, token0Exponent, token1Exponent, calculatePrice)
@@ -104,7 +119,11 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 			calculatePrice.Div(calculatePrice, amount1Out)
 
 			swap.Price = calculatePrice.String()
+
+			amount1Out = amount1Out.Mul(amount1Out, config.AmountBaseFactor1e36)
+			amount1Out = amount1Out.Div(amount1Out, token1Exponent)
 			swap.AmountOfMainToken = amount1Out.String()
+
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 
 			// log.Println("[ updateUniV2Swap ] debug... price :\n\n", amount1In, amount0Out, token0Exponent, token1Exponent, calculatePrice)
@@ -165,7 +184,11 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 			calculatePrice.Div(calculatePrice, amount0)
 
 			swap.Price = calculatePrice.String()
+
+			amount0 = amount0.Mul(amount0, config.AmountBaseFactor1e36)
+			amount0 = amount0.Div(amount0, token0Exponent)
 			swap.AmountOfMainToken = amount0.String()
+
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
 		} else if amount0.Cmp(big.NewInt(0)) < 0 && amount1.Cmp(big.NewInt(0)) > 0 {
 			amount0 = new(big.Int).Sub(big.NewInt(0), amount0)
@@ -175,7 +198,11 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 			calculatePrice.Div(calculatePrice, amount0)
 
 			swap.Price = calculatePrice.String()
+
+			amount0 = amount0.Mul(amount0, config.AmountBaseFactor1e36)
+			amount0 = amount0.Div(amount0, token0Exponent)
 			swap.AmountOfMainToken = amount0.String()
+
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 		}
 	}
@@ -190,7 +217,11 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 			calculatePrice.Div(calculatePrice, amount1)
 
 			swap.Price = calculatePrice.String()
+
+			amount1 = amount1.Mul(amount1, config.AmountBaseFactor1e36)
+			amount1 = amount1.Div(amount1, token1Exponent)
 			swap.AmountOfMainToken = amount1.String()
+
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 		} else if amount0.Cmp(big.NewInt(0)) < 0 && amount1.Cmp(big.NewInt(0)) > 0 {
 
@@ -201,7 +232,11 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 			calculatePrice.Div(calculatePrice, amount1)
 
 			swap.Price = calculatePrice.String()
+
+			amount1 = amount1.Mul(amount1, config.AmountBaseFactor1e36)
+			amount1 = amount1.Div(amount1, token1Exponent)
 			swap.AmountOfMainToken = amount1.String()
+
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
 		}
 	}

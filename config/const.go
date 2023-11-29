@@ -1,7 +1,9 @@
 package config
 
-const CREAT_DEBUG = true // for creat....
-// const CREAT_DEBUG = false
+import "math/big"
+
+// const CREAT_DEBUG = true // for creat....
+const CREAT_DEBUG = false
 
 const SecondsForOneDay = (60 * 60 * 24)
 const SecondsForOneWeek = (SecondsForOneDay * 7)
@@ -12,7 +14,8 @@ const BlocksPerDay = 250 * 24
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
 
 var (
-	RetriveOldBlockNum = 10000 // 如果要回溯多一些区块, 修改这个字段
+	RetriveOldBlockNum = 100
+	// RetriveOldBlockNum = SecondsForOneDay * 3
 
 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
 
@@ -46,21 +49,24 @@ const SwapTableName = "swap"
 const PairTableName = "pair"
 const TokenTableName = "token"
 const TransferTableName = "transfer"
+const ConfigTableName = "config"
 
 const LiquidityEventTableName = "liquidity"
 const LiquidityEventSaveTime = int32(SecondsForOneYear)
 
 const Kline1MinTableName = "kline1min"
 const Kline1HourTableName = "kline1hour"
-const Kline1DayTableName = "kline1d"
 
-const Kline1DayTableSaveTime = SecondsForOneYear
+const GlobalTrendTableName = "trend"
+const GlobalTrendTableSaveTime = SecondsForOneWeek
 
 const NeverExpireTime = 0
 
-const MaxConcurrentRoutineNums = 10
+const MaxConcurrentRoutineNums = 10   // 最大并行的协程数, 避免节点扛不住
+const GlobalUpdateIntervalBlocks = 10 // 每隔多少个区块update一次全局24h趋势数据
 
-const INFINITE_CHANGE = 10000
+// 如果上一个小时数据为0值, 则算翻一倍吧..
+const INFINITE_CHANGE = 1
 
 const WS_ADDR = "ws://127.0.0.1:8546"
 const MONGO_ADDR = "mongodb://127.0.0.1:27017"
@@ -82,4 +88,9 @@ var QuoteUsdCoinList = []string{
 	"0x6B175474E89094C44Da98b954EedeAC495271d0F", // dai
 }
 
-const PriceBaseFactor = 1000000000000000000
+const PriceBaseFactor = 1000000000000000000 // price乘以的基数
+
+var BaseFactor1e18 = big.NewInt(1000000000000000000)
+
+// amount 乘以的基数
+var AmountBaseFactor1e36 = BaseFactor1e18.Mul(BaseFactor1e18, BaseFactor1e18)

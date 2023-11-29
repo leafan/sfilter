@@ -53,7 +53,7 @@ func parseTransferEvent(block *schema.Block, l *types.Log) *schema.Transfer {
 			From: common.HexToAddress(l.Topics[1].Hex()).String(),
 			To:   common.HexToAddress(l.Topics[2].Hex()).String(),
 
-			Amount: new(big.Int).SetBytes(l.Data[:32]).String(),
+			AmountBigInt: new(big.Int).SetBytes(l.Data[:32]),
 
 			BlockNo:  l.BlockNumber,
 			TxHash:   l.TxHash.String(),
@@ -62,6 +62,7 @@ func parseTransferEvent(block *schema.Block, l *types.Log) *schema.Transfer {
 			Timestamp: time.Unix(int64(block.Block.Time()), 0),
 		}
 
+		transfer.Amount = transfer.AmountBigInt.String()
 		transfer.LogIndexWithTx = fmt.Sprintf("%s_%d", transfer.TxHash, transfer.Position)
 
 	}

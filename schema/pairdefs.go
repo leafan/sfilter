@@ -19,9 +19,6 @@ type Pair struct {
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
 
-type AddOrRmLiquidEvent struct {
-}
-
 type InfoOnPairCreated struct {
 	Type int `json:"type" bson:"type"` // 类型是uniswap v2还是v3等
 
@@ -37,7 +34,7 @@ type InfoOnPools struct {
 	FirstAddPoolBlockNo uint64    `json:"firstAddPoolBlockNo" bson:"firstAddPoolBlockNo"`
 	FirstAddPoolTime    time.Time `json:"firstAddPoolTime" bson:"firstAddPoolTime"`
 	FirstAddTxHash      string    `json:"firstAddTxHash" bson:"firstAddTxHash"`
-    FirstAddGasPrice    string    `json:"firstAddGasPrice" bson:"firstAddGasPrice"`
+	FirstAddGasPrice    string    `json:"firstAddGasPrice" bson:"firstAddGasPrice"`
 }
 
 type InfoOnChain struct {

@@ -18,9 +18,14 @@ type Transaction struct {
 }
 
 type Block struct {
-	Block        *types.Block
-	TxNums       int
-	EthPrice     float64
+	Block     *types.Block
+	BlockNo   uint64
+	BlockTime time.Time
+
+	TxNums      int
+	VolumeByUsd float64
+	EthPrice    float64
+
 	Transactions []*Transaction
 }
 
@@ -32,7 +37,8 @@ type BlockProceeded struct {
 	BlockTime int64   `json:"blockTime" bson:"blockTime"` // 区块打包时间
 	EthPrice  float64 `json:"ethPrice" bson:"ethPrice"`   // eth价格 by usd. 每个区块从usdc/eth v3 pool中获取
 
-	TxNums int `json:"txNums" bson:"txNums"`
+	TxNums      int     `json:"txNums" bson:"txNums"`
+	VolumeByUsd float64 `json:"volumeByUsd" bson:"volumeByUsd"`
 
 	Status    int       `json:"status" bson:"status"`       // 状态，目前未使用
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
