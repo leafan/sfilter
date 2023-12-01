@@ -1,4 +1,4 @@
-package chain
+package eth
 
 import (
 	"sfilter/api/utils"

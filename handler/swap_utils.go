@@ -38,15 +38,12 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 	token0, err0 := chain.GetTokenInfo(swap.Token0, mongodb)
 	token1, err1 := chain.GetTokenInfo(swap.Token1, mongodb)
 	if err0 != nil || err1 != nil {
-		log.Printf("[ updateUniV2Swap ] GetTokenInfo error! err0: %v, err1: %v\n", err0, err1)
+		log.Printf("[ updateUniV2Swap ] GetTokenInfo error! err0: %v, err1: %v, tx: %v\n", err0, err1, _log.TxHash)
 		return
 	}
 
-	// log.Printf("[ updateUniV2Swap ] GetTokenInfo success! decimal0: %v, decimal1: %v\n", token0.Decimal, token1.Decimal)
-
-	if utils.CheckExistString(swap.Token0, config.QuoteUsdCoinList) {
-		swap.MainToken = swap.Token1
-	} else if utils.CheckExistString(swap.Token0, config.QuoteEthCoinList) {
+	quoteToken := utils.GetQuoteToken(swap.Token0, swap.Token1)
+	if swap.Token0 == quoteToken {
 		swap.MainToken = swap.Token1
 	} else {
 		swap.MainToken = swap.Token0

@@ -13,11 +13,13 @@ const SecondsForOneYear = (SecondsForOneMonth * 12)
 const BlocksPerDay = 250 * 24
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
 
-const ApiListenAddrPort = "0.0.0.0:10086"
+// api configure
+const ApiListenAddrPort = ":10086"
+const ProxyFromIp = "192.168.2.101"
 
 var (
-	// RetriveOldBlockNum = 100
-	RetriveOldBlockNum = SecondsForOneDay * 3
+	RetriveOldBlockNum = 100
+	// RetriveOldBlockNum = BlocksPerDay * 3
 
 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
 
@@ -67,8 +69,7 @@ const NeverExpireTime = 0
 const MaxConcurrentRoutineNums = 10   // 最大并行的协程数, 避免节点扛不住
 const GlobalUpdateIntervalBlocks = 10 // 每隔多少个区块update一次全局24h趋势数据
 
-// 如果上一个小时数据为0值, 则算翻一倍吧..
-const INFINITE_CHANGE = 1
+const INFINITE_CHANGE = 100
 
 const WS_ADDR = "ws://127.0.0.1:8546"
 const MONGO_ADDR = "mongodb://127.0.0.1:27017"

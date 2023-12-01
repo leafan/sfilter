@@ -22,5 +22,6 @@ go.work
 
 *.log
 sfilter*
+sapi
 
 

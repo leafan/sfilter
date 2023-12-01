@@ -2,6 +2,7 @@ package utils
 
 import (
 	"net/http"
+    "log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,4 +29,18 @@ func AuthNothingMiddleWare() gin.HandlerFunc {
 
 		c.Abort()
 	}
+}
+
+func IPWhiteList(whitelist map[string]bool) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        if !whitelist[c.RemoteIP()] {
+            c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+                "status":  http.StatusForbidden,
+                "message": "Permission denied",
+            })
+
+            log.Printf("[ IPWhiteList ] middleware failed.. ip: %v\n", c.RemoteIP())
+            return
+        }
+    }
 }

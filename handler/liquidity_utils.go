@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/big"
 	"sfilter/schema"
+	"sfilter/utils"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -113,4 +114,13 @@ func parseUniV3RemoveLiquidity(l *types.Log, tx *schema.Transaction) *schema.Liq
 	}
 
 	return event
+}
+
+func updateLiquidityAmount(event *schema.LiquidityEvent, _pair *schema.Pair, block *schema.Block) {
+	event.PairName = _pair.PairName
+
+	amount := utils.CalculateVolumeInUsd(_pair.Token0, utils.GetBigIntOrZero(event.Amount0), _pair.Decimal0, block.EthPrice)
+	amount += utils.CalculateVolumeInUsd(_pair.Token1, utils.GetBigIntOrZero(event.Amount1), _pair.Decimal1, block.EthPrice)
+
+	event.AmountInUsd = amount
 }

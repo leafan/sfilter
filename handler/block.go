@@ -34,7 +34,7 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 	}
 	oneBlk.Block = block
 
-	log.Printf("[ getBlock ] block number: %d now, tx num: %d, hash: %v\n", blockNumber, len(block.Transactions()), block.Hash())
+	log.Printf("[ getBlock ] get block: %d now, tx num: %d, hash: %v\n", blockNumber, len(block.Transactions()), block.Hash())
 
 	for _, tx := range block.Transactions() {
 		receipt, err := ethblocks.GetTransactionReceipt(ctx, client, tx.Hash())

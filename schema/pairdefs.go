@@ -38,9 +38,14 @@ type InfoOnPools struct {
 }
 
 type InfoOnChain struct {
-	Address  string `json:"address" bson:"address"`   // 地址
-	Token0   string `json:"token0" bson:"token0"`     // 代币0
-	Token1   string `json:"token1" bson:"token1"`     // 代币1
+	Address string `json:"address" bson:"address"` // 地址
+
+	Token0 string `json:"token0" bson:"token0"` // 代币0
+	Token1 string `json:"token1" bson:"token1"` // 代币1
+
+	Decimal0 uint8 `json:"decimal0" bson:"decimal0"`
+	Decimal1 uint8 `json:"decimal1" bson:"decimal1"`
+
 	PairName string `json:"pairName" bson:"pairName"` // 如 pepe/weths
 }
 

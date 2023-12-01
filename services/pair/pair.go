@@ -3,10 +3,12 @@ package pair
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,13 +17,14 @@ import (
 
 func GetPairInfoForRead(address string) (*schema.Pair, error) {
 	mongodb := chain.GetMongo()
+
 	return GetPairInfo(address, mongodb)
 }
 
 func GetPairInfo(address string, mongodb *mongo.Client) (*schema.Pair, error) {
 	if address == "" {
 		log.Printf("[ GetPairInfo ] error! empty address. address!")
-		return nil, errors.New("empty address")
+		return nil, errors.New("GetPairInfo: empty address")
 	}
 
 	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
@@ -33,29 +36,68 @@ func GetPairInfo(address string, mongodb *mongo.Client) (*schema.Pair, error) {
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// 不存在，去链上查并返回
-			result.Address = address
-
-			token0, err0 := chain.GetSingleProp(address, "token0")
-			token1, err1 := chain.GetSingleProp(address, "token1")
-
-			if err0 != nil || err1 != nil {
-				// log.Printf("[ GetPairInfo ] get chainInfo error. address: %v, err0: %v, err1: %v\n", address, err0, err1)
-				return nil, err1
+			_pair := getPairOnChainInfoFromChain(address, mongodb)
+			if _pair != nil {
+				UpSertOnChainInfo(_pair.Address, &_pair.InfoOnChain, mongodb)
+				return _pair, nil
 			}
-			result.Token0 = token0.(common.Address).String()
-			result.Token1 = token1.(common.Address).String()
 
-			// 存入mongo, 不判断错误, 只打印
-			UpSertOnChainInfo(result.Address, &result.InfoOnChain, mongodb)
-
+			return nil, errors.New("getPairOnChainInfoFromChain failed")
 		} else {
-			log.Printf("[ GetPairInfo ] FindOne error: %v, pair addr: %v\n", err, address)
-			return nil, nil
+			return nil, err
 		}
-
 	}
 
 	return &result, nil
+}
+
+// 当db中不存在时，update一下信息
+func getPairOnChainInfoFromChain(address string, mongodb *mongo.Client) *schema.Pair {
+	var pair schema.Pair
+
+	pair.Address = address
+	token0Addr, err0 := chain.GetSingleProp(address, "token0")
+	token1Addr, err1 := chain.GetSingleProp(address, "token1")
+
+	if err0 != nil || err1 != nil {
+		return nil
+	}
+	pair.Token0 = token0Addr.(common.Address).String()
+	pair.Token1 = token1Addr.(common.Address).String()
+
+	token0, err0 := chain.GetTokenInfo(pair.Token0, mongodb)
+	token1, err1 := chain.GetTokenInfo(pair.Token1, mongodb)
+	if err0 != nil || err1 != nil {
+		log.Printf("[ getPairInfoOnChain ] getTokenInfo error. token0: %v, err0: %v, token1: %v, err1: %v\n", pair.Token0, err0, pair.Token1, err1)
+		return nil
+	}
+
+	pair.Decimal0 = token0.Decimal
+	pair.Decimal1 = token1.Decimal
+
+	GeneratePairName(&pair, token0, token1)
+
+	return &pair
+}
+
+func GeneratePairName(pair *schema.Pair, token0, token1 *schema.Token) {
+	// 组装pairName, 如果一方是价值token, 则作为quoteToken
+	pair.PairName = fmt.Sprintf("%s/%s", token0.Symbol, token1.Symbol)
+
+	quoteToken := utils.GetQuoteToken(pair.Token0, pair.Token1)
+	if quoteToken == pair.Token0 {
+		pair.PairName = fmt.Sprintf("%s/%s", token1.Symbol, token0.Symbol)
+	}
+
+	// 再加上UniV2 or UniV3等尾巴
+	if pair.Type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
+		pair.PairName = fmt.Sprintf("%s_%s", pair.PairName, "UniV2")
+	} else if pair.Type == schema.SWAP_EVENT_UNISWAPV3_LIKE {
+		pair.PairName = fmt.Sprintf("%s_%s", pair.PairName, "UniV3")
+	} else {
+		// pair.PairName = fmt.Sprintf("%s_%s", pair.PairName, "")
+		//  暂时不变, 因为有时候回溯导致没有 pair_reat 事件而Unknown
+	}
 }
 
 func TEST_PAIR() {

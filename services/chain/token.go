@@ -22,7 +22,7 @@ func GetTokenInfoForRead(address string) (*schema.Token, error) {
 
 func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) {
 	if address == "" {
-		log.Printf("[ GetTokenInfo ] error! address %v\n", address)
+		log.Printf("[ GetTokenInfo ] error! address: %v\n", address)
 		return nil, errors.New("address is empty")
 	}
 
@@ -47,14 +47,15 @@ func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) 
 
 			symbol, err2 := getSingleProp(address, "symbol", getClient(), nil)
 			if err2 != nil {
-				// log.Printf("[ GetTokenInfo ] get symbol error. address: %v,  err2: %v\n", address, err2)
-
 				// 再取一次, 还失败就不要了
-				symbol, err2 := getSingleBackupProp(address, "symbol", getClient(), nil)
-				if err2 == nil {
-					symbol2 := symbol.([32]byte)
-					result.Symbol = string(bytes.TrimRight(symbol2[:], "\x00"))
+				symbol, err21 := getSingleBackupProp(address, "symbol", getClient(), nil)
+				if err21 != nil {
+					// symbol必须取到, pair需要用
+					return nil, err21
 				}
+
+				symbol2 := symbol.([32]byte)
+				result.Symbol = string(bytes.TrimRight(symbol2[:], "\x00"))
 			} else {
 				result.Symbol = symbol.(string)
 			}
@@ -62,8 +63,6 @@ func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) 
 			// name和totalsupply没取到也没事
 			name, err3 := getSingleProp(address, "name", getClient(), nil)
 			if err3 != nil {
-				// log.Printf("[ GetTokenInfo ] get name error. address: %v,  err2: %v\n", address, err3)
-
 				name, err3 = getSingleBackupProp(address, "name", getClient(), nil)
 				if err3 == nil {
 					name2 := name.([32]byte)
@@ -82,11 +81,7 @@ func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) 
 
 			// save...
 			service_token.SaveTokenInfo(&result, mongodb)
-		} else {
-			log.Printf("[ GetTokenInfo ] FindOne error: %v, token addr: %v\n", err, address)
-			return nil, err
 		}
-
 	}
 
 	return &result, nil

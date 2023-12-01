@@ -18,6 +18,9 @@ type LiquidityEvent struct {
 	Amount0 string `json:"amount0" bson:"amount0"`
 	Amount1 string `json:"amount1" bson:"amount1"`
 
+	AmountInUsd float64 `json:"amountInUsd" bson:"amountInUsd"`
+	PairName    string  `json:"pairName" bson:"pairName"`
+
 	Operator string `json:"operator" bson:"operator"`
 
 	EventBlockNo  uint64    `json:"eventBlockNo" bson:"eventBlockNo"`
