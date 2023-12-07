@@ -158,19 +158,18 @@ func updateVolumeinfo(swap *schema.Swap) {
 	volume := utils.GetBigIntOrZero(swap.AmountOfMainToken)
 	volumeInUsd := volume.Mul(volume, utils.GetBigIntOrZero(swap.Price))
 
-	// price有乘以1e18, 要去掉
-	volumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e18))
-
-	// amount 乘了1e36 的基数, 要去掉
+	// amount 乘了1e36 的基数
 	volumeInUsd = volumeInUsd.Div(volumeInUsd, config.AmountBaseFactor1e36)
 
-	// 此时的volume是包含有 MainToken 的decimal的, 需要除掉
+	// price有乘以1e18, 要去掉, 此时由于已经是eth或者usd, 所以除以1e9防止误差即可
+	volumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e9))
+
 	floatWithoutDecimal, _ := new(big.Float).SetInt(volumeInUsd).Float64()
 
 	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
-		swap.VolumeInUsd = floatWithoutDecimal
+		swap.VolumeInUsd = floatWithoutDecimal / 1e9
 	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
-		swap.VolumeInUsd = floatWithoutDecimal * swap.CurrentEthPrice
+		swap.VolumeInUsd = floatWithoutDecimal * swap.CurrentEthPrice / 1e9
 	} else {
 		swap.VolumeInUsd = 0
 	}
@@ -208,6 +207,7 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 	if err == nil {
 		swap.Token0 = pair.Token0
 		swap.Token1 = pair.Token1
+		swap.PairName = pair.PairName
 	} else {
 		log.Printf("[ newSwapStruct ] wrong pair here. addr: %v, tx: %v\n", swap.PairAddr, swap.TxHash)
 		return nil

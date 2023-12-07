@@ -119,8 +119,20 @@ func parseUniV3RemoveLiquidity(l *types.Log, tx *schema.Transaction) *schema.Liq
 func updateLiquidityAmount(event *schema.LiquidityEvent, _pair *schema.Pair, block *schema.Block) {
 	event.PairName = _pair.PairName
 
-	amount := utils.CalculateVolumeInUsd(_pair.Token0, utils.GetBigIntOrZero(event.Amount0), _pair.Decimal0, block.EthPrice)
-	amount += utils.CalculateVolumeInUsd(_pair.Token1, utils.GetBigIntOrZero(event.Amount1), _pair.Decimal1, block.EthPrice)
+	var amount, amount0, amount1 float64
+
+	amount0 = utils.CalculateVolumeInUsd(_pair.Token0, utils.GetBigIntOrZero(event.Amount0), _pair.Decimal0, block.EthPrice)
+
+	amount1 = utils.CalculateVolumeInUsd(_pair.Token1, utils.GetBigIntOrZero(event.Amount1), _pair.Decimal1, block.EthPrice)
+
+	amount = amount0 + amount1
+
+	// 如果两方都不为0, 且一方usd为0, 则直接乘以2
+	if event.Type == schema.SWAP_EVENT_UNISWAPV2_LIKE && (amount0 == 0 || amount1 == 0) {
+		if event.Amount0 != "" && event.Amount1 != "" && event.Amount0 != "0" && event.Amount1 != "0" {
+			amount *= 2
+		}
+	}
 
 	event.AmountInUsd = amount
 }

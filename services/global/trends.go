@@ -33,7 +33,7 @@ func GetTrendsByTimeRange(start, end time.Time, mongodb *mongo.Client) ([]schema
 	}
 	options := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)
 	defer cancel()
 
 	var result []schema.GlobalTrend

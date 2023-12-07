@@ -45,10 +45,13 @@ var LiquidityEventIndexModel = []mongo.IndexModel{
 		Keys:    bson.D{{Key: "operator", Value: 1}},
 		Options: options.Index().SetName("operator_index"),
 	},
-
 	{
 		Keys:    bson.D{{Key: "eventBlockNo", Value: 1}},
 		Options: options.Index().SetName("eventBlockNo_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "amountInUsd", Value: 1}},
+		Options: options.Index().SetName("amountInUsd_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "eventTime", Value: 1}},

@@ -21,26 +21,27 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 
 		// pair
 		{
-			// 最新加流动性的pair列表，不支持其他方式排序, 单纯的展示
-			// 支持按 token、pair 地址查询
-			ethGroup.GET("/newpair", eth.GetNewPairs)
+            ethGroup.GET("/pair", eth.GetPair)
 
 			// 优秀的pair列表. 默认筛选最近30天add的池子(是个选项); 按24h成交数排序
-			// 支持其他方式排序; 同时还有一个24h交易额最少大于10000u的选项
-			ethGroup.GET("/goodpair", eth.GetNewPairs)
+			// 支持其他方式排序;
+			ethGroup.GET("/hotpair", eth.GetHotPairs)
+
+			// 按24h交易数排序, 且最近7天内新添加池子的pair
+			ethGroup.GET("/hotnewpair", eth.GetHotPairs)
 		}
 
 		// swap
 		{
 			// 所有的最新swaps集合, 支持 token, operator, trader 等条件查询
 			// 只支持查询最近1个月的数据
-			ethGroup.GET("/swaps", eth.GetNewPairs)
+			ethGroup.GET("/swaps", eth.GetSwapEvents)
 		}
 
 		// transfer
 		{
 			// 所有的最新transfer集合, 支持 token, operator 等条件查询
-			ethGroup.GET("/transfers", eth.GetNewPairs)
+			ethGroup.GET("/transfers", eth.GetTransferEvents)
 		}
 
 		// liquidity
@@ -52,10 +53,10 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 		// block
 		{
 			// 所有的最新 block 集合, 支持 token, pair, operator 等条件查询
-			ethGroup.GET("/blocks", eth.GetNewPairs)
+			// ethGroup.GET("/blocks", eth.GetNewPairs)
 
 			// 某区块下的所有信息, 含swaps集合
-			ethGroup.GET("/block/:no", eth.GetNewPairs)
+			// ethGroup.GET("/block/:no", eth.GetNewPairs)
 		}
 	}
 

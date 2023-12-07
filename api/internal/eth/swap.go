@@ -3,7 +3,7 @@ package eth
 import (
 	"sfilter/api/utils"
 	"sfilter/schema"
-	"sfilter/services/liquidity"
+	"sfilter/services/swap"
 	"strconv"
 	"time"
 
@@ -13,23 +13,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetLiquidityEvent(c *gin.Context) {
-	options, err := parseLiquidityOptions(c)
+func GetSwapEvents(c *gin.Context) {
+	options, err := parseSwapOptions(c)
 	if err != nil {
 		return
 	}
 
-	filter := parseLiquidityFilter(c)
+	filter := parseSwapFilterOptions(c)
 
-	info, count, err := liquidity.GetLiquidityEvents(options, filter, utils.GetMongo())
+	info, count, err := swap.GetSwapEvents(options, filter, utils.GetMongo())
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
 	}
 
 	data := struct {
-		List  []schema.LiquidityEvent `json:"list"`
-		Count int64                   `json:"count"`
+		List  []schema.Swap `json:"list"`
+		Count int64         `json:"count"`
 	}{
 		List:  info,
 		Count: count,
@@ -38,7 +38,7 @@ func GetLiquidityEvent(c *gin.Context) {
 	utils.ResSuccess(c, data)
 }
 
-func parseLiquidityOptions(c *gin.Context) (*options.FindOptions, error) {
+func parseSwapOptions(c *gin.Context) (*options.FindOptions, error) {
 	page, limit, err := utils.ParsePageLimitParams(c)
 	if err != nil {
 		utils.ResFailure(c, 400, err.Error())
@@ -47,57 +47,73 @@ func parseLiquidityOptions(c *gin.Context) (*options.FindOptions, error) {
 
 	skip := int64(page*limit - limit)
 	options := &options.FindOptions{Limit: &limit, Skip: &skip}
-	options = options.SetSort(bson.D{{Key: "updatedAt", Value: -1}})
+	options = options.SetSort(bson.D{{Key: "swapTime", Value: -1}})
 
 	// 获取排序
 	var key string
 	var order = -1
 	sortBy := c.DefaultQuery("sortBy", "")
-	if sortBy == "amountInUsd" {
+	if sortBy != "" && (sortBy == "amountOfMainToken" || sortBy == "volumeInUsd") {
 		key = sortBy
+
 		orderStr := c.DefaultQuery("descending", "true")
 		if orderStr == "false" {
 			order = 1
 		}
-        
 		options = options.SetSort(bson.D{{Key: key, Value: order}})
 	}
 
 	return options, nil
 }
 
-func parseLiquidityFilter(c *gin.Context) *primitive.M {
+func parseSwapFilterOptions(c *gin.Context) *primitive.M {
 	filter := bson.M{}
 
-	direction := c.DefaultQuery("direction", "7")
+	blockNo := c.DefaultQuery("blockNo", "")
+	blockNoInt, err := strconv.Atoi(blockNo)
+	if err == nil {
+		filter["blockNo"] = blockNoInt
+	}
 
+	direction := c.DefaultQuery("direction", "0")
 	directionInt, err := strconv.Atoi(direction)
 	if err == nil && (directionInt == 1 || directionInt == 2) {
 		filter["direction"] = directionInt
 	}
 
-	address := c.DefaultQuery("address", "")
-	if address != "" && utils.IsValidEthereumAddress(address) {
+	trader := c.DefaultQuery("trader", "")
+	if trader != "" && utils.IsValidEthereumAddress(trader) {
+		filter["trader"] = trader
+	}
+
+	pairAddr := c.DefaultQuery("pairAddr", "")
+	if pairAddr != "" && utils.IsValidEthereumAddress(pairAddr) {
+		filter["pairAddr"] = pairAddr
+	}
+
+	// 根据token地址查询, 可能为token0或token1
+	token := c.DefaultQuery("token", "")
+	if token != "" && utils.IsValidEthereumAddress(token) {
 		filter["$or"] = []bson.M{
-			{"poolAddress": address},
+			{"token0": token},
+			{"token1": token},
+			{"pairAddr": token},
 		}
 	}
 
-	// 时间段
-	recentdays := c.DefaultQuery("recentdays", "7")
+	recentdays := c.DefaultQuery("recentdays", "1")
 	recentdaysInt, err := strconv.Atoi(recentdays)
 	if err == nil {
 		if recentdaysInt < 1 {
 			recentdaysInt = 1
-		} else if recentdaysInt > 180 {
-			recentdaysInt = 180
+		} else if recentdaysInt > 30 {
+			recentdaysInt = 30
 		}
 
 		date := time.Now().Add(-time.Duration(recentdaysInt) * time.Hour * 24)
-		filter["eventTime"] = bson.M{
+		filter["swapTime"] = bson.M{
 			"$gte": date,
 		}
-
 	}
 
 	return &filter

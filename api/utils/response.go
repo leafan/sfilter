@@ -27,4 +27,6 @@ func ResFailure(c *gin.Context, code uint32, message string) {
 		Msg:  message,
 		Data: nil,
 	})
+
+	c.Abort()
 }

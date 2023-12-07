@@ -7,35 +7,35 @@ import (
 	"sfilter/schema"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetNewPairs(mongodb *mongo.Client) ([]schema.Pair, error) {
+func GetHotPairs(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Client) ([]schema.Pair, int64, error) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
-
-    limit := int64(5)
-    page := int64(2)
-    skip := int64(page * limit - limit)
-    
-    options := &options.FindOptions{Limit: &limit, Skip: &skip}
-	options = options.SetSort(bson.D{{Key: "firstAddPoolTime", Value: -1}})
 
 	var result []schema.Pair
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cursor, err := collection.Find(ctx, bson.M{}, options)
+	cursor, err := collection.Find(ctx, filter, findOpt)
 	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			log.Printf("[ GetNewPairs ] Find error: %v\n", err)
-		}
-
-		return result, err
+		return result, 0, err
 	}
 	defer cursor.Close(ctx)
 
+    countOpts := &options.CountOptions {
+        Limit: &config.COUNT_UPPER_SIZE,
+    }
+    countOpts.SetMaxTime(config.MONGO_FIND_TIMEOUT * time.Second)
+
+	totalCount, err := collection.CountDocuments(ctx, filter, countOpts)
+	if err != nil {
+		log.Printf("[ GetHotPairs ] Count error: %v\n", err)
+		return result, 0, err
+	}
+
 	err = cursor.All(ctx, &result)
-	return result, err
+	return result, totalCount, err
 }

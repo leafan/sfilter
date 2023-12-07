@@ -4,7 +4,7 @@ import (
 	"log"
 	"sfilter/api/router"
 	"sfilter/api/utils"
-    "sfilter/config"
+	"sfilter/config"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -49,11 +49,13 @@ func (server *Server) configureMiddleware() {
 
 	server.Engine.Use(utils.Cors())
 
-    whitelist := make(map[string]bool)
-    whitelist[config.ProxyFromIp] = true
+	whitelist := make(map[string]bool)
+	whitelist[config.ProxyFromIp] = true
 
-    // 设置白名单访问
-    server.Engine.Use(utils.IPWhiteList(whitelist))
+	// 设置白名单访问
+	if !config.DEVELOPMENT {
+		server.Engine.Use(utils.IPWhiteList(whitelist))
+	}
 }
 
 func ping(c *gin.Context) {

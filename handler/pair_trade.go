@@ -40,31 +40,41 @@ func updatePairInfo(_pair string, mongodb *mongo.Client) {
 	now := time.Now()
 	klines1Min := kline.Get1MinKlineWithFullGenerated(pair.Address, now, 2, mongodb)
 	klines1Hour := kline.Get1HourKlineWithFullGenerated(pair.Address, now, 2, mongodb)
-	// log.Printf("\n\n\n[ updatePairInfo ] pair: %v, time is: %v, klines1Min: %v\n\n\n\n", pair.Address, now, klines1Min)
 
-	if len(klines1Min) != 120 || len(klines1Hour) != 48 {
-		// log.Printf("[updatePairInfo] kline 1min is empty, return.. pair: %v, len: %v\n", _pair, len(klines1Min))
-		return
-	}
 	updatePairTx1h(klines1Min, pair)
 	updatePairPrice1h(klines1Min, pair)
 
 	updatePairTx24h(klines1Hour, pair)
 	updatePairPrice24h(klines1Hour, pair)
 
+	// 纠正, 针对某些刚开始时候的pair
+	if pair.TxNumIn24h < pair.TxNumIn1h {
+		pair.TxNumIn24h = pair.TxNumIn1h
+	}
+	if pair.VolumeByUsdIn24h < pair.VolumeByUsdIn1h {
+		pair.VolumeByUsdIn24h = pair.VolumeByUsdIn1h
+	}
+
 	// update to db
 	services_pair.UpdateTradeInfo(pair, mongodb)
-
-	// log.Printf("\n\n\n[ updatePairInfo ] update finished... pair: %v\n", _pair)
 }
 
 func updatePairTx1h(klines1Min []schema.KLine, pair *schema.Pair) {
-	// 先更新 TxNumIn1h
-	var txNum1h, txNumBefore1h int
+	if len(klines1Min) <= 0 {
+		return
+	}
 
-	for i := 120 - 1; i >= 60; i-- {
+	var txNum1h int
+	for i, j := len(klines1Min)-1, 0; i >= 0 && j < 60; i, j = i-1, j+1 {
 		txNum1h += klines1Min[i].TxNum
 	}
+	pair.TxNumIn1h = txNum1h
+
+	if len(klines1Min) != 120 {
+		return
+	}
+
+	var txNumBefore1h int
 	for i := 60 - 1; i >= 0; i-- {
 		txNumBefore1h += klines1Min[i].TxNum
 	}
@@ -80,16 +90,25 @@ func updatePairTx1h(klines1Min []schema.KLine, pair *schema.Pair) {
 		change = float32(delta / txNumBefore1h)
 	}
 
-	pair.TxNumIn1h = txNum1h
 	pair.TxNumChangeIn1h = change
 }
 
 func updatePairTx24h(klines1Hour []schema.KLine, pair *schema.Pair) {
-	var txNum24h, txNumBefore24h int
+	if len(klines1Hour) <= 0 {
+		return
+	}
 
-	for i := 48 - 1; i >= 24; i-- {
+	var txNum24h int
+	for i, j := len(klines1Hour)-1, 0; i >= 0 && j < 24; i, j = i-1, j+1 {
 		txNum24h += klines1Hour[i].TxNum
 	}
+	pair.TxNumIn24h = txNum24h
+
+	if len(klines1Hour) != 48 {
+		return
+	}
+
+	var txNumBefore24h int
 	for i := 24 - 1; i >= 0; i-- {
 		txNumBefore24h += klines1Hour[i].TxNum
 	}
@@ -104,16 +123,26 @@ func updatePairTx24h(klines1Hour []schema.KLine, pair *schema.Pair) {
 	} else {
 		change = float32(delta / txNumBefore24h)
 	}
-
-	pair.TxNumIn24h = txNum24h
 	pair.TxNumChangeIn24h = change
 }
 
 func updatePairPrice1h(klines1Min []schema.KLine, pair *schema.Pair) {
-	var volume float64
-	var change float32
+	if len(klines1Min) <= 0 {
+		return
+	}
 
+	var volume float64
+	for i, j := len(klines1Min)-1, 0; i >= 0 && j < 60; i, j = i-1, j+1 {
+		volume += klines1Min[i].VolumeInUsd
+	}
+	pair.VolumeByUsdIn1h = volume
 	pair.Price = klines1Min[len(klines1Min)-1].ClosePrice
+
+	if len(klines1Min) < 61 { // 前一小时最后一分钟即可
+		return
+	}
+
+	var change float32
 
 	current := klines1Min[len(klines1Min)-1].ClosePrice
 	last := klines1Min[len(klines1Min)-60-1].ClosePrice
@@ -121,26 +150,29 @@ func updatePairPrice1h(klines1Min []schema.KLine, pair *schema.Pair) {
 		change = float32((current - last) / last)
 	}
 	pair.PriceChangeIn1h = change
-
-	for i := 120 - 1; i >= 60; i-- {
-		volume += klines1Min[i].VolumeInUsd
-	}
-	pair.VolumeByUsdIn1h = volume
 }
 
 func updatePairPrice24h(klines1Hour []schema.KLine, pair *schema.Pair) {
-	var volume float64
-	var change float32
+	if len(klines1Hour) <= 0 {
+		return
+	}
 
+	var volume float64
+	for i, j := len(klines1Hour)-1, 0; i >= 0 && j < 24; i, j = i-1, j+1 {
+		volume += klines1Hour[i].VolumeInUsd
+	}
+	pair.VolumeByUsdIn24h = volume
+
+	if len(klines1Hour) < 25 { // 前一天最后一小时即可
+		return
+	}
+
+	var change float32
 	current := klines1Hour[len(klines1Hour)-1].ClosePrice
+
 	last := klines1Hour[len(klines1Hour)-24-1].ClosePrice
 	if last != 0 {
 		change = float32((current - last) / last)
 	}
 	pair.PriceChangeIn24h = change
-
-	for i := 48 - 1; i >= 24; i-- {
-		volume += klines1Hour[i].VolumeInUsd
-	}
-	pair.VolumeByUsdIn24h = volume
 }

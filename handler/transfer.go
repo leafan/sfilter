@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"math/big"
 	"sfilter/schema"
+	"sfilter/services/chain"
 	"sfilter/services/transfer"
 	"strings"
 	"time"
+    "math"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -62,9 +64,25 @@ func parseTransferEvent(block *schema.Block, l *types.Log) *schema.Transfer {
 			Timestamp: time.Unix(int64(block.Block.Time()), 0),
 		}
 
-		transfer.Amount = transfer.AmountBigInt.String()
-		transfer.LogIndexWithTx = fmt.Sprintf("%s_%d", transfer.TxHash, transfer.Position)
+		// 获取token
+		token, err := chain.GetTokenInfoForRead(transfer.Token)
+		if err == nil {
+			transfer.TokenSymbol = token.Symbol
 
+            if token.Decimal <= 9 { // 没到丢精度的程度
+                amount, _ := transfer.AmountBigInt.Float64()
+                transfer.Amount = amount / math.Pow10(int(token.Decimal))
+            } else {
+                // 如果某个token少于1e9, 那可以当0看了
+                tmpBig := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token.Decimal)-9), nil)
+                tmpBig = tmpBig.Div(transfer.AmountBigInt, tmpBig)
+
+                amount, _ := tmpBig.Float64()
+                transfer.Amount = amount / 1e9
+            }
+		}
+
+		transfer.LogIndexWithTx = fmt.Sprintf("%s_%d", transfer.TxHash, transfer.Position)
 	}
 
 	return transfer

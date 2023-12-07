@@ -101,15 +101,15 @@ func GeneratePairName(pair *schema.Pair, token0, token1 *schema.Token) {
 }
 
 func TEST_PAIR() {
-	// GetPairInfo("0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009", getMongo())
+	GetPairInfo("0x1dd3Ba955388e76e9D35E00dF82B1DaD3D1E065A", chain.GetMongo())
 
-	pairx := &schema.Pair{
-		InfoOnChain: schema.InfoOnChain{
-			Address:  "0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009",
-			PairName: "leafan6",
-		},
-	}
+	// pairx := &schema.Pair{
+	// 	InfoOnChain: schema.InfoOnChain{
+	// 		Address:  "0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009",
+	// 		PairName: "leafan6",
+	// 	},
+	// }
 
-	UpSertOnChainInfo("0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009", &pairx.InfoOnChain, chain.GetMongo())
+	// UpSertOnChainInfo("0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009", &pairx.InfoOnChain, chain.GetMongo())
 
 }

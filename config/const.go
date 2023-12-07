@@ -2,8 +2,11 @@ package config
 
 import "math/big"
 
-// const CREAT_DEBUG = true // for creat....
+// const CREAT_DEBUG = true
+// const DEVELOPMENT = false
+
 const CREAT_DEBUG = false
+const DEVELOPMENT = true
 
 const SecondsForOneDay = (60 * 60 * 24)
 const SecondsForOneWeek = (SecondsForOneDay * 7)
@@ -14,37 +17,39 @@ const BlocksPerDay = 250 * 24
 const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
 
 // api configure
-const ApiListenAddrPort = ":10086"
+
 const ProxyFromIp = "192.168.2.101"
 
 var (
-	RetriveOldBlockNum = 100
-	// RetriveOldBlockNum = BlocksPerDay * 3
+	DatabaseName = "deepeye"
 
+	RetriveOldBlockNum         = BlocksPerDay * 3
 	GetPriceIntervalForRetrive = 10 // 每隔多少个区块获取一次eth价格
 
-	DatabaseName = "deepeye"
-	// DatabaseName = "test"
-
-	SwapSaveTime          = int32(SecondsForOneWeek)
-	TransferTableSavetime = int32(SecondsForOneWeek)
+	SwapSaveTime          = int32(SecondsForOneMonth * 3)
+	TransferTableSavetime = int32(SecondsForOneMonth * 3)
 
 	Kline1MinTableSaveTime  = int32(SecondsForOneWeek)
 	Kline1HourTableSaveTime = int32(SecondsForOneMonth * 6)
 
-	TokenTableSavetime = int32(SecondsForOneYear)
+	TokenTableSavetime = int32(SecondsForOneYear * 3)
+
+	ApiListenAddrPort = ":10086"
 )
 
 func init() {
 	// 重置 参数..
+	if DEVELOPMENT {
+		DatabaseName = "test"
+		RetriveOldBlockNum = 100
+		ApiListenAddrPort = ":50086"
+	}
+
 	if CREAT_DEBUG {
 		DatabaseName = "creat"
 
 		RetriveOldBlockNum = (BlocksPerDay * 30)
 		GetPriceIntervalForRetrive = 100
-
-		SwapSaveTime = int32(SecondsForOneMonth * 3)
-		TransferTableSavetime = int32(SecondsForOneMonth * 3)
 	}
 }
 
@@ -69,10 +74,21 @@ const NeverExpireTime = 0
 const MaxConcurrentRoutineNums = 10   // 最大并行的协程数, 避免节点扛不住
 const GlobalUpdateIntervalBlocks = 10 // 每隔多少个区块update一次全局24h趋势数据
 
-const INFINITE_CHANGE = 100
+const INFINITE_CHANGE = 1
+
+const MONGO_LIMIT_UPPER = 50
+const MONGO_LIMIT_DOWN = 5
+const MONGO_PAGE_UPPER = 1000
+
+// mongodb 查询时的上限值, 超过则吐10000
+var COUNT_UPPER_SIZE = int64(10000)
+
+var StartRetriveBlock = 0 // 0表示不设置, 该配置用于调试, 一般不用配置
+
+const MONGO_FIND_TIMEOUT = 2
+const MONGO_ADDR = "mongodb://127.0.0.1:27017"
 
 const WS_ADDR = "ws://127.0.0.1:8546"
-const MONGO_ADDR = "mongodb://127.0.0.1:27017"
 
 // 用于获取历史高度上的eth价格.. 如果是回溯的时候，10个区块才调用一次即可(特殊处理)
 const INFURA_KEY_ADDR = "https://mainnet.infura.io/v3/06a6594cfd1a404591470c2f81a7ac93"

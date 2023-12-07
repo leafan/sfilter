@@ -31,6 +31,7 @@ type Swap struct {
 	Position uint   `json:"position" bson:"position"` // 交易在本区块中的序号
 
 	PairAddr string `json:"pairAddr" bson:"pairAddr"` // 交易对地址
+	PairName string `json:"pairName" bson:"pairName"`
 	SwapType int    `json:"swapType" bson:"swapType"` // 交易类型,
 
 	CurrentEthPrice float64 `json:"currentEthPrice" bson:"currentEthPrice"` // 当前区块（时间）的eth价格in usd
@@ -106,5 +107,22 @@ var SwapIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "mainToken", Value: 1}},
 		Options: options.Index().SetName("mainToken_index"),
+	},
+    
+	{
+		Keys:    bson.D{{Key: "token0", Value: 1}},
+		Options: options.Index().SetName("token0_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "token1", Value: 1}},
+		Options: options.Index().SetName("token1_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "volumeInUsd", Value: 1}},
+		Options: options.Index().SetName("volumeInUsd_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "amountOfMainToken", Value: 1}},
+		Options: options.Index().SetName("amountOfMainToken_index"),
 	},
 }

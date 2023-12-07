@@ -1,4 +1,4 @@
-package liquidity
+package swap
 
 import (
 	"context"
@@ -12,19 +12,28 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetLiquidityEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Client) ([]schema.LiquidityEvent, int64, error) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.LiquidityEventTableName)
+func SaveSwapTx(swap *schema.Swap, mongodb *mongo.Client) error {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
 
-	var result []schema.LiquidityEvent
+	swap.CreatedAt = time.Now()
+
+	_, err := collection.InsertOne(context.Background(), swap)
+	if err != nil {
+		log.Printf("[ saveSwapTx ] InsertOne error: %v, swap tx: %v\n", err, swap.TxHash)
+	}
+
+	return err
+}
+
+func GetSwapEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Client) ([]schema.Swap, int64, error) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
+
+	var result []schema.Swap
 	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)
 	defer cancel()
 
 	cursor, err := collection.Find(ctx, filter, findOpt)
 	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			log.Printf("[ GetLiquidityEvents ] Find error: %v\n", err)
-		}
-
 		return result, 0, err
 	}
 	defer cursor.Close(ctx)
@@ -36,18 +45,10 @@ func GetLiquidityEvents(findOpt *options.FindOptions, filter *primitive.M, mongo
 
 	totalCount, err := collection.CountDocuments(ctx, filter, countOpts)
 	if err != nil {
-		log.Printf("[ GetLiquidityEvents ] Count error: %v\n", err)
-		return result, 0, err // 返回总数为0
+		log.Printf("[ GetSwapEvents ] Count error: %v\n", err)
+		return result, 0, err
 	}
 
 	err = cursor.All(ctx, &result)
 	return result, totalCount, err
-}
-
-func SaveLiquidityEvent(event *schema.LiquidityEvent, mongodb *mongo.Client) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.LiquidityEventTableName)
-
-	event.CreatedAt = time.Now()
-
-	collection.InsertOne(context.Background(), event)
 }

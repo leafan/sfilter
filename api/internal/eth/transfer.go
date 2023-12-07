@@ -3,7 +3,7 @@ package eth
 import (
 	"sfilter/api/utils"
 	"sfilter/schema"
-	"sfilter/services/liquidity"
+	"sfilter/services/transfer"
 	"strconv"
 	"time"
 
@@ -13,23 +13,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetLiquidityEvent(c *gin.Context) {
-	options, err := parseLiquidityOptions(c)
+func GetTransferEvents(c *gin.Context) {
+	options, err := parseTransferOptions(c)
 	if err != nil {
 		return
 	}
 
-	filter := parseLiquidityFilter(c)
+	filter := parseTransferFilterOptions(c)
 
-	info, count, err := liquidity.GetLiquidityEvents(options, filter, utils.GetMongo())
+	info, count, err := transfer.GetTransferEvents(options, filter, utils.GetMongo())
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
 	}
-
 	data := struct {
-		List  []schema.LiquidityEvent `json:"list"`
-		Count int64                   `json:"count"`
+		List  []schema.Transfer `json:"list"`
+		Count int64             `json:"count"`
 	}{
 		List:  info,
 		Count: count,
@@ -38,7 +37,7 @@ func GetLiquidityEvent(c *gin.Context) {
 	utils.ResSuccess(c, data)
 }
 
-func parseLiquidityOptions(c *gin.Context) (*options.FindOptions, error) {
+func parseTransferOptions(c *gin.Context) (*options.FindOptions, error) {
 	page, limit, err := utils.ParsePageLimitParams(c)
 	if err != nil {
 		utils.ResFailure(c, 400, err.Error())
@@ -47,57 +46,62 @@ func parseLiquidityOptions(c *gin.Context) (*options.FindOptions, error) {
 
 	skip := int64(page*limit - limit)
 	options := &options.FindOptions{Limit: &limit, Skip: &skip}
-	options = options.SetSort(bson.D{{Key: "updatedAt", Value: -1}})
+	options = options.SetSort(bson.D{{Key: "timestamp", Value: -1}})
 
 	// 获取排序
 	var key string
 	var order = -1
 	sortBy := c.DefaultQuery("sortBy", "")
-	if sortBy == "amountInUsd" {
+	if sortBy != "" && sortBy == "amount" {
 		key = sortBy
+
 		orderStr := c.DefaultQuery("descending", "true")
 		if orderStr == "false" {
 			order = 1
 		}
-        
 		options = options.SetSort(bson.D{{Key: key, Value: order}})
 	}
 
 	return options, nil
 }
 
-func parseLiquidityFilter(c *gin.Context) *primitive.M {
+func parseTransferFilterOptions(c *gin.Context) *primitive.M {
 	filter := bson.M{}
 
-	direction := c.DefaultQuery("direction", "7")
-
-	directionInt, err := strconv.Atoi(direction)
-	if err == nil && (directionInt == 1 || directionInt == 2) {
-		filter["direction"] = directionInt
+	blockNo := c.DefaultQuery("blockNo", "0")
+	blockNoInt, err := strconv.Atoi(blockNo)
+	if err == nil && blockNoInt > 0 {
+		filter["blockNo"] = blockNoInt
 	}
 
-	address := c.DefaultQuery("address", "")
-	if address != "" && utils.IsValidEthereumAddress(address) {
-		filter["$or"] = []bson.M{
-			{"poolAddress": address},
-		}
+	token := c.DefaultQuery("token", "")
+	if token != "" && utils.IsValidEthereumAddress(token) {
+		filter["token"] = token
 	}
 
-	// 时间段
-	recentdays := c.DefaultQuery("recentdays", "7")
+	from := c.DefaultQuery("from", "")
+	if from != "" && utils.IsValidEthereumAddress(from) {
+		filter["from"] = from
+	}
+
+	to := c.DefaultQuery("to", "")
+	if to != "" && utils.IsValidEthereumAddress(to) {
+		filter["to"] = to
+	}
+    
+	recentdays := c.DefaultQuery("recentdays", "1")
 	recentdaysInt, err := strconv.Atoi(recentdays)
 	if err == nil {
 		if recentdaysInt < 1 {
 			recentdaysInt = 1
-		} else if recentdaysInt > 180 {
-			recentdaysInt = 180
+		} else if recentdaysInt > 30 {
+			recentdaysInt = 30
 		}
 
 		date := time.Now().Add(-time.Duration(recentdaysInt) * time.Hour * 24)
-		filter["eventTime"] = bson.M{
+		filter["timestamp"] = bson.M{
 			"$gte": date,
 		}
-
 	}
 
 	return &filter

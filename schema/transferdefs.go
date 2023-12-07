@@ -17,13 +17,15 @@ type TxTokenTransfersMap map[string][]*Transfer
 type Transfer struct {
 	Token string `json:"token" bson:"token"` // 地址
 
+	TokenSymbol string `json:"tokenSymbol" bson:"tokenSymbol"`
+
 	From string `json:"from" bson:"from"`
 	To   string `json:"to" bson:"to"`
 
-	Amount       string   `json:"amount" bson:"amount"`
-	AmountBigInt *big.Int `json:"-" bson:"-"`
+	Amount       float64  `json:"amount" bson:"amount"`
+	AmountBigInt *big.Int `json:"-" bson:"-"` // 暂时保留
 
-	AmountInUsd string `json:"amountInUsd" bson:"amountInUsd"`
+	AmountInUsd float64 `json:"amountInUsd" bson:"amountInUsd"` // 先保留, 不好计算..
 
 	BlockNo  uint64 `json:"blockNo" bson:"blockNo"`   // 区块号
 	TxHash   string `json:"txHash" bson:"txHash"`     // 交易哈希
@@ -53,6 +55,10 @@ var TransferIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "txHash", Value: 1}},
 		Options: options.Index().SetName("txHash_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "amount", Value: 1}},
+		Options: options.Index().SetName("amount_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "token", Value: 1}},

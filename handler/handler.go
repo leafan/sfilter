@@ -33,6 +33,9 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	}
 
 	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
+	if config.StartRetriveBlock > 0 && startBlock > int64(config.StartRetriveBlock) {
+		startBlock = int64(config.StartRetriveBlock)
+	}
 	log.Println("[ Retrive_old_blocks ] retrive now.. start block: ", startBlock)
 
 	var ethPrice float64
