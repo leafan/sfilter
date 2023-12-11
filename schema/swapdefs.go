@@ -52,9 +52,13 @@ type Swap struct {
 
 	Sender            string  `json:"sender" bson:"sender"`                       // 发送者
 	Recipient         string  `json:"recipient" bson:"recipient"`                 // 接收者
-	Price             string  `json:"price" bson:"price"`                         // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
-	AmountOfMainToken string  `json:"amountOfMainToken" bson:"amountOfMainToken"` // 主代币数量
-	VolumeInUsd       float64 ` json:"volumeInUsd" bson:"volumeInUsd"`            // 本次交易以Usd计价金额
+	Price             float64 `json:"price" bson:"price"`                         // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
+	AmountOfMainToken float64 `json:"amountOfMainToken" bson:"amountOfMainToken"` // 主代币数量
+
+	AmountOfMainBig  string `json:"-" bson:"amountOfMainBig"`
+	AmountOfQuoteBig string `json:"-" bson:"amountOfQuoteBig"`
+
+	VolumeInUsd float64 ` json:"volumeInUsd" bson:"volumeInUsd"` // 本次交易以Usd计价金额
 
 	LogIndexWithTx string `json:"-" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
 
@@ -108,7 +112,7 @@ var SwapIndexModel = []mongo.IndexModel{
 		Keys:    bson.D{{Key: "mainToken", Value: 1}},
 		Options: options.Index().SetName("mainToken_index"),
 	},
-    
+
 	{
 		Keys:    bson.D{{Key: "token0", Value: 1}},
 		Options: options.Index().SetName("token0_index"),

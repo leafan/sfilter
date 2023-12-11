@@ -2,13 +2,10 @@ package kline
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"math/big"
 	"sfilter/config"
 	"sfilter/schema"
-	"sfilter/utils"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +18,7 @@ func Update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 	// 防止同时写入的时候, 查询时覆盖
 	// 简单实现, 实际上应该是给 行加读写锁, 这里直接给整个加锁了..
 
-	if swap.Price == "" {
+	if swap.Price == 0 {
 		log.Printf("[ update1MinKline ] wrong price. swap: %v, tx: %v\n", swap, swap.LogIndexWithTx)
 		return
 	}
@@ -82,11 +79,7 @@ func Update1MinKline(swap *schema.Swap, mongodb *mongo.Client) {
 }
 
 func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
-	curPrice, err := getPriceToFloat64(swap.Price)
-	if err != nil {
-		log.Printf("[ updateKLineWithNewData ] wrong price. price: %v, tx: %v\n", swap.Price, swap.LogIndexWithTx)
-		return
-	}
+	curPrice := swap.Price
 
 	kline.ClosePrice = curPrice // 不管新老柱子, 先更新close
 
@@ -110,29 +103,12 @@ func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
 	kline.UnixTime = swap.SwapTime.Unix()
 
 	// volume啥都不用考虑, 直接加
-	volume, ok := new(big.Int).SetString(swap.AmountOfMainToken, 10)
-	if !ok {
-		log.Printf("[ updateKLineWithNewData ] wrong volume. AmountOfMainToken: %v, tx: %v\n", swap.AmountOfMainToken, swap.LogIndexWithTx)
-		// volume = big.NewInt(0)
-		return // volume都为0了, 没必要计算tx啥的了
-	}
-	kline.Volume = volume.Add(volume, utils.GetBigIntOrZero(kline.Volume)).String()
+	volume := swap.AmountOfMainToken
+	kline.Volume += volume
 
 	// 更新 deepeye info
 	kline.TxNum++
 	kline.VolumeInUsd += swap.VolumeInUsd
 
 	// log.Printf("[ updateKLineWithNewData ] debug.. after update, kline: %v\n", kline)
-}
-
-func getPriceToFloat64(_price string) (float64, error) {
-	bigPrice, ok := new(big.Float).SetString(_price)
-	if !ok {
-		return 0, errors.New("to big float wrong")
-	}
-
-	bigPrice = bigPrice.Quo(bigPrice, new(big.Float).SetFloat64(config.PriceBaseFactor))
-	curPrice, _ := bigPrice.Float64()
-
-	return curPrice, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"sfilter/schema"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -111,10 +112,26 @@ func getUniV3Position(postionManagerAddr string, tokenId *big.Int) (common.Addre
 	return token0, token1, fee, nil
 }
 
-func TEST_POOL() {
-	a, b, c, err := getUniV3Position("0xC36442b4a4522E871399CD717aBDD847Ab11FE88", big.NewInt(609781))
-	fmt.Printf("[ TEST_POOL ] token0: %v, token1: %v, fee: %v, err: %v\n", a, b, c, err)
+func GetUniPoolType(poolAddr string) (int, error) {
+	// uni v2 check
+	_, err := getSingleProp(poolAddr, "price0CumulativeLast", getClient(), nil)
+	if err == nil {
+		return schema.SWAP_EVENT_UNISWAPV2_LIKE, nil
+	}
 
-	addr, err := GetUniV3PoolAddr("0xC36442b4a4522E871399CD717aBDD847Ab11FE88", big.NewInt(609781))
-	fmt.Printf("[ TEST_POOL ] pool addr: %v, err: %v\n", addr, err)
+	// uni v3 check
+	_, err = getSingleProp(poolAddr, "maxLiquidityPerTick", getClient(), nil)
+	if err == nil {
+		return schema.SWAP_EVENT_UNISWAPV3_LIKE, nil
+	}
+
+	return 0, err
+}
+
+func TEST_POOL() {
+	v2, err2 := GetUniPoolType("0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc")
+
+	v3, err3 := GetUniPoolType("0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640")
+
+	fmt.Printf("[ TEST_POOL ] v2: %v, v3: %v, err2: %v, err3: %v\n", v2, v3, err2, err3)
 }

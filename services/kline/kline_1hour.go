@@ -15,7 +15,7 @@ import (
 var kline1hourLock sync.Mutex
 
 func Update1HourKline(swap *schema.Swap, mongodb *mongo.Client) {
-	if swap.Price == "" {
+	if swap.Price == 0 {
 		log.Printf("[ update1MinKline ] wrong price. swap: %v, tx: %v\n", swap, swap.LogIndexWithTx)
 		return
 	}

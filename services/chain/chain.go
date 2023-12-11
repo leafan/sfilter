@@ -1514,6 +1514,18 @@ const ChainAbiJson = `[{
 	}],
 	"stateMutability": "view",
 	"type": "function"
+},
+
+{
+	"inputs": [],
+	"name": "maxLiquidityPerTick",
+	"outputs": [{
+		"internalType": "uint128",
+		"name": "",
+		"type": "uint128"
+	}],
+	"stateMutability": "view",
+	"type": "function"
 }
 
 

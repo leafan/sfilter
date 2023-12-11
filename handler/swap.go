@@ -155,21 +155,12 @@ func updateVolumeinfo(swap *schema.Swap) {
 		quoteToken = swap.Token0
 	}
 
-	volume := utils.GetBigIntOrZero(swap.AmountOfMainToken)
-	volumeInUsd := volume.Mul(volume, utils.GetBigIntOrZero(swap.Price))
-
-	// amount 乘了1e36 的基数
-	volumeInUsd = volumeInUsd.Div(volumeInUsd, config.AmountBaseFactor1e36)
-
-	// price有乘以1e18, 要去掉, 此时由于已经是eth或者usd, 所以除以1e9防止误差即可
-	volumeInUsd = volumeInUsd.Div(volumeInUsd, big.NewInt(1e9))
-
-	floatWithoutDecimal, _ := new(big.Float).SetInt(volumeInUsd).Float64()
+	volumeInUsd := swap.AmountOfMainToken * swap.Price
 
 	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
-		swap.VolumeInUsd = floatWithoutDecimal / 1e9
+		swap.VolumeInUsd = volumeInUsd
 	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
-		swap.VolumeInUsd = floatWithoutDecimal * swap.CurrentEthPrice / 1e9
+		swap.VolumeInUsd = volumeInUsd * swap.CurrentEthPrice
 	} else {
 		swap.VolumeInUsd = 0
 	}

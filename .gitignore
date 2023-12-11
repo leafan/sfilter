@@ -25,5 +25,5 @@ sfilter*
 sapi*
 .vscode
 
-
+.env
 

@@ -16,19 +16,19 @@ import (
 )
 
 func GetPair(c *gin.Context) {
-    address := c.DefaultQuery("address", "")
+	address := c.DefaultQuery("address", "")
 	if !utils.IsValidEthereumAddress(address) {
-        utils.ResFailure(c, 500, "invalid params")
+		utils.ResFailure(c, 500, "invalid params")
 		return
-    }
+	}
 
-    data, err := pair.GetPairInfoForRead(address)
-    if err != nil {
-        utils.ResFailure(c, 500, err.Error())
+	data, err := pair.GetPairInfoForRead(address)
+	if err != nil {
+		utils.ResFailure(c, 500, err.Error())
 		return
-    }
+	}
 
-    utils.ResSuccess(c, data)
+	utils.ResSuccess(c, data)
 }
 
 // hot pair(token): 最近n天 24h tx 数排名
@@ -36,7 +36,7 @@ func GetPair(c *gin.Context) {
 func GetHotPairs(c *gin.Context) {
 	filter := parsePairFilterOptions(c)
 
-	options, err := parsePairOptions(c,filter)
+	options, err := parsePairOptions(c, filter)
 	if err != nil {
 		return
 	}
@@ -62,7 +62,6 @@ func GetHotPairs(c *gin.Context) {
 	utils.ResSuccess(c, data)
 }
 
-
 // 要根据排序条件, 增加查询条件
 func parsePairOptions(c *gin.Context, filter *primitive.M) (*options.FindOptions, error) {
 	page, limit, err := utils.ParsePageLimitParams(c)
@@ -74,8 +73,8 @@ func parsePairOptions(c *gin.Context, filter *primitive.M) (*options.FindOptions
 	skip := int64(page*limit - limit)
 	options := &options.FindOptions{Limit: &limit, Skip: &skip}
 
-    sort := bson.D{}
-	
+	sort := bson.D{}
+
 	// 获取排序
 	var key string
 	var order = -1
@@ -90,29 +89,33 @@ func parsePairOptions(c *gin.Context, filter *primitive.M) (*options.FindOptions
 			order = 1
 		}
 
-        sort = append(sort, bson.E{Key: key, Value: order})
+		(*filter)[key] = bson.M{
+			"$ne": nil,
+		}
 
-        // 如果是根据时间排序, 由于db是由swap触发更新, 如果这段时间没有更新, 则数据是老的
-        // 因此如果是根据1h/24h等排序，则只过滤出近期数据有更新的data
-        if key=="txNumIn1h" || key=="txNumChangeIn1h" || key=="priceChangeIn1h" || key=="volumeByUsdIn1h" {
-            date := time.Now().Add(-1 * time.Hour)
-            (*filter)["updatedAt"] = bson.M{
-                "$gte": date,
-            }
-        }
+		sort = append(sort, bson.E{Key: key, Value: order})
 
-        if key=="txNumIn24h" || key=="txNumChangeIn24h" || key=="priceChangeIn24h" || key=="volumeByUsdIn24h" {
-            date := time.Now().Add(-24 * time.Hour)
-            (*filter)["updatedAt"] = bson.M{
-                "$gte": date,
-            }
-        }
+		// 如果是根据时间排序, 由于db是由swap触发更新, 如果这段时间没有更新, 则数据是老的
+		// 因此如果是根据1h/24h等排序，则只过滤出近期数据有更新的data
+		if key == "txNumIn1h" || key == "txNumChangeIn1h" || key == "priceChangeIn1h" || key == "volumeByUsdIn1h" {
+			date := time.Now().Add(-1 * time.Hour)
+			(*filter)["updatedAt"] = bson.M{
+				"$gte": date,
+			}
+		}
+
+		if key == "txNumIn24h" || key == "txNumChangeIn24h" || key == "priceChangeIn24h" || key == "volumeByUsdIn24h" {
+			date := time.Now().Add(-24 * time.Hour)
+			(*filter)["updatedAt"] = bson.M{
+				"$gte": date,
+			}
+		}
 	}
 
-    sort = append(sort, bson.E{Key: "txNumIn1h", Value: -1}, bson.E{Key: "UpdateAt", Value: -1})
-    options = options.SetSort(sort)
-	
-    return options, nil
+	sort = append(sort, bson.E{Key: "txNumIn1h", Value: -1}, bson.E{Key: "UpdateAt", Value: -1})
+	options = options.SetSort(sort)
+
+	return options, nil
 }
 
 func parsePairFilterOptions(c *gin.Context) *primitive.M {
@@ -143,8 +146,6 @@ func parsePairFilterOptions(c *gin.Context) *primitive.M {
 
 	return &filter
 }
-
-
 
 func updateWrongData(info []schema.Pair) {
 	for _, _pair := range info {

@@ -27,6 +27,8 @@ func handlePairCreated(block *schema.Block, _log *types.Log, mongodb *mongo.Clie
 	if _pair != nil {
 		log.Printf("[ handlePairCreated ] pair: %v, tx: %v\n\n", _pair, _log.TxHash)
 
+		block.PairCreatedNum++
+
 		updateTokenInfo(_pair, mongodb)
 
 		// 插入或更新pair

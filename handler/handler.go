@@ -101,7 +101,7 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	// record the proceeded block.
 	setBlockToProceeded(blk, mongodb)
 
-	log.Printf("[ handleOneBlock ] handle block: %d finished, swap num: %v, time elapsed: % v\n\n", blk.Block.NumberU64(), blk.TxNums, time.Since(start))
+	log.Printf("\033[0;34mHandle block: %d finished, swap num: %v, time elapsed: % v\033[0m\n\n", blk.Block.NumberU64(), blk.TxNums, time.Since(start))
 }
 
 func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {

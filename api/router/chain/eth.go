@@ -21,7 +21,7 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 
 		// pair
 		{
-            ethGroup.GET("/pair", eth.GetPair)
+			ethGroup.GET("/pair", eth.GetPair)
 
 			// 优秀的pair列表. 默认筛选最近30天add的池子(是个选项); 按24h成交数排序
 			// 支持其他方式排序;
@@ -50,13 +50,9 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 			ethGroup.GET("/liquidity", eth.GetLiquidityEvent)
 		}
 
-		// block
+		// trend
 		{
-			// 所有的最新 block 集合, 支持 token, pair, operator 等条件查询
-			// ethGroup.GET("/blocks", eth.GetNewPairs)
-
-			// 某区块下的所有信息, 含swaps集合
-			// ethGroup.GET("/block/:no", eth.GetNewPairs)
+			ethGroup.GET("/pairtrend", eth.GetPriceAndTxTrends)
 		}
 	}
 

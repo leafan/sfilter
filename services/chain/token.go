@@ -45,21 +45,6 @@ func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) 
 				result.Decimal = decimals.(uint8)
 			}
 
-			symbol, err2 := getSingleProp(address, "symbol", getClient(), nil)
-			if err2 != nil {
-				// 再取一次, 还失败就不要了
-				symbol, err21 := getSingleBackupProp(address, "symbol", getClient(), nil)
-				if err21 != nil {
-					// symbol必须取到, pair需要用
-					return nil, err21
-				}
-
-				symbol2 := symbol.([32]byte)
-				result.Symbol = string(bytes.TrimRight(symbol2[:], "\x00"))
-			} else {
-				result.Symbol = symbol.(string)
-			}
-
 			// name和totalsupply没取到也没事
 			name, err3 := getSingleProp(address, "name", getClient(), nil)
 			if err3 != nil {
@@ -70,6 +55,26 @@ func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) 
 				}
 			} else {
 				result.Name = name.(string)
+			}
+
+			symbol, err2 := getSingleProp(address, "symbol", getClient(), nil)
+			if err2 != nil {
+				// 再取一次, 还失败就不要了
+				symbol, err21 := getSingleBackupProp(address, "symbol", getClient(), nil)
+				if err21 != nil {
+					// 如果name存在, 则把name赋值给symbol
+					if result.Name != "" {
+						result.Symbol = result.Name
+					} else {
+						// symbol必须取到, pair需要用
+						return nil, err21
+					}
+				} else {
+					symbol2 := symbol.([32]byte)
+					result.Symbol = string(bytes.TrimRight(symbol2[:], "\x00"))
+				}
+			} else {
+				result.Symbol = symbol.(string)
 			}
 
 			totalsupply, err4 := getSingleProp(address, "totalSupply", getClient(), nil)

@@ -89,15 +89,23 @@ func GeneratePairName(pair *schema.Pair, token0, token1 *schema.Token) {
 		pair.PairName = fmt.Sprintf("%s/%s", token1.Symbol, token0.Symbol)
 	}
 
+	// 更新下 pair.Type
+	if pair.Type == 0 {
+		pair.Type = getPairTypeFromChain(pair.Address)
+	}
+
 	// 再加上UniV2 or UniV3等尾巴
 	if pair.Type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
 		pair.PairName = fmt.Sprintf("%s_%s", pair.PairName, "UniV2")
 	} else if pair.Type == schema.SWAP_EVENT_UNISWAPV3_LIKE {
 		pair.PairName = fmt.Sprintf("%s_%s", pair.PairName, "UniV3")
-	} else {
-		// pair.PairName = fmt.Sprintf("%s_%s", pair.PairName, "")
-		//  暂时不变, 因为有时候回溯导致没有 pair_reat 事件而Unknown
 	}
+}
+
+func getPairTypeFromChain(address string) int {
+	_type, _ := chain.GetUniPoolType(address)
+
+	return _type
 }
 
 func TEST_PAIR() {

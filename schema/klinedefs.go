@@ -52,7 +52,7 @@ type KLine struct {
 	HighPrice  float64 `bson:"highPrice" json:"highPrice"`
 	LowPrice   float64 `bson:"lowPrice" json:"lowPrice"`
 
-	Volume string `bson:"volume" json:"volume"`
+	Volume float64 `bson:"volume" json:"volume"`
 
 	// 作用: 由于为了节省表行数, 因此一个字段有多个k线数据
 	// 因此增加一个 时间 表示当前KLine表述时间

@@ -35,8 +35,8 @@ func Get1HourKlineWithFullGenerated(pair string, end time.Time, days int, mongod
 					kline.HighPrice = last.ClosePrice
 					kline.LowPrice = last.ClosePrice
 
-					// 加1分钟
-					kline.UnixTime = last.UnixTime + 60
+					// 加60min...
+					kline.UnixTime = last.UnixTime + 60*60
 				}
 
 				// 如果当前时间超出end, 则返回, 但不管start

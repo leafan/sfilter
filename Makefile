@@ -1,6 +1,24 @@
-.PHONY: api filter run ps build stop restart 
+.PHONY: api filter run ps build stop restart  creat
 
 default: build
+
+creat:
+	@make build
+
+	@echo "\n\033[0;34mKill process...\033[0m"
+	pkill -f '^.*sfilter_creat$$' 2>&1 || true
+	pkill -f '^.*sapi_creat$$' 2>&1 || true
+
+	@echo "\n\033[0;34mCopy file...\033[0m"
+	cp sfilter /data_v1/deepeye/sfilter_creat
+	cp sapi /data_v1/deepeye/sapi_creat
+
+	@echo "\n\033[0;34mStart process...\033[0m"
+
+	cd /data_v1/deepeye/ && nohup ./sapi_creat > /var/local/log/sapi_creat.log 2>&1 &
+	cd /data_v1/deepeye/ && nohup ./sfilter_creat > /var/local/log/sfilter_creat.log 2>&1 &
+
+	@echo "\n\033[0;34mFinished...\033[0m"
 
 run:
 	@make start

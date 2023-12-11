@@ -49,7 +49,6 @@ func GetTrendsByTimeRange(start, end time.Time, mongodb *mongo.Client) ([]schema
 		log.Printf("[ GetTrendsByTimeRange ] cursor.All error: %v, filter: %v\n", err, filter)
 	}
 
-	// log.Printf("[ GetTrendsByTimeRange ] find success. len: %v, filter: %v\n", len(result), filter)
 	return result, err
 }
 

@@ -22,9 +22,10 @@ type Block struct {
 	BlockNo   uint64
 	BlockTime time.Time
 
-	TxNums      int
-	VolumeByUsd float64
-	EthPrice    float64
+	TxNums         int
+	PairCreatedNum int
+	VolumeByUsd    float64
+	EthPrice       float64
 
 	Transactions []*Transaction
 }

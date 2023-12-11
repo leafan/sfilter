@@ -59,33 +59,47 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 		token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
 		token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.Decimal)), nil)
 		if swap.MainToken == swap.Token0 {
+			swap.AmountOfMainBig = amount0Out.String()
+			swap.AmountOfQuoteBig = amount1In.String()
+
 			calculatePrice := new(big.Int).Mul(amount1In, token0Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, config.BaseFactor1e18)
 			calculatePrice.Div(calculatePrice, token1Exponent)
 			calculatePrice.Div(calculatePrice, amount0Out)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
+			swap.Price = tmpFloat / 1e18
 
-			amount0Out = amount0Out.Mul(amount0Out, config.AmountBaseFactor1e36)
+			amount0Out = amount0Out.Mul(amount0Out, config.BaseFactor1e18)
 			amount0Out = amount0Out.Div(amount0Out, token0Exponent)
-			swap.AmountOfMainToken = amount0Out.String()
+
+			tmpFloat, _ = amount0Out.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
+
 
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 
 			//log.Println("[ updateUniV2Swap ] debug... price : ", amount0Out, amount1In, token0Exponent, token1Exponent, calculatePrice)
 		} else if amount1In.Cmp(big.NewInt(0)) > 0 {
+			swap.AmountOfMainBig = amount1In.String()
+			swap.AmountOfQuoteBig = amount0Out.String()
+
 			calculatePrice := new(big.Int).Mul(amount0Out, token1Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, (config.BaseFactor1e18))
 			calculatePrice.Div(calculatePrice, token0Exponent)
 			calculatePrice.Div(calculatePrice, amount1In)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
+			swap.Price = tmpFloat / 1e18
 
-			amount1In = amount1In.Mul(amount1In, config.AmountBaseFactor1e36)
+			amount1In = amount1In.Mul(amount1In, config.BaseFactor1e18)
 			amount1In = amount1In.Div(amount1In, token1Exponent)
-			swap.AmountOfMainToken = amount1In.String()
+
+			tmpFloat, _ = amount1In.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
+
 
 			//log.Println("[ updateUniV2Swap ] debug... price :\n\n", amount1In, amount0Out, token0Exponent, token1Exponent, calculatePrice)
 		}
@@ -95,31 +109,43 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 		token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
 		token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.Decimal)), nil)
 		if swap.MainToken == swap.Token0 {
+			swap.AmountOfMainBig = amount0In.String()
+			swap.AmountOfQuoteBig = amount1Out.String()
+
 			calculatePrice := new(big.Int).Mul(amount1Out, token0Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, config.BaseFactor1e18)
 			calculatePrice.Div(calculatePrice, token1Exponent)
 			calculatePrice.Div(calculatePrice, amount0In)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
+			swap.Price = tmpFloat / 1e18
 
-			amount0In = amount0In.Mul(amount0In, config.AmountBaseFactor1e36)
+			amount0In = amount0In.Mul(amount0In, config.BaseFactor1e18)
 			amount0In = amount0In.Div(amount0In, token0Exponent)
-			swap.AmountOfMainToken = amount0In.String()
+
+			tmpFloat, _ = amount0In.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
 
 			// log.Println("[ updateUniV2Swap ] debug... price :\n\n", amount0Out, amount1In, token0Exponent, token1Exponent, calculatePrice)
 		} else if amount1Out.Cmp(big.NewInt(0)) > 0 {
+			swap.AmountOfMainBig = amount1Out.String()
+			swap.AmountOfQuoteBig = amount0In.String()
+
 			calculatePrice := new(big.Int).Mul(amount0In, token1Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, config.BaseFactor1e18)
 			calculatePrice.Div(calculatePrice, token0Exponent)
 			calculatePrice.Div(calculatePrice, amount1Out)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
+			swap.Price = tmpFloat / 1e18
 
-			amount1Out = amount1Out.Mul(amount1Out, config.AmountBaseFactor1e36)
+			amount1Out = amount1Out.Mul(amount1Out, config.BaseFactor1e18)
 			amount1Out = amount1Out.Div(amount1Out, token1Exponent)
-			swap.AmountOfMainToken = amount1Out.String()
+
+			tmpFloat, _ = amount1Out.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 
@@ -172,67 +198,83 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 	token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.Decimal)), nil)
 	token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.Decimal)), nil)
 	if swap.MainToken == swap.Token0 {
+		swap.AmountOfMainBig = amount0.String()
+		swap.AmountOfQuoteBig = amount1.String()
 		if amount0.Cmp(big.NewInt(0)) > 0 && amount1.Cmp(big.NewInt(0)) < 0 {
-
 			amount1 = new(big.Int).Sub(big.NewInt(0), amount1)
 			calculatePrice := new(big.Int).Mul(amount1, token0Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, config.BaseFactor1e18)
 			calculatePrice.Div(calculatePrice, token1Exponent)
 			calculatePrice.Div(calculatePrice, amount0)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
 
-			amount0 = amount0.Mul(amount0, config.AmountBaseFactor1e36)
+			swap.Price = tmpFloat / 1e18
+			amount0 = amount0.Mul(amount0, config.BaseFactor1e18)
 			amount0 = amount0.Div(amount0, token0Exponent)
-			swap.AmountOfMainToken = amount0.String()
+
+			tmpFloat, _ = amount0.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
 		} else if amount0.Cmp(big.NewInt(0)) < 0 && amount1.Cmp(big.NewInt(0)) > 0 {
+
 			amount0 = new(big.Int).Sub(big.NewInt(0), amount0)
 			calculatePrice := new(big.Int).Mul(amount1, token0Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, config.BaseFactor1e18)
 			calculatePrice.Div(calculatePrice, token1Exponent)
 			calculatePrice.Div(calculatePrice, amount0)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
+			swap.Price = tmpFloat / 1e18
 
-			amount0 = amount0.Mul(amount0, config.AmountBaseFactor1e36)
+			amount0 = amount0.Mul(amount0, config.BaseFactor1e18)
 			amount0 = amount0.Div(amount0, token0Exponent)
-			swap.AmountOfMainToken = amount0.String()
+
+			tmpFloat, _ = amount0.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 		}
 	}
 
 	if swap.MainToken == swap.Token1 {
+		swap.AmountOfMainBig = amount1.String()
+		swap.AmountOfQuoteBig = amount0.String()
 		if amount0.Cmp(big.NewInt(0)) > 0 && amount1.Cmp(big.NewInt(0)) < 0 {
 
 			amount1 = new(big.Int).Sub(big.NewInt(0), amount1)
 			calculatePrice := new(big.Int).Mul(amount0, token1Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, config.BaseFactor1e18)
 			calculatePrice.Div(calculatePrice, token0Exponent)
 			calculatePrice.Div(calculatePrice, amount1)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
+			swap.Price = tmpFloat / 1e18
 
-			amount1 = amount1.Mul(amount1, config.AmountBaseFactor1e36)
+			amount1 = amount1.Mul(amount1, config.BaseFactor1e18)
 			amount1 = amount1.Div(amount1, token1Exponent)
-			swap.AmountOfMainToken = amount1.String()
+
+			tmpFloat, _ = amount1.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 		} else if amount0.Cmp(big.NewInt(0)) < 0 && amount1.Cmp(big.NewInt(0)) > 0 {
 
 			amount0 = new(big.Int).Sub(big.NewInt(0), amount0)
 			calculatePrice := new(big.Int).Mul(amount0, token1Exponent)
-			calculatePrice.Mul(calculatePrice, big.NewInt(config.PriceBaseFactor))
+			calculatePrice.Mul(calculatePrice, config.BaseFactor1e18)
 			calculatePrice.Div(calculatePrice, token0Exponent)
 			calculatePrice.Div(calculatePrice, amount1)
 
-			swap.Price = calculatePrice.String()
+			tmpFloat, _ := calculatePrice.Float64()
+			swap.Price = tmpFloat / 1e18
 
-			amount1 = amount1.Mul(amount1, config.AmountBaseFactor1e36)
+			amount1 = amount1.Mul(amount1, config.BaseFactor1e18)
 			amount1 = amount1.Div(amount1, token1Exponent)
-			swap.AmountOfMainToken = amount1.String()
+
+			tmpFloat, _ = amount1.Float64()
+			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
 		}

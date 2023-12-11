@@ -17,8 +17,17 @@ type GlobalInfo struct {
 
 	TransactionInfo `bson:",inline"`
 	OnChainInfo     `bson:",inline"`
+	PairCreatedInfo `bson:",inline"`
 
 	UpdatedAt time.Time `json:"-" bson:"updatedAt"`
+}
+
+type PairCreatedInfo struct {
+	PairCreatedNumIn1h    int     `json:"pairCreatedNumIn1h" bson:"pairCreatedNumIn1h"`
+	PairCreatedChangeIn1h float32 `json:"pairCreatedChangeIn1h" bson:"pairCreatedChangeIn1h"`
+
+	PairCreatedNumIn24h    int     `json:"pairCreatedNumIn24h" bson:"pairCreatedNumIn24h"`
+	PairCreatedChangeIn24h float32 `json:"pairCreatedChangeIn24h" bson:"pairCreatedChangeIn24h"`
 }
 
 type OnChainInfo struct {
@@ -46,9 +55,10 @@ type GlobalTrend struct {
 	// 以 Day_Hour_Minute作为key即可
 	TimelineKey string `json:"timelineKey" bson:"timelineKey"`
 
-	TxNums      int     `json:"txNums" bson:"txNums"`
-	BaseGas     int64   `json:"baseGas" bson:"baseGas"` // Int64足够用了
-	VolumeByUsd float64 `json:"volumeByUsd" bson:"volumeByUsd"`
+	TxNums         int     `json:"txNums" bson:"txNums"`
+	PairCreatedNum int     `json:"pairCreatedNum" bson:"pairCreatedNum"`
+	BaseGas        int64   `json:"baseGas" bson:"baseGas"` // Int64足够用了
+	VolumeByUsd    float64 `json:"volumeByUsd" bson:"volumeByUsd"`
 
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"` // 保存7天差不多了
 
