@@ -21,8 +21,8 @@
 go.work
 
 *.log
-sfilter*
-sapi*
+sfilter
+sapi
 .vscode
 
 .env
