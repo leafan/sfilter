@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"log"
 	"math/big"
 	"sync"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"sfilter/schema"
 	service_block "sfilter/services/block"
 	"sfilter/services/chain"
+	"sfilter/utils"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,14 +29,14 @@ func HandleBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.
 func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	curBlkNo, err := client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		log.Fatal("[ Retrive_old_blocks ] HeaderByNumber err: ", err)
+		utils.Fatalf("[ Retrive_old_blocks ] HeaderByNumber err: ", err)
 	}
 
 	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
 	if config.StartRetriveBlock > 0 && startBlock > int64(config.StartRetriveBlock) {
 		startBlock = int64(config.StartRetriveBlock)
 	}
-	log.Println("[ Retrive_old_blocks ] retrive now.. start block: ", startBlock)
+	utils.Infof("[ Retrive_old_blocks ] retrive now.. start block: %v", startBlock)
 
 	var ethPrice float64
 	times := 0
@@ -101,7 +101,7 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	// record the proceeded block.
 	setBlockToProceeded(blk, mongodb)
 
-	log.Printf("\033[0;34mHandle block: %d finished, swap num: %v, time elapsed: % v\033[0m\n\n", blk.Block.NumberU64(), blk.TxNums, time.Since(start))
+	utils.Debugf("Handle block: %d finished, swap num: %v, time elapsed: % v\n", blk.Block.NumberU64(), blk.TxNums, time.Since(start))
 }
 
 func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {

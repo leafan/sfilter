@@ -2,9 +2,9 @@ package global
 
 import (
 	"context"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -37,7 +37,7 @@ func UpdateGlobalInfo(info *schema.GlobalInfo, mongodb *mongo.Client) {
 
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
-		log.Printf("[ UpsertTrends ] failed. err: %v\n", err)
+		utils.Warnf("[ UpsertTrends ] failed. err: %v\n", err)
 	}
 
 }

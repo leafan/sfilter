@@ -2,9 +2,9 @@ package pair
 
 import (
 	"context"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 	"sync"
 	"time"
 
@@ -36,7 +36,7 @@ func UpdatePoolInfo(address string, traderInfo *schema.InfoOnPools, mongodb *mon
 
 	_, err := collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		log.Printf("[ UpdatePoolInfo ] failed. pair: %v, err: %v\n", address, err)
+		utils.Warnf("[ UpdatePoolInfo ] failed. pair: %v, err: %v\n", address, err)
 	}
 }
 
@@ -68,7 +68,7 @@ func UpSertOnChainInfo(address string, infoOnChain *schema.InfoOnChain, mongodb 
 
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
-		log.Printf("[ UpSertOnChainInfo ] failed. pair: %v, err: %v\n", address, err)
+		utils.Warnf("[ UpSertOnChainInfo ] failed. pair: %v, err: %v\n", address, err)
 	}
 }
 
@@ -101,7 +101,7 @@ func UpSertPairCreatedInfo(pair *schema.Pair, mongodb *mongo.Client) {
 
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
-		log.Printf("[ UpSertPairCreatedInfo ] failed. pair: %v, err: %v\n", pair.Address, err)
+		utils.Warnf("[ UpSertPairCreatedInfo ] failed. pair: %v, err: %v\n", pair.Address, err)
 	}
 }
 
@@ -126,6 +126,6 @@ func UpdateTradeInfo(pair *schema.Pair, mongodb *mongo.Client) {
 
 	_, err := collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		log.Printf("[ UpdateTradeInfo ] failed. pair: %v, err: %v\n", pair.Address, err)
+		utils.Warnf("[ UpdateTradeInfo ] failed. pair: %v, err: %v\n", pair.Address, err)
 	}
 }

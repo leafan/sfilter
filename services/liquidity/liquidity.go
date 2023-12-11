@@ -2,9 +2,9 @@ package liquidity
 
 import (
 	"context"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,21 +22,21 @@ func GetLiquidityEvents(findOpt *options.FindOptions, filter *primitive.M, mongo
 	cursor, err := collection.Find(ctx, filter, findOpt)
 	if err != nil {
 		if err != mongo.ErrNoDocuments {
-			log.Printf("[ GetLiquidityEvents ] Find error: %v\n", err)
+			utils.Warnf("[ GetLiquidityEvents ] Find error: %v\n", err)
 		}
 
 		return result, 0, err
 	}
 	defer cursor.Close(ctx)
-    
-    countOpts := &options.CountOptions {
-        Limit: &config.COUNT_UPPER_SIZE,
-    }
-    countOpts.SetMaxTime(config.MONGO_FIND_TIMEOUT * time.Second)
+
+	countOpts := &options.CountOptions{
+		Limit: &config.COUNT_UPPER_SIZE,
+	}
+	countOpts.SetMaxTime(config.MONGO_FIND_TIMEOUT * time.Second)
 
 	totalCount, err := collection.CountDocuments(ctx, filter, countOpts)
 	if err != nil {
-		log.Printf("[ GetLiquidityEvents ] Count error: %v\n", err)
+		utils.Warnf("[ GetLiquidityEvents ] Count error: %v\n", err)
 		return result, 0, err // 返回总数为0
 	}
 

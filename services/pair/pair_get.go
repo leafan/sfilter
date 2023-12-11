@@ -2,9 +2,9 @@ package pair
 
 import (
 	"context"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,14 +25,14 @@ func GetHotPairs(findOpt *options.FindOptions, filter *primitive.M, mongodb *mon
 	}
 	defer cursor.Close(ctx)
 
-    countOpts := &options.CountOptions {
-        Limit: &config.COUNT_UPPER_SIZE,
-    }
-    countOpts.SetMaxTime(config.MONGO_FIND_TIMEOUT * time.Second)
+	countOpts := &options.CountOptions{
+		Limit: &config.COUNT_UPPER_SIZE,
+	}
+	countOpts.SetMaxTime(config.MONGO_FIND_TIMEOUT * time.Second)
 
 	totalCount, err := collection.CountDocuments(ctx, filter, countOpts)
 	if err != nil {
-		log.Printf("[ GetHotPairs ] Count error: %v\n", err)
+		utils.Warnf("[ GetHotPairs ] Count error: %v\n", err)
 		return result, 0, err
 	}
 

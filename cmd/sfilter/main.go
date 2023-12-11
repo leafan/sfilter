@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"math/big"
 
@@ -15,17 +14,18 @@ import (
 	"sfilter/config"
 	"sfilter/handler"
 	"sfilter/schema"
+	"sfilter/utils"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func test() {
-	fmt.Printf("\n\n****** \033[0;34mDebug start \033[0m ******\n\n")
+	utils.Infof("****** Debug start ******\n\n")
 
 	// chain.TEST_POOL()
 
-	fmt.Printf("****** \033[0;34mDebug end \033[0m ******\n\n\n")
+	utils.Infof("****** Debug end  ******\n\n\n")
 }
 
 func main() {
@@ -38,9 +38,10 @@ func main() {
 	client, mongodb := _init(*db)
 
 	if *block != 0 {
-		fmt.Printf("\n\n\n\033[0;34mStart block test now...\033[0m\n\n\n")
+		utils.Infof("\n\n\nStart block test now...\n\n\n")
 		handler.HandleBlock(big.NewInt(*block), client, mongodb)
-		fmt.Printf("\n\n\033[0;34mFinished block test...\033[0m\n\n")
+		utils.Infof("\n\nFinished block test...\n\n")
+
 		return
 	}
 
@@ -78,16 +79,16 @@ func loop(client *ethclient.Client, mongodb *mongo.Client) {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("[ loop ] start SubscribeNewHead now..\n\n")
+	utils.Infof("[ loop ] start SubscribeNewHead now..\n\n")
 
 	for {
 		select {
 		case err := <-sub.Err():
-			log.Fatal("SubscribeBlocks error: ", err)
+			utils.Fatalf("SubscribeBlocks error: ", err)
 			return
 
 		case header := <-headers:
-			log.Printf("\033[0;34m[ loop ] get new header now. number: %v\033[0m\n\n", header.Number)
+			utils.Infof("[ loop ] Get new header now. number: %v\n", header.Number)
 			go handler.HandleBlock(header.Number, client, mongodb)
 		}
 

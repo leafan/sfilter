@@ -2,9 +2,9 @@ package token
 
 import (
 	"context"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 	"sync"
 	"time"
 
@@ -26,7 +26,7 @@ func SaveTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 
 	_, err := collection.InsertOne(context.Background(), token)
 	if err != nil {
-		log.Printf("[ SaveTokenInfo ] InsertOne error: %v, token: %v\n", err, token.Address)
+		utils.Warnf("[ SaveTokenInfo ] InsertOne error: %v, token: %v\n", err, token.Address)
 		return
 	}
 
@@ -54,7 +54,7 @@ func UpdateTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
-		log.Printf("[ UpdateTokenInfo ] UpdateOne error: %v, token: %v\n", err, token.Address)
+		utils.Warnf("[ UpdateTokenInfo ] UpdateOne error: %v, token: %v\n", err, token.Address)
 		return
 	}
 

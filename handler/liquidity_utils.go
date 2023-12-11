@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"math/big"
 	"sfilter/schema"
 	"sfilter/utils"
@@ -24,7 +23,7 @@ func parseUniV2AddLiquidity(l *types.Log, tx *schema.Transaction) *schema.Liquid
 
 		sender, err := types.Sender(types.NewLondonSigner(tx.OriginTx.ChainId()), tx.OriginTx)
 		if err != nil {
-			log.Printf("[ parseUniV2AddLiquidity ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
+			utils.Warnf("[ parseUniV2AddLiquidity ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
 		} else {
 			event.Operator = sender.String()
 		}
@@ -51,7 +50,7 @@ func parseUniV3AddLiquidity(l *types.Log, tx *schema.Transaction) *schema.Liquid
 
 		sender, err := types.Sender(types.NewLondonSigner(tx.OriginTx.ChainId()), tx.OriginTx)
 		if err != nil {
-			log.Printf("[ parseLiquidityEvent ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
+			utils.Warnf("[ parseLiquidityEvent ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
 		} else {
 			event.Operator = sender.String()
 		}
@@ -77,7 +76,7 @@ func parseUniV2RemoveLiquidity(l *types.Log, tx *schema.Transaction) *schema.Liq
 
 		sender, err := types.Sender(types.NewLondonSigner(tx.OriginTx.ChainId()), tx.OriginTx)
 		if err != nil {
-			log.Printf("[ parseUniV2RemoveLiquidity ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
+			utils.Warnf("[ parseUniV2RemoveLiquidity ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
 		} else {
 			event.Operator = sender.String()
 		}
@@ -104,7 +103,7 @@ func parseUniV3RemoveLiquidity(l *types.Log, tx *schema.Transaction) *schema.Liq
 
 		sender, err := types.Sender(types.NewLondonSigner(tx.OriginTx.ChainId()), tx.OriginTx)
 		if err != nil {
-			log.Printf("[ parseUniV3RemoveLiquidity ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
+			utils.Warnf("[ parseUniV3RemoveLiquidity ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
 		} else {
 			event.Operator = sender.String()
 		}

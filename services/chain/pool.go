@@ -3,9 +3,9 @@ package chain
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/big"
 	"sfilter/schema"
+	"sfilter/utils"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,7 +48,7 @@ func getPoolAddr(factoryAddr, token0, token1 common.Address, fee *big.Int) (comm
 
 	data, err := abi.Pack("getPool", token0, token1, fee)
 	if err != nil {
-		log.Printf("[ getPoolAddr ] Pack data error. factory: %v, err: %v\n", factoryAddr, err)
+		utils.Warnf("[ getPoolAddr ] Pack data error. factory: %v, err: %v", factoryAddr, err)
 		return pool, err
 	}
 	msg := ethereum.CallMsg{
@@ -59,13 +59,13 @@ func getPoolAddr(factoryAddr, token0, token1 common.Address, fee *big.Int) (comm
 
 	ret, err := getClient().CallContract(context.Background(), msg, nil)
 	if err != nil {
-		log.Printf("[ getPoolAddr ] CallContract error. addr: %v, factory: %v\n", factoryAddr, err)
+		utils.Debugf("[ getPoolAddr ] CallContract error. addr: %v, factory: %v\n", factoryAddr, err)
 		return pool, err
 	}
 
 	intr, err := abi.Methods["getPool"].Outputs.UnpackValues(ret)
 	if err != nil {
-		log.Printf("[ getPoolAddr ] UnpackValues error. factory: %v, err: %v\n", factoryAddr, err)
+		utils.Warnf("[ getPoolAddr ] UnpackValues error. factory: %v, err: %v\n", factoryAddr, err)
 		return pool, err
 	}
 
@@ -83,7 +83,7 @@ func getUniV3Position(postionManagerAddr string, tokenId *big.Int) (common.Addre
 
 	data, err := abi.Pack("positions", tokenId)
 	if err != nil {
-		log.Printf("[ getUniV3Position ] Pack data error. tokenId: %v, err: %v\n", tokenId, err)
+		utils.Warnf("[ getUniV3Position ] Pack data error. tokenId: %v, err: %v\n", tokenId, err)
 		return token0, token1, fee, err
 	}
 	msg := ethereum.CallMsg{
@@ -95,13 +95,13 @@ func getUniV3Position(postionManagerAddr string, tokenId *big.Int) (common.Addre
 	ret, err := getClient().CallContract(context.Background(), msg, nil)
 	if err != nil {
 		// 回溯历史的时候, 由于 tokenId可能已被burn, 这里是可能报错的
-		log.Printf("[ getUniV3Position ] CallContract error. addr: %v, tokenId: %v, err: %v\n", postionManagerAddr, tokenId, err)
+		utils.Debugf("[ getUniV3Position ] CallContract error. addr: %v, tokenId: %v, err: %v\n", postionManagerAddr, tokenId, err)
 		return token0, token1, fee, err
 	}
 
 	intr, err := abi.Methods["positions"].Outputs.UnpackValues(ret)
 	if err != nil {
-		log.Printf("[ getUniV3Position ] UnpackValues error. tokenId: %v, err: %v\n", tokenId, err)
+		utils.Warnf("[ getUniV3Position ] UnpackValues error. tokenId: %v, err: %v\n", tokenId, err)
 		return token0, token1, fee, err
 	}
 

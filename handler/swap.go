@@ -188,7 +188,7 @@ func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction)
 	// 解析发送者地址
 	sender, err := types.Sender(types.NewLondonSigner(tx.OriginTx.ChainId()), tx.OriginTx)
 	if err != nil {
-		log.Printf("[ newSwapStruct ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
+		utils.Warnf("[ newSwapStruct ] types.Sender err: %v, tx: %v\n", err, tx.OriginTx.Hash())
 	} else {
 		swap.Operator = sender.String()
 	}

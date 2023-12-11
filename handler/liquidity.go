@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"log"
 	"sfilter/schema"
 	"sfilter/services/liquidity"
 	"sfilter/services/pair"
+	"sfilter/utils"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -37,7 +37,7 @@ func handleAddLiquidity(block *schema.Block, tx *schema.Transaction, l *types.Lo
 
 		_pair, err := pair.GetPairInfo(event.PoolAddress, mongodb)
 		if err != nil || _pair == nil {
-			log.Printf("[ handleAddLiquidity ] no pair?!! err: %v, tx: %v\n", err, event.EventTxHash)
+			utils.Warnf("[ handleAddLiquidity ] no pair?!! err: %v, tx: %v\n", err, event.EventTxHash)
 			return
 		}
 

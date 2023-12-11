@@ -2,9 +2,9 @@ package kline
 
 import (
 	"context"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -32,7 +32,7 @@ func get1MinKlineByPair(pair string, start, end time.Time, mongodb *mongo.Client
 	cursor, err := collection.Find(ctx, filter, options)
 	if err != nil {
 		if err != mongo.ErrNoDocuments {
-			log.Printf("[ get1MinKlineByPair ] Find error: %v, filter: %v\n", err, filter)
+			utils.Warnf("[ get1MinKlineByPair ] Find error: %v, filter: %v\n", err, filter)
 		}
 
 		return result
@@ -40,7 +40,7 @@ func get1MinKlineByPair(pair string, start, end time.Time, mongodb *mongo.Client
 	defer cursor.Close(ctx)
 
 	if err := cursor.All(ctx, &result); err != nil {
-		log.Printf("[ get1MinKlineByPair ] cursor.All error: %v, filter: %v\n", err, filter)
+		utils.Warnf("[ get1MinKlineByPair ] cursor.All error: %v, filter: %v\n", err, filter)
 	}
 	// log.Printf("[ get1MinKlineByPair ] result: %v\n\n", result)
 
@@ -65,7 +65,7 @@ func get1HourKlineByPair(pair string, start, end time.Time, mongodb *mongo.Clien
 	cursor, err := collection.Find(ctx, filter, options)
 	if err != nil {
 		if err != mongo.ErrNoDocuments {
-			log.Printf("[ get1HourKlineByPair ] Find error: %v, filter: %v\n", err, filter)
+			utils.Warnf("[ get1HourKlineByPair ] Find error: %v, filter: %v\n", err, filter)
 		}
 
 		return result
@@ -73,9 +73,8 @@ func get1HourKlineByPair(pair string, start, end time.Time, mongodb *mongo.Clien
 	defer cursor.Close(ctx)
 
 	if err := cursor.All(ctx, &result); err != nil {
-		log.Printf("[ get1HourKlineByPair ] cursor.All error: %v, filter: %v\n", err, filter)
+		utils.Warnf("[ get1HourKlineByPair ] cursor.All error: %v, filter: %v\n", err, filter)
 	}
-	// log.Printf("[ get1HourKlineByPair ] result: %v\n\n", result)
 
 	return result
 }

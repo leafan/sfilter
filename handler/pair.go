@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"log"
 	"sfilter/schema"
 	"sfilter/services/chain"
 	"sfilter/services/pair"
+	"sfilter/utils"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,7 +25,7 @@ func HandlePairLogic(block *schema.Block, mongodb *mongo.Client) {
 func handlePairCreated(block *schema.Block, _log *types.Log, mongodb *mongo.Client) {
 	_pair := parsePairCreatedEvent(block, _log)
 	if _pair != nil {
-		log.Printf("[ handlePairCreated ] pair: %v, tx: %v\n\n", _pair, _log.TxHash)
+		utils.Debugf("[ handlePairCreated ] pair: %v, tx: %v", _pair, _log.TxHash)
 
 		block.PairCreatedNum++
 
@@ -41,7 +41,7 @@ func updateTokenInfo(_pair *schema.Pair, mongodb *mongo.Client) {
 	token1, err1 := chain.GetTokenInfo(_pair.Token1, mongodb)
 	if err0 != nil || err1 != nil {
 		// pair create的时候, 一般不会出错..
-		log.Printf("[ updateTokenInfo ] getTokenInfo error. token0: %v, err0: %v, token1: %v, err1: %v\n", _pair.Token0, err0, _pair.Token1, err1)
+		utils.Warnf("[ updateTokenInfo ] getTokenInfo error. token0: %v, err0: %v, token1: %v, err1: %v\n", _pair.Token0, err0, _pair.Token1, err1)
 
 		_pair.Decimal0 = 0
 		_pair.Decimal1 = 0

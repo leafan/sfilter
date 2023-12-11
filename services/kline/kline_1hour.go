@@ -6,6 +6,7 @@ import (
 	"log"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -41,7 +42,7 @@ func Update1HourKline(swap *schema.Swap, mongodb *mongo.Client) {
 
 	err := collection.FindOne(context.Background(), filter).Decode(&kline)
 	if err != nil && err != mongo.ErrNoDocuments {
-		log.Printf("[ update1HourKline ] FindOne error: %v, swap tx: %v\n", err, swap.LogIndexWithTx)
+		utils.Warnf("[ update1HourKline ] FindOne error: %v, swap tx: %v\n", err, swap.LogIndexWithTx)
 		return
 	}
 

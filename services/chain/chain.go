@@ -3,9 +3,9 @@ package chain
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/big"
 	"sfilter/config"
+	"sfilter/utils"
 	"strings"
 
 	"github.com/cloudfresco/ethblocks"
@@ -38,7 +38,7 @@ func getAbi() *abi.ABI {
 	if chainStaticAbi == nil {
 		abi, err := abi.JSON(strings.NewReader(ChainAbiJson))
 		if err != nil {
-			log.Fatal("getAbi error! err: ", err)
+			utils.Fatalf("getAbi error! err: ", err)
 		}
 
 		chainStaticAbi = &abi
@@ -51,7 +51,7 @@ func getBackupAbi() *abi.ABI {
 	if chainStaticBackupAbi == nil {
 		abi, err := abi.JSON(strings.NewReader(ChainAbiJsonBackup))
 		if err != nil {
-			log.Fatal("getBackupAbi error! err: ", err)
+			utils.Fatalf("getBackupAbi error! err: ", err)
 		}
 
 		chainStaticBackupAbi = &abi
@@ -65,7 +65,7 @@ func getMongo() *mongo.Client {
 		clientOptions := options.Client().ApplyURI(config.MONGO_ADDR)
 		mongodb, err := mongo.Connect(context.Background(), clientOptions)
 		if err != nil {
-			log.Fatal("getMongo error! err: ", err)
+			utils.Fatalf("getMongo error! err: ", err)
 		}
 
 		mongoClient = mongodb
@@ -78,7 +78,7 @@ func getClient() *ethclient.Client {
 	if staticClient == nil {
 		cli, err := ethblocks.GetClient(config.WS_ADDR)
 		if err != nil {
-			log.Fatal("getClient error! err: ", err)
+			utils.Fatalf("getClient error! err: ", err)
 		}
 
 		staticClient = cli
@@ -91,7 +91,7 @@ func getInfuraClient() *ethclient.Client {
 	if infuraClient == nil {
 		cli, err := ethblocks.GetClient(config.INFURA_KEY_ADDR)
 		if err != nil {
-			log.Fatal("infuraClient error! err: ", err)
+			utils.Fatalf("infuraClient error! err: ", err)
 		}
 
 		infuraClient = cli
@@ -147,7 +147,7 @@ func IsContract(address string) bool {
 
 	data, err := abi.Pack("isContract", common.HexToAddress(address))
 	if err != nil {
-		log.Printf("[ IsContract ] Pack data error. addr: %v, err: %v\n", address, err)
+		utils.Warnf("[ IsContract ] Pack data error. addr: %v, err: %v", address, err)
 		return false
 	}
 	msg := ethereum.CallMsg{
@@ -158,13 +158,13 @@ func IsContract(address string) bool {
 
 	ret, err := getClient().CallContract(context.Background(), msg, nil)
 	if err != nil {
-		log.Printf("[ IsContract ] CallContract error. addr: %v, err: %v\n", address, err)
+		utils.Debugf("[ IsContract ] CallContract error. addr: %v, err: %v", address, err)
 		return false
 	}
 
 	intr, err := abi.Methods["isContract"].Outputs.UnpackValues(ret)
 	if err != nil {
-		log.Printf("[ IsContract ] UnpackValues error. addr: %v, err: %v\n", address, err)
+		utils.Debugf("[ IsContract ] UnpackValues error. addr: %v, err: %v", address, err)
 		return false
 	}
 
@@ -182,7 +182,7 @@ func GetEthPrice(client *ethclient.Client, height *big.Int) float64 {
 	priceSqrt, err := getSingleProp(ETH_UNI_POOL, "slot0", client, height)
 
 	if err != nil {
-		log.Printf("[ GetEthPrice ] getSingleProp error: %v, height: %v\n", err, height)
+		utils.Warnf("[ GetEthPrice ] getSingleProp error: %v, height: %v\n", err, height)
 		return 0
 	}
 
@@ -201,7 +201,7 @@ func GetEthPrice(client *ethclient.Client, height *big.Int) float64 {
 
 	ret = float64(int(ret*100)) / 100
 
-	log.Printf("[ GetEthPrice ] block height: %v, price: %v\n\n", height, ret)
+	utils.Debugf("[ GetEthPrice ] block height: %v, price: %v", height, ret)
 	return ret
 }
 

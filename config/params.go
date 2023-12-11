@@ -23,6 +23,12 @@ var (
 	TokenTableSavetime = int32(SecondsForOneYear * 3)
 
 	ApiListenAddrPort = ":10086"
+
+	// mail
+	SMTP_HOST     = "127.0.0.1"
+	SMTP_PORT     = 10079
+	SMTP_USER     = "abc"
+	SMTP_PASSWORD = "ddss"
 )
 
 // mongodb 查询时的上限值, 超过则吐10000
@@ -64,4 +70,38 @@ func initEnvConfig() {
 		log.Println("[ init ] Using ApiListenAddrPort: ", listenAddr)
 		ApiListenAddrPort = listenAddr
 	}
+
+	// mail config
+	smtp_host := os.Getenv("SMTP_HOST")
+	if listenAddr != "" {
+		log.Println("[ init ] Using SMTP_HOST: ", smtp_host)
+
+		SMTP_HOST = smtp_host
+	}
+
+	smtp_port := os.Getenv("SMTP_PORT")
+	if smtp_port != "" {
+		tmpNum, err := strconv.Atoi(smtp_port)
+		if err != nil {
+			log.Fatal("Wrong param of SMTP_PORT: ", smtp_port)
+		}
+
+		log.Println("[ init ] Using SMTP_PORT: ", tmpNum)
+		SMTP_PORT = tmpNum
+	}
+
+	smtp_user := os.Getenv("SMTP_USER")
+	if listenAddr != "" {
+		log.Println("[ init ] Using SMTP_USER: ", smtp_user)
+
+		SMTP_USER = smtp_user
+	}
+
+	smtp_pass := os.Getenv("SMTP_PASSWORD")
+	if listenAddr != "" {
+		log.Println("[ init ] Using SMTP_PASSWORD: ", smtp_pass)
+
+		SMTP_PASSWORD = smtp_pass
+	}
+
 }

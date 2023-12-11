@@ -2,11 +2,11 @@ package block
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -37,7 +37,7 @@ func SaveBlockProceeded(bps *schema.BlockProceeded, mongodb *mongo.Client) {
 
 	_, err := collection.InsertOne(context.Background(), bps)
 	if err != nil {
-		log.Printf("[ SaveBlockProceeded ] InsertOne error: %v, block no: %v\n", err, bps.BlockNo)
+		utils.Warnf("[ SaveBlockProceeded ] InsertOne error: %v, block no: %v\n", err, bps.BlockNo)
 		return
 	}
 

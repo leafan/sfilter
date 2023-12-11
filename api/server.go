@@ -1,10 +1,10 @@
 package api
 
 import (
-	"log"
 	"sfilter/api/router"
 	"sfilter/api/utils"
 	"sfilter/config"
+	app_utils "sfilter/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,7 +26,7 @@ func NewServer(engine *gin.Engine, db *mongo.Client) *Server {
 func (server *Server) Run(port string) {
 	err := server.Engine.Run(port)
 	if err != nil {
-		log.Fatal("engine run failed. err: ", err)
+		app_utils.Fatalf("engine run failed. err: ", err)
 		return
 	}
 }

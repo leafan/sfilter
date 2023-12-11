@@ -2,12 +2,12 @@ package handler
 
 import (
 	"context"
-	"log"
 	"math/big"
 
 	"sfilter/schema"
 	service_block "sfilter/services/block"
 	"sfilter/services/chain"
+	"sfilter/utils"
 
 	"time"
 
@@ -18,7 +18,7 @@ import (
 
 func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client, ethPrice float64) *schema.Block {
 	if service_block.IsBlockProceeded(blockNumber.Int64(), mongodb) {
-		log.Println("[ getBlock ] Block is proceeded number: ", blockNumber)
+		utils.Warnf("[ getBlock ] Block is proceeded number: ", blockNumber)
 		return nil
 	}
 
@@ -29,16 +29,16 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 
 	block, err := ethblocks.GetBlockByNumber(ctx, client, blockNumber)
 	if err != nil {
-		log.Println("[ getBlock ] GetBlockByNumber error: ", err)
+		utils.Errorf("[ getBlock ] GetBlockByNumber error: ", err)
 		return nil
 	}
 	oneBlk.Block = block
-	log.Printf("\033[0;34mGet block: %d now, tx num: %d, hash: %v\033[0m\n", blockNumber, len(block.Transactions()), block.Hash())
+	utils.Debugf("Get block: %d now, tx num: %d, hash: %v\n", blockNumber, len(block.Transactions()), block.Hash())
 
 	for _, tx := range block.Transactions() {
 		receipt, err := ethblocks.GetTransactionReceipt(ctx, client, tx.Hash())
 		if err != nil {
-			log.Println("[ getBlock ] GetTransactionReceipt err: ", err)
+			utils.Errorf("[ getBlock ] GetTransactionReceipt err: ", err)
 			continue
 		}
 
@@ -59,7 +59,7 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 
 	// schema.PrintOneBlock(oneBlk)
 
-	log.Printf("[ getBlock ] get block: %d finished, time elapsed: % v\n\n", blockNumber, time.Since(start))
+	utils.Debugf("[ getBlock ] get block: %d finished, time elapsed: % v\n", blockNumber, time.Since(start))
 
 	return oneBlk
 }

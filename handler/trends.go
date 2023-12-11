@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/global"
@@ -70,7 +69,7 @@ func updateGlobalInfoFor1h(info *schema.GlobalInfo, mongodb *mongo.Client) {
 	// 一般情况下长度都是正常的
 	length := len(trends)
 	if err != nil || length < 120 {
-		log.Printf("[ updateGlobalInfoFor1h ] err or length is to short. err: %v, len: %v\n", err, length)
+		utils.Warnf("[ updateGlobalInfoFor1h ] err or length is to short. err: %v, len: %v\n", err, length)
 		return
 	}
 
@@ -107,7 +106,7 @@ func updateGlobalInfoFor24h(info *schema.GlobalInfo, mongodb *mongo.Client) {
 	// 一般情况下长度都是正常的
 	length := len(trends)
 	if err != nil || length < 60*24*2 {
-		log.Printf("[ updateGlobalInfoFor24h ] err or length is to short. err: %v, len: %v\n", err, length)
+		utils.Warnf("[ updateGlobalInfoFor24h ] err or length is to short. err: %v, len: %v\n", err, length)
 		return
 	}
 

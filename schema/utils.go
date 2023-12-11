@@ -2,8 +2,8 @@ package schema
 
 import (
 	"context"
-	"log"
 	"sfilter/config"
+	"sfilter/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,19 +33,19 @@ func doInitTable(collectionName string, index []mongo.IndexModel, mongodb *mongo
 	filter := bson.M{"name": collectionName}
 	cols, err := collection.Database().ListCollectionNames(context.Background(), filter)
 	if err != nil {
-		log.Fatal("[ InitTables] ListCollectionNames err: ", err)
+		utils.Fatalf("[ InitTables] ListCollectionNames err: ", err)
 	}
 
 	if len(cols) == 0 {
 		// 说明是新表, 则创建索引
 		_, err = collection.Indexes().CreateMany(context.Background(), index)
 		if err != nil {
-			log.Fatalf("[ InitTables ] collection.Indexes().CreateMany error. name: % v, err: %v\n", collectionName, err)
+			utils.Fatalf("[ InitTables ] collection.Indexes().CreateMany error. name: % v, err: %v\n", collectionName, err)
 			return
 		}
 
-		log.Printf("[ InitTables ] collection.Indexes().CreateMany for table: %v success\n", collectionName)
+		utils.Infof("[ InitTables ] collection.Indexes().CreateMany for table: %v success\n", collectionName)
 	} else {
-		log.Printf("[ InitTables ] table exist, pass... collections: %v\n", cols)
+		utils.Warnf("[ InitTables ] table exist, pass... collections: %v", cols)
 	}
 }

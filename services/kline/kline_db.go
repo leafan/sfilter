@@ -3,10 +3,10 @@ package kline
 import (
 	"context"
 	"fmt"
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,7 +25,7 @@ func SaveUpsert1MinKline(kline *schema.KLines1Min, mongodb *mongo.Client) {
 
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
-		log.Printf("[ SaveUpsert1MinKline ] InsertOne error: %v, kline: %v\n", err, kline)
+		utils.Warnf("[ SaveUpsert1MinKline ] InsertOne error: %v, kline: %v\n", err, kline)
 		return
 	}
 }
@@ -41,7 +41,7 @@ func SaveUpsert1HourKline(kline *schema.KLines1Hour, mongodb *mongo.Client) {
 
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
-		log.Printf("[ SaveUpsert1HourKline ] InsertOne error: %v, kline: %v\n", err, kline)
+		utils.Warnf("[ SaveUpsert1HourKline ] InsertOne error: %v, kline: %v\n", err, kline)
 		return
 	}
 }

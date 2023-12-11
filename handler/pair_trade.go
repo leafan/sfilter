@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"log"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/kline"
 	services_pair "sfilter/services/pair"
+	"sfilter/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,7 +29,7 @@ func HandleTradeInfo(block *schema.Block, mongodb *mongo.Client, swaps []*schema
 func updatePairInfo(_pair string, mongodb *mongo.Client) {
 	pair, err := services_pair.GetPairInfo(_pair, mongodb)
 	if err != nil {
-		log.Printf("[ updatePairInfo ] GetTokenInfo wrong, return.. err: %v\n\n", err)
+		utils.Errorf("[ updatePairInfo ] GetTokenInfo wrong, return.. err: %v\n\n", err)
 		return
 	}
 

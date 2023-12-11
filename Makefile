@@ -1,4 +1,4 @@
-.PHONY: api filter run ps build stop restart  creat
+.PHONY: sapi sfilter run ps build stop restart  creat
 
 default: build
 
@@ -23,10 +23,10 @@ creat:
 run:
 	@make start
 	
-api:
+sapi:
 	go run cmd/api/main.go
 
-filter:
+sfilter:
 	go run cmd/sfilter/main.go
 
 restart:
