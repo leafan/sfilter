@@ -106,7 +106,7 @@ var SwapIndexModel = []mongo.IndexModel{
 	},
 	{
 		Keys:    bson.D{{Key: "trader", Value: 1}},
-		Options: options.Index().SetName("trader_index"),
+		Options: options.Index().SetName("trader_index").SetSparse(true),
 	},
 	{
 		Keys:    bson.D{{Key: "mainToken", Value: 1}},

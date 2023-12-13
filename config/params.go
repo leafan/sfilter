@@ -1,8 +1,8 @@
 package config
 
 import (
-	"log"
 	"os"
+	"sfilter/utils"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -24,6 +24,9 @@ var (
 
 	ApiListenAddrPort = ":10086"
 
+	// user configure
+	USER_DB_FILE = "/data/sqlite/user.db"
+
 	// mail
 	SMTP_HOST     = "127.0.0.1"
 	SMTP_PORT     = 10079
@@ -34,8 +37,6 @@ var (
 // mongodb 查询时的上限值, 超过则吐10000
 var COUNT_UPPER_SIZE = int64(10000)
 
-var StartRetriveBlock = 0 // 0表示不设置, 该配置用于调试, 一般不用配置
-
 func init() {
 
 	// 如果本地有env, 则以本地为主
@@ -44,13 +45,13 @@ func init() {
 
 func initEnvConfig() {
 	if err := godotenv.Load(".env"); err != nil {
-		log.Println("no env file, pass..")
+		utils.Warnf("no env file, pass..")
 		return
 	}
 
 	dbName := os.Getenv("DB_NAME")
 	if dbName != "" {
-		log.Println("[ init ] Using db: ", dbName)
+		utils.Infof("[ init ] Using db: %v", dbName)
 		DatabaseName = dbName
 	}
 
@@ -58,48 +59,55 @@ func initEnvConfig() {
 	if retriveNum != "" {
 		tmpNum, err := strconv.Atoi(retriveNum)
 		if err != nil {
-			log.Fatal("Wrong param of RETRIVE_OLD_BLOCK_NUM: ", retriveNum)
+			utils.Fatalf("Wrong param of RETRIVE_OLD_BLOCK_NUM: %v", retriveNum)
 		}
 
-		log.Println("[ init ] Using RetriveOldBlockNum: ", tmpNum)
+		utils.Infof("[ init ] Using RetriveOldBlockNum: %v", tmpNum)
 		RetriveOldBlockNum = tmpNum
 	}
 
 	listenAddr := os.Getenv("API_LISTEN_PORT")
 	if listenAddr != "" {
-		log.Println("[ init ] Using ApiListenAddrPort: ", listenAddr)
+		utils.Infof("[ init ] Using ApiListenAddrPort: %v", listenAddr)
 		ApiListenAddrPort = listenAddr
 	}
 
-	// mail config
+	// user config
 	smtp_host := os.Getenv("SMTP_HOST")
 	if listenAddr != "" {
-		log.Println("[ init ] Using SMTP_HOST: ", smtp_host)
+		utils.Infof("[ init ] Using SMTP_HOST: %v", smtp_host)
 
 		SMTP_HOST = smtp_host
+	}
+
+	user_dbfile := os.Getenv("USER_DB_FILE")
+	if listenAddr != "" {
+		utils.Infof("[ init ] Using USER_DB_FILE: %v", user_dbfile)
+
+		USER_DB_FILE = user_dbfile
 	}
 
 	smtp_port := os.Getenv("SMTP_PORT")
 	if smtp_port != "" {
 		tmpNum, err := strconv.Atoi(smtp_port)
 		if err != nil {
-			log.Fatal("Wrong param of SMTP_PORT: ", smtp_port)
+			utils.Fatalf("Wrong param of SMTP_PORT: %v", smtp_port)
 		}
 
-		log.Println("[ init ] Using SMTP_PORT: ", tmpNum)
+		utils.Infof("[ init ] Using SMTP_PORT: %v", tmpNum)
 		SMTP_PORT = tmpNum
 	}
 
 	smtp_user := os.Getenv("SMTP_USER")
 	if listenAddr != "" {
-		log.Println("[ init ] Using SMTP_USER: ", smtp_user)
+		utils.Infof("[ init ] Using SMTP_USER: %v", smtp_user)
 
 		SMTP_USER = smtp_user
 	}
 
 	smtp_pass := os.Getenv("SMTP_PASSWORD")
 	if listenAddr != "" {
-		log.Println("[ init ] Using SMTP_PASSWORD: ", smtp_pass)
+		utils.Infof("[ init ] Using SMTP_PASSWORD: %v", smtp_pass)
 
 		SMTP_PASSWORD = smtp_pass
 	}

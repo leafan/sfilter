@@ -99,19 +99,19 @@ var PairIndexModel = []mongo.IndexModel{
 	},
 	{
 		Keys:    bson.D{{Key: "pairCreatedBlockNo", Value: 1}},
-		Options: options.Index().SetName("pairCreatedBlockNo_index"),
+		Options: options.Index().SetName("pairCreatedBlockNo_index").SetSparse(true),
 	},
 	{
 		Keys:    bson.D{{Key: "firstAddPoolBlockNo", Value: 1}},
-		Options: options.Index().SetName("firstAddPoolBlockNo_index"),
+		Options: options.Index().SetName("firstAddPoolBlockNo_index").SetSparse(true),
 	},
 	{
 		Keys:    bson.D{{Key: "firstAddPoolTime", Value: 1}},
-		Options: options.Index().SetName("firstAddPoolTime_index"),
+		Options: options.Index().SetName("firstAddPoolTime_index").SetSparse(true),
 	},
 	{
 		Keys:    bson.D{{Key: "pairName", Value: 1}},
-		Options: options.Index().SetName("pairName_index"),
+		Options: options.Index().SetName("pairName_index").SetSparse(true),
 	},
 
 	//  数值加索引方便排序？

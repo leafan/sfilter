@@ -116,7 +116,7 @@ func updateTrader(swap *schema.Swap, transferMap schema.TxTokenTransfersMap) {
 
 	// 如果还没找到, 则遍历该token的transfer地址, 找到金额最大的不为contract的地址
 	if swap.Trader == "" {
-		biggestAmount := big.NewInt(0)
+		biggestAmount := utils.GetBigIntOrZero(swap.AmountOfMainBig)
 
 		// 为了防止通缩币向个人转账导致误判, 这里找出转账金额最大的那个
 		for _, transfer := range transfers {
@@ -125,7 +125,13 @@ func updateTrader(swap *schema.Swap, transferMap schema.TxTokenTransfersMap) {
 				address = transfer.From
 			}
 
-			if !chain.IsContract(address) && transfer.AmountBigInt.Cmp(biggestAmount) > 0 {
+			// 去除一些通用的无效地址
+			if utils.IsDeadAddress(address) {
+				continue
+			}
+
+			// 要找到不比交易金额小的 target address
+			if !chain.IsContract(address) && transfer.AmountBigInt.Cmp(biggestAmount) >= 0 {
 				swap.Trader = address
 				biggestAmount = transfer.AmountBigInt // 一直更新until找到最大的
 			}
@@ -157,9 +163,9 @@ func updateVolumeinfo(swap *schema.Swap) {
 
 	volumeInUsd := swap.AmountOfMainToken * swap.Price
 
-	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
+	if utils.CheckExistString(quoteToken, utils.QuoteUsdCoinList) {
 		swap.VolumeInUsd = volumeInUsd
-	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
+	} else if utils.CheckExistString(quoteToken, utils.QuoteEthCoinList) {
 		swap.VolumeInUsd = volumeInUsd * swap.CurrentEthPrice
 	} else {
 		swap.VolumeInUsd = 0

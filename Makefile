@@ -61,6 +61,9 @@ stop:
 	pkill -f '^.*sfilter$$' 2>&1 || true
 	pkill -f '^.*sapi$$' 2>&1 || true
 
+test:
+	go run cmd/test/test.go
+
 ps:
 	@echo "\033[0;34mmake ps result...\033[0m"
 	@ps -e | grep -w "sapi\|sfilter" | grep -v "grep" || true

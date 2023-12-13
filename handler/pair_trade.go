@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/kline"
 	services_pair "sfilter/services/pair"
@@ -85,7 +84,7 @@ func updatePairTx1h(klines1Min []schema.KLine, pair *schema.Pair) {
 	if delta == 0 {
 		change = 0
 	} else if txNumBefore1h == 0 {
-		change = config.INFINITE_CHANGE // 说明txNum1h一定大于0
+		change = utils.INFINITE_CHANGE // 说明txNum1h一定大于0
 	} else {
 		change = float32(delta / txNumBefore1h)
 	}
@@ -119,7 +118,7 @@ func updatePairTx24h(klines1Hour []schema.KLine, pair *schema.Pair) {
 	if delta == 0 {
 		change = 0
 	} else if txNumBefore24h == 0 {
-		change = config.INFINITE_CHANGE // 说明txNum1h一定大于0
+		change = utils.INFINITE_CHANGE // 说明txNum1h一定大于0
 	} else {
 		change = float32(delta / txNumBefore24h)
 	}

@@ -15,7 +15,7 @@ const (
 
 // 跟踪日志, 打印完就会删除
 func Tracef(format string, args ...interface{}) {
-	fmt.Printf(format+"\n", args...)
+	fmt.Printf(ColorYellow+format+ColorReset, args...)
 }
 
 // 打印普通日志

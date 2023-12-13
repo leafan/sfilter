@@ -76,7 +76,6 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 			tmpFloat, _ = amount0Out.Float64()
 			swap.AmountOfMainToken = tmpFloat / 1e18
 
-
 			swap.Direction = schema.DIRECTION_BUY_OR_ADD
 
 			//log.Println("[ updateUniV2Swap ] debug... price : ", amount0Out, amount1In, token0Exponent, token1Exponent, calculatePrice)
@@ -99,7 +98,6 @@ func updateUniV2Swap(swap *schema.Swap, _log *types.Log, mongodb *mongo.Client) 
 			swap.AmountOfMainToken = tmpFloat / 1e18
 
 			swap.Direction = schema.DIRECTION_SELL_OR_DECREASE
-
 
 			//log.Println("[ updateUniV2Swap ] debug... price :\n\n", amount1In, amount0Out, token0Exponent, token1Exponent, calculatePrice)
 		}
@@ -184,9 +182,9 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 		return
 	}
 
-	if utils.CheckExistString(swap.Token0, config.QuoteUsdCoinList) {
+	if utils.CheckExistString(swap.Token0, utils.QuoteUsdCoinList) {
 		swap.MainToken = swap.Token1
-	} else if utils.CheckExistString(swap.Token0, config.QuoteEthCoinList) {
+	} else if utils.CheckExistString(swap.Token0, utils.QuoteEthCoinList) {
 		swap.MainToken = swap.Token1
 	} else {
 		swap.MainToken = swap.Token0

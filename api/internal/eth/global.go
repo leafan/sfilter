@@ -48,7 +48,15 @@ func GetGlobalInfo(c *gin.Context) {
 
 func getHotPairs() ([]schema.Pair, error) {
 	filter := bson.M{}
-	options := options.Find().SetSort(bson.D{{Key: "txNumIn24h", Value: -1}}).SetLimit(5)
+	options := options.Find().SetSort(bson.D{{Key: "txNumIn1h", Value: -1}}).SetLimit(5)
+
+	filter["$and"] = []bson.M{
+		{"address": bson.M{"$ne": "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"}},
+		{"address": bson.M{"$ne": "0x11b815efB8f581194ae79006d24E0d814B7697F6"}},
+		{"address": bson.M{"$ne": "0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852"}},
+		{"address": bson.M{"$ne": "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"}},
+		{"address": bson.M{"$ne": "0xc7bBeC68d12a0d1830360F8Ec58fA599bA1b0e9b"}},
+	}
 
 	hot, _, err := pair.GetHotPairs(options, &filter, utils.GetMongo())
 	if err != nil {
