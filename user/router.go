@@ -36,7 +36,7 @@ func NewServer() *Server {
 
 	_auth := lAuth.NewAuthService(mongodb)
 	// 用户名密码注册
-	_auth.AddDirectProvider("password", lAuth.PasswordCredCheck())
+	_auth.AddDirectProviderWithUserIDFunc("password", lAuth.PasswordCredCheck(), lAuth.UserIDWithRecordIp())
 
 	return &Server{
 		DB:   mongodb,
@@ -65,13 +65,13 @@ func Run(r *gin.Engine) {
 	// 我们需要的新增 routers, 如注册等
 	g := r.Group("/user")
 	{
-		g.POST("/signup", controllers.SignUp)
-		g.POST("/email/code", controllers.SignUp) // 验证码
+		g.POST("/register", controllers.Register)
+		g.GET("/email/code", controllers.SendCode) // 验证码
 	}
 
 	gWithAuth := g.Use(authMiddleware)
 	{
-		gWithAuth.GET("/test", controllers.SignUp) // todo
-		gWithAuth.POST("/passwd-reset", controllers.SignUp)
+		gWithAuth.GET("/info", controllers.GetUserInfo)
+		gWithAuth.POST("/passwd/reset", controllers.ResetPassword)
 	}
 }

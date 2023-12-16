@@ -14,7 +14,6 @@ import (
 	"sfilter/config"
 	"sfilter/handler"
 	"sfilter/schema"
-	"sfilter/user/auth"
 	"sfilter/utils"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,8 +23,7 @@ import (
 func test() {
 	utils.Infof("****** Debug start ******\n\n")
 
-	// chain.TEST_POOL()
-	auth.TEST_EMAIL()
+	// auth.TEST_EMAIL()
 
 	utils.Infof("****** Debug end  ******\n\n\n")
 }

@@ -11,19 +11,33 @@ import (
 )
 
 var (
-	MailerApiKey = "mlsn.ed06601d2db7fa3c62e77fc72e69d72a33a7a59e0238f2240d8d96fbf0d38a3a"
+	Issuer       = "deepeye.cc"
+	JWTHeaderKey = "Authorization"
+	APIURL       = "https://api.deepeye.cc"
 
-	Issuer    = "deepeye.cc"
-	JWTSecret = "jwt.I*d2&s@deepeye.cc"
-	APIURL    = "https://api.deepeye.cc"
-
-	TokenDuration  = 600000 * time.Minute // jwt有效期
-	CookieDuration = 24 * time.Hour       // cookie有效期
+	TokenDuration  = 24 * time.Hour // jwt有效期
+	CookieDuration = 24 * time.Hour // cookie有效期
 
 	DbAddress    = globalConfig.MONGO_ADDR
 	DatabaseName = globalConfig.DatabaseName
 
-	UserDbName = "user"
+	UserTableName = "user"
+
+	VerifyCodeTableName = "vcode"
+	VerifyCodeMaxNum    = 3 // 某一段时间之内某ip允许的最大请求验证码数
+
+	LoginHistoryTableName = "logins"
+)
+
+var (
+	JWTSecret = ""
+)
+
+var (
+	// aws  key
+	AWS_KEY_ID     = ""
+	AWS_SECRET_KEY = ""
+	AWS_REGION     = "ap-southeast-1"
 )
 
 func init() {
@@ -37,7 +51,17 @@ func initEnvConfig() {
 		return
 	}
 
-	if os.Getenv("MAILERSEND_API_KEY") != "" {
-		MailerApiKey = os.Getenv("MAILERSEND_API_KEY")
+	if os.Getenv("AWS_KEY_ID") != "" {
+		AWS_KEY_ID = os.Getenv("AWS_KEY_ID")
 	}
+	if os.Getenv("AWS_SECRET_KEY") != "" {
+		AWS_SECRET_KEY = os.Getenv("AWS_SECRET_KEY")
+	}
+	if os.Getenv("AWS_REGION") != "" {
+		AWS_REGION = os.Getenv("AWS_REGION")
+	}
+	if os.Getenv("JWT_SECRET") != "" {
+		JWTSecret = os.Getenv("JWT_SECRET")
+	}
+
 }

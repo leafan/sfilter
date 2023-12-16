@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"regexp"
 	"sfilter/user/models"
 	"sfilter/utils"
@@ -31,5 +32,15 @@ func PasswordCredCheck() provider.CredCheckerFunc {
 		isUser := models.CheckUserPass(user, passwd)
 
 		return isUser, nil
+	}
+}
+
+func UserIDWithRecordIp() provider.UserIDFunc {
+	return func(user string, r *http.Request) string {
+		// 他的框架写的不好，也不想修改他的框架了, 就到这里记录一下ip吧
+		// 因为跑到这里, 说明登陆校验已经完成
+		models.CreatOneLoginHistory(user, utils.GetClientIP(r))
+
+		return user
 	}
 }

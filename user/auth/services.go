@@ -9,15 +9,13 @@ package auth
  */
 
 import (
-	"fmt"
 	"sfilter/user/config"
 	"sfilter/user/models"
-	"sfilter/utils"
-	"strings"
-
-	"github.com/go-pkgz/auth"
+	
 	"github.com/go-pkgz/auth/avatar"
 	"github.com/go-pkgz/auth/logger"
+
+	"github.com/go-pkgz/auth"
 	"github.com/go-pkgz/auth/token"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -48,38 +46,9 @@ func getAuthOptions() auth.Opts {
 		SecureCookies:  true,
 		AudSecrets:     false,
 		Logger:         logger.Std,
-	}
-}
 
-// 暂时不用
-func ValidateTokenClaims(t string, claims token.Claims) bool {
-	utils.Warnf("[ ValidateTokenClaims ] test here. user: %v", claims.User)
-
-	if claims.User != nil {
-		// 如黑名单处理, 临时配置下发等
-		return strings.HasPrefix(claims.User.Name, "test")
-	}
-
-	return false
-}
-
-// 更新用户的一些数据到token
-// 比如他的级别(决定可以访问哪些内容等)
-func UserClaimsUpdate(userDataFetcher func(user *token.User) (*models.User, error)) token.ClaimsUpdFunc {
-	return func(claims token.Claims) token.Claims {
-		utils.Tracef("[ UserClaimsUpdate ] Debug. claims here: %v", claims)
-
-		if claims.User == nil {
-			return claims
-		}
-
-		userData, err := userDataFetcher(claims.User)
-		if err != nil {
-			return claims
-		}
-
-		claims.User.SetStrAttr("role", fmt.Sprintf("%d", userData.Role))
-
-		return claims
+		// 改为header传输key, cookie不会
+		SendJWTHeader: true,
+		JWTHeaderKey:  config.JWTHeaderKey,
 	}
 }

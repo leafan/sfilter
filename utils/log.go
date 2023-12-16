@@ -10,7 +10,7 @@ const (
 	ColorGreen  = "\033[32m"
 	ColorYellow = "\033[33m"
 
-	ColorReset = "\033[0m"
+	ColorReset = "\n\033[0m"
 )
 
 // 跟踪日志, 打印完就会删除

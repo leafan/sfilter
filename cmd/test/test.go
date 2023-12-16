@@ -1,16 +1,14 @@
 package main
 
-import(
-	"sfilter/user/auth"
+import (
 	"sfilter/utils"
 )
-
 
 func test() {
 	utils.Infof("****** Debug start ******\n\n")
 
 	// chain.TEST_POOL()
-	auth.TEST_EMAIL()
+	// services.TEST_EMAIL_AWS()
 
 	utils.Infof("****** Debug end  ******\n\n\n")
 }

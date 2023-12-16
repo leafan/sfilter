@@ -20,15 +20,17 @@ type BasicInfo struct {
 	Email       string    `json:"email" bson:"email"`
 	Address     string    `json:"address" bson:"address"`
 	Phone       string    `json:"phone" bson:"phone"`
-	Password    string    `json:"-" bson:"password"`
-	IsConfirmed bool      `json:"isConfirmed" bson:"isConfirmed"`
-	CreatedAt   time.Time `json:"createdAt" bson:"createdAt"`
+	Passwd      string    `json:"-" bson:"passwd"`
+	RegisterIp  string    `json:"-" bson:"registerIp"`
+	IsConfirmed bool      `json:"-" bson:"isConfirmed"`
+	RegisterAt  time.Time `json:"registerAt" bson:"registerAt"`
+	UpdateAt    time.Time `json:"-" bson:"updateAt"`
 }
 
 type ReferInfo struct {
-	Parent    int    `json:"parent" bson:"parent"`
-	ReferCode string `json:"referCode" bson:"referCode"`
-	ReferNum  int    `json:"referNum" bson:"referNum"`
+	Parent    string  `json:"-" bson:"parent"`            // 我的邀请人
+	ReferCode *string `json:"referCode" bson:"referCode"` // 我的邀请码
+	ReferNum  int     `json:"-" bson:"referNum"`          // 我的邀请人数, 暂时不用
 }
 
 type RoleInfo struct {
@@ -47,20 +49,19 @@ var UserIndexModel = []mongo.IndexModel{
 		Options: options.Index().SetName("email_index").SetSparse(true).SetUnique(true),
 	},
 	{
-		Keys:    bson.D{{Key: "referCode", Value: -1}},
-		Options: options.Index().SetName("referCode_index").SetSparse(true).SetUnique(true),
+		Keys: bson.D{{Key: "parent", Value: -1}},
+		Options: options.Index().SetName("parent_index").
+			SetSparse(true),
 	},
 	{
-		Keys:    bson.D{{Key: "createdAt", Value: -1}},
-		Options: options.Index().SetName("createdAt_index"),
+		Keys: bson.D{{Key: "referCode", Value: -1}},
+		Options: options.Index().SetName("referCode_index").
+			SetUnique(true).
+			SetPartialFilterExpression(bson.M{"referCode": bson.M{"$type": "string"}}),
 	},
 	{
-		Keys:    bson.D{{Key: "isConfirmed", Value: -1}},
-		Options: options.Index().SetName("isConfirmed_index"),
-	},
-	{
-		Keys:    bson.D{{Key: "parent", Value: -1}},
-		Options: options.Index().SetName("parent_index"),
+		Keys:    bson.D{{Key: "registerAt", Value: -1}},
+		Options: options.Index().SetName("registerAt_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "referNum", Value: -1}},
