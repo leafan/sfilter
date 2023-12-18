@@ -25,7 +25,7 @@ func checkOrCreatAdmin() {
 				Username: admin,
 				Email:    "market@deepeye.cc",
 				Nickname: "Deepeye_Admin",
-				Passwd:   "1",
+				Passwd:   "$2a$10$sOJmYz46DSXy4Ep/3EcFJ.Vi7TzJwcKACmLVi2WwqibECmZo93hwa", // deepeye@admin
 			},
 			ReferInfo: ReferInfo{
 				ReferCode: &referCode,

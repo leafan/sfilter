@@ -23,6 +23,12 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	params.Passwd, err = utils.HashPassword(params.Passwd)
+	if err != nil {
+		ResFailure(c, 401, err.Error())
+		return
+	}
+
 	role := models.USER_ROLE_BASIC
 
 	user := &models.User{
@@ -48,7 +54,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	utils.Infof("[ Register ] success register one user. params: %v", params)
+	utils.Infof("[ Register ] success register one user: %v", params.Username)
 	ResSuccess(c, nil)
 }
 
@@ -94,19 +100,21 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	info, err := models.GetUser(user.Name)
-	if err != nil {
-		ResFailure(c, 404, "User not exists.")
+	// 转换密码为加密
+	var err1 error
+	rset.PasswdNew, err1 = utils.HashPassword(rset.PasswdNew)
+	if err1 != nil {
+		ResFailure(c, 401, "System error, please try again.")
 		return
 	}
 
-	if info.Passwd != rset.PasswdOld {
+	if !models.CheckUserPass(user.Name, rset.PasswdOld) {
 		ResFailure(c, 401, "wrong old password")
 		return
 	}
 
 	// updateDb
-	err = models.ResetUserPassword(info.Username, rset.PasswdNew)
+	err = models.ResetUserPassword(user.Name, rset.PasswdNew)
 	if err != nil {
 		ResFailure(c, 500, "System error to reset password")
 		return

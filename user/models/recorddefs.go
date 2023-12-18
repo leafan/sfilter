@@ -9,9 +9,10 @@ import (
 )
 
 type VerifyCode struct {
-	Username string `json:"username" bson:"username"`
-	Code     string `json:"code" bson:"code"`
-	ClientIp string `json:"clientIp" bson:"clientIp"`
+	Username       string `json:"username" bson:"username"`
+	Code           string `json:"code" bson:"code"`
+	ClientIp       string `json:"clientIp" bson:"clientIp"`
+	ClientLocation string `json:"clientLocation" bson:"clientLocation"`
 
 	Status    int       `json:"status" bson:"status"` // 状态，目前未使用
 	CreatedAt time.Time `json:"-" bson:"createdAt"`   // 创建时间
@@ -34,8 +35,9 @@ var VerifyCodeIndexModel = []mongo.IndexModel{
 
 // 登陆历史记录
 type LoginHistory struct {
-	Username string `json:"username" bson:"username"`
-	LoginIp  string `json:"loginIp" bson:"loginIp"`
+	Username      string `json:"username" bson:"username"`
+	LoginIp       string `json:"loginIp" bson:"loginIp"`
+	LoginLocation string `json:"loginLocation" bson:"loginLocation"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"` // 创建时间
 }

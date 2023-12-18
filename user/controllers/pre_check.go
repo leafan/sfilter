@@ -21,7 +21,7 @@ func preCheckRegister(form *models.RegisterForm) error {
 
 	// 目前beta阶段, 必须要有refercode 且refer人存在
 	if form.ReferCode == "" || !models.IsExistedReferCode(form.ReferCode) {
-		return fmt.Errorf("wrong params: refer code is not exist")
+		return fmt.Errorf("wrong params: refer code not exists")
 	}
 
 	// username或email是否已存在

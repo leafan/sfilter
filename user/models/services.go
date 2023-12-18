@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"sfilter/user/config"
+	"sfilter/user/services"
 	"sfilter/utils"
 )
 
@@ -64,12 +65,13 @@ func CheckUserPass(username, passwd string) bool {
 		return false
 	}
 
-	if user.Passwd != passwd {
+	err = utils.ComparePassword(user.Passwd, passwd)
+	if err != nil {
 		utils.Warnf("[ CheckUserPass ] user(%v) password is not correct", username)
 		return false
 	}
 
-	utils.Debugf("[ CheckUserPass ] user(%v) login success", username)
+	utils.Debugf("[ CheckUserPass ] user(%v) check success", username)
 	return true
 }
 
@@ -118,6 +120,12 @@ func CreatVerifyCode(username, code, ip string) error {
 		ClientIp: ip,
 	}
 
+	var err error
+	vcode.ClientLocation, err = services.GetIpLocation(vcode.ClientIp)
+	if err != nil {
+		utils.Errorf("[ CreatVerifyCode ] getip location failed, err: %v", err)
+	}
+
 	return vm.CreatCode(vcode)
 }
 
@@ -129,6 +137,12 @@ func CreatOneLoginHistory(username, ip string) error {
 	entry := LoginHistory{
 		Username: username,
 		LoginIp:  ip,
+	}
+
+	var err error
+	entry.LoginLocation, err = services.GetIpLocation(entry.LoginIp)
+	if err != nil {
+		utils.Errorf("[ CreatOneLoginHistory ] getip location failed, err: %v", err)
 	}
 
 	return lm.CreatOne(&entry)

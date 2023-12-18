@@ -12,7 +12,7 @@ import (
 )
 
 func PasswordCredCheck() provider.CredCheckerFunc {
-	var isValidAnonName = regexp.MustCompile(`^[a-zA-Z][\w ]+$`).MatchString
+	var isValidAnonName = regexp.MustCompile(`^[\w.-]+(?:@[\w.-]+)?`).MatchString
 
 	return func(user, passwd string) (ok bool, err error) {
 		utils.Debugf("[ PasswordCredCheck ] user: %v, passwd: %v", user, passwd)

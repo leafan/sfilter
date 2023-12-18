@@ -19,9 +19,10 @@ var (
 	CookieDuration = 24 * time.Hour // cookie有效期
 
 	DbAddress    = globalConfig.MONGO_ADDR
-	DatabaseName = globalConfig.DatabaseName
+	DatabaseName = "user"
 
-	UserTableName = "user"
+	UserTableName = "users"
+	UserWatchList = "watchlist"
 
 	VerifyCodeTableName = "vcode"
 	VerifyCodeMaxNum    = 3 // 某一段时间之内某ip允许的最大请求验证码数
@@ -30,7 +31,8 @@ var (
 )
 
 var (
-	JWTSecret = ""
+	JWTSecret     = ""
+	IPINFO_APIKEY = "4af0cf25375a5d" // leafan.chan google账号注册
 )
 
 var (

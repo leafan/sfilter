@@ -43,7 +43,7 @@ func (m *UserModel) GetUserByReferCode(refercode string) (*User, error) {
 }
 
 func (m *UserModel) CreatUser(u *User) error {
-	u.UpdateAt = time.Now()
+	u.UpdatedAt = time.Now()
 
 	_, err := m.Collection.InsertOne(context.Background(), u)
 	if err != nil {

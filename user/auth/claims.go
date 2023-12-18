@@ -21,20 +21,19 @@ func ValidateTokenClaims(t string, claims token.Claims) bool {
 // 比如他的级别(决定可以访问哪些内容等)
 func UserClaimsUpdate(userDataFetcher func(user *token.User) (*models.User, error)) token.ClaimsUpdFunc {
 	return func(claims token.Claims) token.Claims {
-		utils.Tracef("[ UserClaimsUpdate ] Debug. claims here: %v", claims)
+		// utils.Tracef("[ UserClaimsUpdate ] Debug. claims here: %v", claims)
 
 		if claims.User == nil {
 			return claims
 		}
 
-		utils.Tracef("[ UserClaimsUpdate ] ip: %v, user: %v", claims.User.IP, claims.User)
+		// utils.Tracef("[ UserClaimsUpdate ] ip: %v, user: %v", claims.User.IP, claims.User)
 		userData, err := userDataFetcher(claims.User)
 		if err != nil {
 			return claims
 		}
 
 		claims.User.SetStrAttr("role", fmt.Sprintf("%d", userData.Role))
-		claims.User.SetStrAttr("email", fmt.Sprintf("%v", "email@test.com"))
 
 		return claims
 	}

@@ -24,7 +24,7 @@ type BasicInfo struct {
 	RegisterIp  string    `json:"-" bson:"registerIp"`
 	IsConfirmed bool      `json:"-" bson:"isConfirmed"`
 	RegisterAt  time.Time `json:"registerAt" bson:"registerAt"`
-	UpdateAt    time.Time `json:"-" bson:"updateAt"`
+	UpdatedAt   time.Time `json:"-" bson:"updatedAt"`
 }
 
 type ReferInfo struct {
