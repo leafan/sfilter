@@ -10,7 +10,7 @@ creat:
 	pkill -f '^.*sapi_creat$$' 2>&1 || true
 
 	@echo "\n\033[0;34mCopy file...\033[0m"
-	cp sfilter /data_v1/deepeye/sfilter_creat
+	cp sfilter_eth /data_v1/deepeye/sfilter_creat
 	cp sapi /data_v1/deepeye/sapi_creat
 
 	@echo "\n\033[0;34mStart process...\033[0m"
@@ -36,12 +36,12 @@ restart:
 start:
 	@make --no-print-directory build
 	
-	@echo "\n\033[0;34mChecking sfilter now...\033[0m"
-	@if pgrep -f '^.*sfilter$$'; then \
-        echo "\033[0;32msfilter process is already running\033[0m"; \
+	@echo "\n\033[0;34mChecking sfilter_eth now...\033[0m"
+	@if pgrep -f '^.*sfilter_eth$$'; then \
+        echo "\033[0;32msfilter_eth process is already running\033[0m"; \
     else \
-        echo "\033[0;31mStarting sfilter process...\033[0m"; \
-        nohup ./sfilter > /data_v1/logs/sfilter.log 2>&1 & \
+        echo "\033[0;31mStarting sfilter_eth process...\033[0m"; \
+        nohup ./sfilter_eth > /data_v1/logs/sfilter_eth.log 2>&1 & \
     fi
 
 	@echo "\n\033[0;34mChecking sapi now...\033[0m"
@@ -58,7 +58,7 @@ start:
 
 stop:
 	@echo "\033[0;34mpkill now...\033[0m"
-	pkill -f '^.*sfilter$$' 2>&1 || true
+	pkill -f '^.*sfilter_eth$$' 2>&1 || true
 	pkill -f '^.*sapi$$' 2>&1 || true
 
 test:
@@ -66,16 +66,17 @@ test:
 
 ps:
 	@echo "\033[0;34mmake ps result...\033[0m"
-	@ps -e | grep -w "sapi\|sfilter" | grep -v "grep" || true
+	@ps -e | grep -w "sapi\|sfilter_eth" | grep -v "grep" || true
 
 log:
 	@tail -f /data_v1/logs/sapi.log 
 
 
-# 停止所有服务
 build:
 	@echo "\033[0;34mbuild now...\033[0m"
+
 	go build -o sapi cmd/api/main.go
-	go build -o sfilter cmd/sfilter/main.go
+	@make eth
 
-
+eth:
+	go build -o sfilter_eth cmd/sfilter/main.go

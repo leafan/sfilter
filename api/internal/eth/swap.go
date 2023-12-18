@@ -14,6 +14,8 @@ import (
 )
 
 func GetSwapEvents(c *gin.Context) {
+	db := utils.GetChainDatabase(c.Param("chain"))
+
 	options, err := parseSwapOptions(c)
 	if err != nil {
 		return
@@ -21,7 +23,7 @@ func GetSwapEvents(c *gin.Context) {
 
 	filter := parseSwapFilterOptions(c)
 
-	info, count, err := swap.GetSwapEvents(options, filter, utils.GetMongo())
+	info, count, err := swap.GetSwapEvents(options, filter, db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return

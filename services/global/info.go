@@ -14,8 +14,9 @@ import (
 
 const GlobalInfoKey = "global_info"
 
-func GetGlobalInfo(mongodb *mongo.Client) (*schema.GlobalInfo, error) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.ConfigTableName)
+// get用database, 因为可能有多个 db
+func GetGlobalInfo(mongodb *mongo.Database) (*schema.GlobalInfo, error) {
+	collection := mongodb.Collection(config.ConfigTableName)
 	filter := bson.D{{Key: "configKey", Value: GlobalInfoKey}}
 
 	var result schema.GlobalInfo

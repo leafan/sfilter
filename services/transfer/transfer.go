@@ -22,8 +22,8 @@ func SaveTransferEvent(_transfer *schema.Transfer, mongodb *mongo.Client) {
 	}
 }
 
-func GetTransferEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Client) ([]schema.Transfer, int64, error) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.TransferTableName)
+func GetTransferEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Database) ([]schema.Transfer, int64, error) {
+	collection := mongodb.Collection(config.TransferTableName)
 
 	var result []schema.Transfer
 	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)

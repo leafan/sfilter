@@ -14,6 +14,8 @@ import (
 )
 
 func GetLiquidityEvent(c *gin.Context) {
+	db := utils.GetChainDatabase(c.Param("chain"))
+
 	options, err := parseLiquidityOptions(c)
 	if err != nil {
 		return
@@ -21,7 +23,7 @@ func GetLiquidityEvent(c *gin.Context) {
 
 	filter := parseLiquidityFilter(c)
 
-	info, count, err := liquidity.GetLiquidityEvents(options, filter, utils.GetMongo())
+	info, count, err := liquidity.GetLiquidityEvents(options, filter, db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
@@ -59,7 +61,7 @@ func parseLiquidityOptions(c *gin.Context) (*options.FindOptions, error) {
 		if orderStr == "false" {
 			order = 1
 		}
-        
+
 		options = options.SetSort(bson.D{{Key: key, Value: order}})
 	}
 

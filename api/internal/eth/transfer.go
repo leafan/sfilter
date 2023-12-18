@@ -14,6 +14,8 @@ import (
 )
 
 func GetTransferEvents(c *gin.Context) {
+	db := utils.GetChainDatabase(c.Param("chain"))
+
 	options, err := parseTransferOptions(c)
 	if err != nil {
 		return
@@ -21,7 +23,7 @@ func GetTransferEvents(c *gin.Context) {
 
 	filter := parseTransferFilterOptions(c)
 
-	info, count, err := transfer.GetTransferEvents(options, filter, utils.GetMongo())
+	info, count, err := transfer.GetTransferEvents(options, filter, db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
@@ -88,7 +90,7 @@ func parseTransferFilterOptions(c *gin.Context) *primitive.M {
 	if to != "" && utils.IsValidEthereumAddress(to) {
 		filter["to"] = to
 	}
-    
+
 	recentdays := c.DefaultQuery("recentdays", "1")
 	recentdaysInt, err := strconv.Atoi(recentdays)
 	if err == nil {

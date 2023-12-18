@@ -13,8 +13,8 @@ import (
 )
 
 // 取出从start到end的所有柱子
-func get1MinKlineByPair(pair string, start, end time.Time, mongodb *mongo.Client) []schema.KLines1Min {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.Kline1MinTableName)
+func get1MinKlineByPair(pair string, start, end time.Time, mongodb *mongo.Database) []schema.KLines1Min {
+	collection := mongodb.Collection(config.Kline1MinTableName)
 
 	filter := bson.M{
 		"pair": pair,
@@ -47,8 +47,8 @@ func get1MinKlineByPair(pair string, start, end time.Time, mongodb *mongo.Client
 	return result
 }
 
-func get1HourKlineByPair(pair string, start, end time.Time, mongodb *mongo.Client) []schema.KLines1Hour {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.Kline1HourTableName)
+func get1HourKlineByPair(pair string, start, end time.Time, mongodb *mongo.Database) []schema.KLines1Hour {
+	collection := mongodb.Collection(config.Kline1HourTableName)
 
 	filter := bson.M{
 		"pair": pair,

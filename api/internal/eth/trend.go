@@ -13,6 +13,8 @@ import (
 // 获取 1h 数据(分钟线) 与 48h 数据(小时线)
 // 返回他们的柱子
 func GetPriceAndTxTrends(c *gin.Context) {
+	db := utils.GetChainDatabase(c.Param("chain"))
+
 	address := c.DefaultQuery("address", "")
 	if !utils.IsValidEthereumAddress(address) {
 		utils.ResFailure(c, 500, "invalid params")
@@ -20,8 +22,8 @@ func GetPriceAndTxTrends(c *gin.Context) {
 	}
 
 	now := time.Now()
-	klines1Min := kline.Get1MinKlineWithFullGenerated(address, now, 1, utils.GetMongo())
-	klines1Hour := kline.Get1HourKlineWithFullGenerated(address, now, 2, utils.GetMongo())
+	klines1Min := kline.Get1MinKlineWithFullGenerated(address, now, 1, db)
+	klines1Hour := kline.Get1HourKlineWithFullGenerated(address, now, 2, db)
 	// fmt.Printf("klines1Hour: %v\n", klines1Hour)
 
 	var p1, t1, p48, t48 schema.TrendStruct

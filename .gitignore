@@ -22,6 +22,7 @@ go.work
 
 *.log
 sfilter
+sfilter_*
 sapi
 .vscode
 

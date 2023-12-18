@@ -12,8 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetHotPairs(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Client) ([]schema.Pair, int64, error) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
+func GetHotPairs(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Database) ([]schema.Pair, int64, error) {
+	collection := mongodb.Collection(config.PairTableName)
 
 	var result []schema.Pair
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

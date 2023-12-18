@@ -51,6 +51,20 @@ func GetPairInfo(address string, mongodb *mongo.Client) (*schema.Pair, error) {
 	return &result, nil
 }
 
+func GetPairInfoForApi(address string, db *mongo.Database) (*schema.Pair, error) {
+	collection := db.Collection(config.PairTableName)
+
+	filter := bson.M{"address": address}
+
+	var result schema.Pair
+	err := collection.FindOne(context.Background(), filter).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 // 当db中不存在时，update一下信息
 func getPairOnChainInfoFromChain(address string, mongodb *mongo.Client) *schema.Pair {
 	var pair schema.Pair

@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Get1HourKlineWithFullGenerated(pair string, end time.Time, days int, mongodb *mongo.Client) []schema.KLine {
+func Get1HourKlineWithFullGenerated(pair string, end time.Time, days int, mongodb *mongo.Database) []schema.KLine {
 	var result []schema.KLine
 
 	end = time.Date(end.Year(), end.Month(), end.Day(), end.Hour(), 0, 0, 0, end.Location())
@@ -77,7 +77,7 @@ finish:
 	return result
 }
 
-func Get1HourKlineByPairForDays(pair string, end time.Time, days int, mongodb *mongo.Client) []schema.KLinesForDay {
+func Get1HourKlineByPairForDays(pair string, end time.Time, days int, mongodb *mongo.Database) []schema.KLinesForDay {
 	start := end.Add(-time.Duration(days) * time.Hour * 24)
 	data := get1HourKlineByPair(pair, start, end, mongodb)
 

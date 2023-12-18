@@ -9,7 +9,7 @@ import (
 )
 
 func setupEthRoutes(parentGroup *gin.RouterGroup) {
-	ethGroup := parentGroup.Group("/eth")
+	ethGroup := parentGroup.Group("/:chain")
 
 	getMiddleware := utils.AuthNothingMiddleWare()
 	ethGroup.Use(getMiddleware)

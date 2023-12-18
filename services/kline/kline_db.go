@@ -2,10 +2,8 @@ package kline
 
 import (
 	"context"
-	"fmt"
 	"sfilter/config"
 	"sfilter/schema"
-	"sfilter/services/chain"
 	"sfilter/utils"
 	"time"
 
@@ -44,10 +42,4 @@ func SaveUpsert1HourKline(kline *schema.KLines1Hour, mongodb *mongo.Client) {
 		utils.Warnf("[ SaveUpsert1HourKline ] InsertOne error: %v, kline: %v\n", err, kline)
 		return
 	}
-}
-
-func TEST_KLINE_DB() {
-	pair := "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
-	data := Get1MinKlineWithFullGenerated(pair, time.Now(), 1, chain.GetMongo())
-	fmt.Printf("Get1MinKlineByPairForHours. len: %v,  klines: %v\n", len(data), data)
 }

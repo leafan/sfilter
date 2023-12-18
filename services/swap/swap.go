@@ -25,8 +25,8 @@ func SaveSwapTx(swap *schema.Swap, mongodb *mongo.Client) error {
 	return err
 }
 
-func GetSwapEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Client) ([]schema.Swap, int64, error) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
+func GetSwapEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Database) ([]schema.Swap, int64, error) {
+	collection := mongodb.Collection(config.SwapTableName)
 
 	var result []schema.Swap
 	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)

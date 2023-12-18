@@ -16,13 +16,15 @@ import (
 )
 
 func GetPair(c *gin.Context) {
+	db := utils.GetChainDatabase(c.Param("chain"))
+
 	address := c.DefaultQuery("address", "")
 	if !utils.IsValidEthereumAddress(address) {
 		utils.ResFailure(c, 500, "invalid params")
 		return
 	}
 
-	data, err := pair.GetPairInfoForRead(address)
+	data, err := pair.GetPairInfoForApi(address, db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
@@ -34,6 +36,8 @@ func GetPair(c *gin.Context) {
 // hot pair(token): 最近n天 24h tx 数排名
 // hot new pair(token): 最近7天添加的新池子中, 24h tx 数排名
 func GetHotPairs(c *gin.Context) {
+	db := utils.GetChainDatabase(c.Param("chain"))
+
 	filter := parsePairFilterOptions(c)
 
 	options, err := parsePairOptions(c, filter)
@@ -41,7 +45,7 @@ func GetHotPairs(c *gin.Context) {
 		return
 	}
 
-	info, count, err := pair.GetHotPairs(options, filter, utils.GetMongo())
+	info, count, err := pair.GetHotPairs(options, filter, db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return

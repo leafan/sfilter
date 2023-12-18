@@ -9,7 +9,10 @@ import (
 )
 
 var (
+	MONGO_ADDR   = "mongodb://127.0.0.1:27017"
 	DatabaseName = "deepeye"
+
+	WS_ADDR = "ws://127.0.0.1:8546"
 
 	RetriveOldBlockNum         = BlocksPerDay * 3
 	GetPriceIntervalForRetrive = 100 // 每隔多少个区块获取一次eth价格
@@ -38,6 +41,18 @@ func initEnvConfig() {
 	if err := godotenv.Load(".env"); err != nil {
 		utils.Warnf("no env file, pass..")
 		return
+	}
+
+	mongoAddr := os.Getenv("MONGO_ADDR")
+	if mongoAddr != "" {
+		utils.Infof("[ init ] Using mongo addr: %v", mongoAddr)
+		MONGO_ADDR = mongoAddr
+	}
+
+	ws_addr := os.Getenv("WS_ADDR")
+	if ws_addr != "" {
+		utils.Infof("[ init ] Using node ws addr: %v", ws_addr)
+		WS_ADDR = ws_addr
 	}
 
 	dbName := os.Getenv("DB_NAME")

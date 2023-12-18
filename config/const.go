@@ -42,11 +42,17 @@ const MONGO_LIMIT_DOWN = 5
 const MONGO_PAGE_UPPER = 1000
 
 const MONGO_FIND_TIMEOUT = 2
-const MONGO_ADDR = "mongodb://127.0.0.1:27017"
-
-const WS_ADDR = "ws://127.0.0.1:8546"
 
 // 用于获取历史高度上的eth价格.. 如果是回溯的时候，10个区块才调用一次即可(特殊处理)
 const INFURA_KEY_ADDR = "https://mainnet.infura.io/v3/06a6594cfd1a404591470c2f81a7ac93"
 
 var BaseFactor1e18 = big.NewInt(1000000000000000000)
+
+// 合法的chain, 只支持这些链
+var ValidChains = []string{
+	"eth",
+	"avax",
+	// "optimism",
+	// "arbi",
+	// "bsc",
+}

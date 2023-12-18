@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/kline"
 	services_pair "sfilter/services/pair"
@@ -37,8 +38,10 @@ func updatePairInfo(_pair string, mongodb *mongo.Client) {
 
 	// 取最近2-3小时数据, 可以计算出2h内的数据变化(Change)
 	now := time.Now()
-	klines1Min := kline.Get1MinKlineWithFullGenerated(pair.Address, now, 2, mongodb)
-	klines1Hour := kline.Get1HourKlineWithFullGenerated(pair.Address, now, 2, mongodb)
+
+	database := mongodb.Database(config.DatabaseName)
+	klines1Min := kline.Get1MinKlineWithFullGenerated(pair.Address, now, 2, database)
+	klines1Hour := kline.Get1HourKlineWithFullGenerated(pair.Address, now, 2, database)
 
 	updatePairTx1h(klines1Min, pair)
 	updatePairPrice1h(klines1Min, pair)

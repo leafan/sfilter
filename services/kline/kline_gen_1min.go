@@ -11,13 +11,13 @@ import (
 
 // 生成1min k线, 合并成一个大数组, 且将0值更新成前值(无交易时等于前值)
 // 结束时间为end, 但起始时间可能比end-hours早, 最多不超过1小时
-func Get1MinKlineWithFullGenerated(pair string, end time.Time, hours int, mongodb *mongo.Client) []schema.KLine {
+func Get1MinKlineWithFullGenerated(pair string, end time.Time, hours int, mongodb *mongo.Database) []schema.KLine {
 	var result []schema.KLine
 
 	// 将end更新到当前分钟的0值
 	end = time.Date(end.Year(), end.Month(), end.Day(), end.Hour(), end.Minute(), 0, 0, end.Location())
 
-	klines := Get1MinKlineByPairForHours(pair, end, hours, mongodb)
+	klines := get1MinKlineByPairForHours(pair, end, hours, mongodb)
 
 	end = end.Add(59 * time.Second) // 再加1min, 取到当前柱子
 
@@ -84,7 +84,7 @@ finish:
 }
 
 // 获取k线, 且倒推几小时且返回值必须生成几根柱子
-func Get1MinKlineByPairForHours(pair string, end time.Time, hours int, mongodb *mongo.Client) []schema.KLinesForHour {
+func get1MinKlineByPairForHours(pair string, end time.Time, hours int, mongodb *mongo.Database) []schema.KLinesForHour {
 	start := end.Add(-time.Duration(hours) * time.Hour)
 	data := get1MinKlineByPair(pair, start, end, mongodb)
 
@@ -101,7 +101,7 @@ func Get1MinKlineByPairForHours(pair string, end time.Time, hours int, mongodb *
 		for _, v := range data {
 			// 如果当前小时有合法柱子, 拷贝, 否则全为0
 			if v.PairDayHour == pairDayHour {
-				// log.Printf("[ Get1MinKlineByPairForHours ] find one pairDayHour: %v, v: %v\n", pairDayHour, v)
+				// log.Printf("[ get1MinKlineByPairForHours ] find one pairDayHour: %v, v: %v\n", pairDayHour, v)
 
 				utils.DeepCopy(&v.Kline, &kline)
 				break

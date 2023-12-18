@@ -12,8 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetLiquidityEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Client) ([]schema.LiquidityEvent, int64, error) {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.LiquidityEventTableName)
+func GetLiquidityEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Database) ([]schema.LiquidityEvent, int64, error) {
+	collection := mongodb.Collection(config.LiquidityEventTableName)
 
 	var result []schema.LiquidityEvent
 	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)

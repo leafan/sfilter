@@ -9,25 +9,26 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var limit = int64(5)
-
 func GetGlobalInfo(c *gin.Context) {
-	global, err := global.GetGlobalInfo(utils.GetMongo())
+	db := utils.GetChainDatabase(c.Param("chain"))
+
+	global, err := global.GetGlobalInfo(db)
 	if err != nil {
 		utils.ResFailure(c, 401, err.Error())
 		return
 	}
 
-	hot, err := getHotPairs()
+	hot, err := getHotPairs(db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
 	}
 
-	new, err := getNewHotPairs()
+	new, err := getNewHotPairs(db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
@@ -46,7 +47,7 @@ func GetGlobalInfo(c *gin.Context) {
 	utils.ResSuccess(c, data)
 }
 
-func getHotPairs() ([]schema.Pair, error) {
+func getHotPairs(db *mongo.Database) ([]schema.Pair, error) {
 	filter := bson.M{}
 	options := options.Find().SetSort(bson.D{{Key: "txNumIn1h", Value: -1}}).SetLimit(5)
 
@@ -58,7 +59,7 @@ func getHotPairs() ([]schema.Pair, error) {
 		{"address": bson.M{"$ne": "0xc7bBeC68d12a0d1830360F8Ec58fA599bA1b0e9b"}},
 	}
 
-	hot, _, err := pair.GetHotPairs(options, &filter, utils.GetMongo())
+	hot, _, err := pair.GetHotPairs(options, &filter, db)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,7 @@ func getHotPairs() ([]schema.Pair, error) {
 	return hot, nil
 }
 
-func getNewHotPairs() ([]schema.Pair, error) {
+func getNewHotPairs(db *mongo.Database) ([]schema.Pair, error) {
 	filter := bson.M{}
 	date := time.Now().Add(-time.Duration(24*7) * time.Hour) // 最近7天的新币
 	filter["firstAddPoolTime"] = bson.M{
@@ -75,7 +76,7 @@ func getNewHotPairs() ([]schema.Pair, error) {
 
 	options := options.Find().SetSort(bson.D{{Key: "txNumIn24h", Value: -1}}).SetLimit(5)
 
-	hot, _, err := pair.GetHotPairs(options, &filter, utils.GetMongo())
+	hot, _, err := pair.GetHotPairs(options, &filter, db)
 	if err != nil {
 		return nil, err
 	}
