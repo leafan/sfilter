@@ -15,8 +15,8 @@ creat:
 
 	@echo "\n\033[0;34mStart process...\033[0m"
 
-	cd /data_v1/deepeye/ && nohup ./sapi_creat > /var/local/log/sapi_creat.log 2>&1 &
-	cd /data_v1/deepeye/ && nohup ./sfilter_creat > /var/local/log/sfilter_creat.log 2>&1 &
+	cd /data_v1/deepeye/ && nohup ./sapi_creat > /data_v1/deepeye/logs/sapi_creat_$(shell date +%s).log 2>&1 &
+	cd /data_v1/deepeye/ && nohup ./sfilter_creat > /data_v1/deepeye/logs/sfilter_creat_$(shell date +%s).log 2>&1 &
 
 	@echo "\n\033[0;34mFinished...\033[0m"
 

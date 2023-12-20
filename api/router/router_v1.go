@@ -10,7 +10,7 @@ import (
 func SetUpV1Router(router *gin.Engine) {
 	apiV1Group := router.Group("/v1")
 
-	apiV1Group.Use(utils.AuthchainMiddleWare())
+	apiV1Group.Use(utils.AuthChainMiddleWare())
 	{
 		chain.SetupChainRoutes(apiV1Group)
 	}

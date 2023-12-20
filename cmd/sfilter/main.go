@@ -20,17 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func test() {
-	utils.Infof("****** Debug start ******\n\n")
-
-	// auth.TEST_EMAIL()
-
-	utils.Infof("****** Debug end  ******\n\n\n")
-}
-
 func main() {
-	test()
-
 	db := flag.String("db", "", "the db want to use")
 	block := flag.Int64("block", 0, "a tool to retrive/test one block")
 	flag.Parse()

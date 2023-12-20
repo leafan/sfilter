@@ -18,6 +18,7 @@ func ResSuccess(c *gin.Context, data interface{}) {
 		Msg:  "SUCCESS",
 		Data: data,
 	}
+
 	c.JSON(http.StatusOK, result)
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	tutils "sfilter/api/utils"
 	"sfilter/utils"
 )
 
@@ -9,7 +10,7 @@ func test() {
 
 	// chain.TEST_POOL()
 	// services.TEST_EMAIL_AWS()
-	utils.TEST_HASH_PASSWORD("deepeye@admin")
+	tutils.TEST_ENCRYPT()
 
 	utils.Infof("****** Debug end  ******\n\n\n")
 }

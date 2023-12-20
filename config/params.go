@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	MONGO_ADDR   = "mongodb://127.0.0.1:27017"
-	DatabaseName = "deepeye"
+	MONGO_ADDR       = "mongodb://127.0.0.1:27017"
+	DatabaseName     = "deepeye"
+	API_AES_DATA_KEY = "deepeye@leafan16"
 
 	WS_ADDR = "ws://127.0.0.1:8546"
 
@@ -76,6 +77,12 @@ func initEnvConfig() {
 	if listenAddr != "" {
 		utils.Infof("[ init ] Using ApiListenAddrPort: %v", listenAddr)
 		ApiListenAddrPort = listenAddr
+	}
+
+	aesKey := os.Getenv("API_AES_DATA_KEY")
+	if aesKey != "" {
+		utils.Infof("[ init ] Using API_AES_DATA_KEY: %v", aesKey)
+		API_AES_DATA_KEY = aesKey
 	}
 
 }

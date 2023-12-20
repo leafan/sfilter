@@ -1,7 +1,8 @@
-package eth
+package encrypt
 
 import (
 	"sfilter/api/utils"
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/transfer"
 	"strconv"
@@ -36,7 +37,12 @@ func GetTransferEvents(c *gin.Context) {
 		Count: count,
 	}
 
-	utils.ResSuccess(c, data)
+	enc, err := utils.AesEncrypt(data, config.API_AES_DATA_KEY)
+	if err != nil {
+		utils.ResFailure(c, 500, err.Error())
+		return
+	}
+	utils.ResSuccess(c, enc)
 }
 
 func parseTransferOptions(c *gin.Context) (*options.FindOptions, error) {

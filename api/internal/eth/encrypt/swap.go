@@ -1,7 +1,8 @@
-package eth
+package encrypt
 
 import (
 	"sfilter/api/utils"
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/swap"
 	"strconv"
@@ -37,7 +38,13 @@ func GetSwapEvents(c *gin.Context) {
 		Count: count,
 	}
 
-	utils.ResSuccess(c, data)
+	// 加密
+	enc, err := utils.AesEncrypt(data, config.API_AES_DATA_KEY)
+	if err != nil {
+		utils.ResFailure(c, 500, err.Error())
+		return
+	}
+	utils.ResSuccess(c, enc)
 }
 
 func parseSwapOptions(c *gin.Context) (*options.FindOptions, error) {

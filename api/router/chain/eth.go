@@ -3,6 +3,7 @@ package chain
 import (
 	"log"
 	"sfilter/api/internal/eth"
+	"sfilter/api/internal/eth/encrypt"
 	"sfilter/api/utils"
 
 	"github.com/gin-gonic/gin"
@@ -31,19 +32,6 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 			ethGroup.GET("/hotnewpair", eth.GetHotPairs)
 		}
 
-		// swap
-		{
-			// 所有的最新swaps集合, 支持 token, operator, trader 等条件查询
-			// 只支持查询最近1个月的数据
-			ethGroup.GET("/swaps", eth.GetSwapEvents)
-		}
-
-		// transfer
-		{
-			// 所有的最新transfer集合, 支持 token, operator 等条件查询
-			ethGroup.GET("/transfers", eth.GetTransferEvents)
-		}
-
 		// liquidity
 		{
 			// 所有的最新 add/remove liquidity 集合, 支持 token, pair, operator 等条件查询
@@ -54,6 +42,17 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 		{
 			ethGroup.GET("/pairtrend", eth.GetPriceAndTxTrends)
 		}
+
+		// 简单加密数据
+		{
+			// 所有的最新swaps集合, 支持 token, operator, trader 等条件查询
+			// 只支持查询最近1个月的数据
+			ethGroup.GET("/swaps", encrypt.GetSwapEvents)
+
+			// 所有的最新transfer集合, 支持 token, operator 等条件查询
+			ethGroup.GET("/transfers", encrypt.GetTransferEvents)
+		}
+
 	}
 
 	// post etc..
