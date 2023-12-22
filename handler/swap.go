@@ -149,7 +149,6 @@ func handleOneSwapAndKline(swap *schema.Swap, mongodb *mongo.Client) {
 	// 数据为最近一周才update kline
 	if err == nil && (time.Since(swap.SwapTime).Seconds() < config.SecondsForOneWeek) {
 		UpdateKlines(swap, mongodb)
-		service_swap.UpdateKOLTxTrends(swap, mongodb)
 	}
 }
 

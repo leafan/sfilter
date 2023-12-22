@@ -32,6 +32,9 @@ const Kline1HourTableName = "kline1hour"
 const GlobalTrendTableName = "trend"
 const GlobalTrendTableSaveTime = SecondsForOneWeek
 
+const TrackSwapTableName = "trackswap"
+const TrackSwapTableSaveTime = SecondsForOneMonth
+
 const NeverExpireTime = 0
 
 const MaxConcurrentRoutineNums = 10   // 最大并行的协程数, 避免节点扛不住

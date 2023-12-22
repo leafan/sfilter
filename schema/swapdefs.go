@@ -32,7 +32,7 @@ type Swap struct {
 
 	PairAddr string `json:"pairAddr" bson:"pairAddr"` // 交易对地址
 	PairName string `json:"pairName" bson:"pairName"`
-	SwapType int    `json:"swapType" bson:"swapType"` // 交易类型,
+	SwapType int    `json:"swapType" bson:"swapType"` // 交易类型
 
 	CurrentEthPrice float64 `json:"currentEthPrice" bson:"currentEthPrice"` // 当前区块（时间）的eth价格in usd
 

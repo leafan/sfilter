@@ -53,12 +53,17 @@ func CreateTrackedAddress(c *gin.Context) {
 	err = c.ShouldBind(&addr)
 	if err != nil {
 		gutils.Tracef("err: %v, addr: %v", err, addr)
-		ResFailure(c, 401, "Wrong Params.")
+		ResFailure(c, 403, "Wrong Params.")
 		return
 	}
 
 	if !utils.IsValidEthereumAddress(addr.Address) {
 		utils.ResFailure(c, 500, "Invalid address")
+		return
+	}
+
+	if len(addr.Memo) > 30 {
+		utils.ResFailure(c, 403, "Memo is too long.")
 		return
 	}
 

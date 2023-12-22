@@ -1,10 +1,11 @@
 package chain
 
 import (
-	"log"
 	"sfilter/api/internal/eth"
 	"sfilter/api/internal/eth/encrypt"
+	"sfilter/api/internal/eth/user"
 	"sfilter/api/utils"
+	guser "sfilter/user"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,15 +56,10 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 
 	}
 
-	// post etc..
-	postMiddleware := utils.AuthNothingMiddleWare()
-	ethGroup.Use(postMiddleware)
+	// auth user etc..
+	authMiddleware := guser.GetUserAuthMiddleware()
+	ethGroup.Use(authMiddleware)
 	{
-		ethGroup.POST("/test", func(context *gin.Context) {
-			go func() {
-				log.Printf("[ ethGroup ] post test..\n")
-			}()
-			utils.ResSuccess(context, gin.H{"message": "post test successful"})
-		})
+		ethGroup.GET("/trackswaps", user.GetTrackSwaps)
 	}
 }

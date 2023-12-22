@@ -89,9 +89,11 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	// trade info 是更新最近24h或7天的数据, 因此老数据就别掺和了
 	if time.Since(time.Unix(int64(blk.Block.Time()), 0)).Seconds() < config.SecondsForOneWeek {
 		HandleTradeInfo(blk, mongodb, swaps)
+		HandleGlobalInfo(blk, mongodb)
 	}
 
-	HandleGlobalInfo(blk, mongodb)
+	// 更新 用户跟踪地址逻辑
+	HandleUserTrackSwaps(blk, mongodb, swaps)
 
 	// etc.. todo
 

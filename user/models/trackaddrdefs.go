@@ -36,6 +36,11 @@ import (
 
 */
 
+// 用户对应trackAddress的map表: map[ Trader ] : UserTrackedAddress
+// 假设有1000个用户, 平均100个地址, 也就是10w地址, 每个地址 80Byte
+// 则一共占用 80*10*10000 = 8MB 而已
+type UserTrackAddressMap map[string][]UserTrackedAddress
+
 type UserTrackedAddress struct {
 	Username string `json:"-" bson:"username"` // 按username来吧, 可读性高一些, 都是唯一的
 
@@ -63,5 +68,13 @@ var TrackAddressIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "address", Value: -1}},
 		Options: options.Index().SetName("address_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "memo", Value: -1}},
+		Options: options.Index().SetName("memo_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "priority", Value: -1}},
+		Options: options.Index().SetName("priority_index"),
 	},
 }

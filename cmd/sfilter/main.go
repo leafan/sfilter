@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -14,6 +15,7 @@ import (
 	"sfilter/config"
 	"sfilter/handler"
 	"sfilter/schema"
+	userModels "sfilter/user/models"
 	"sfilter/utils"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -35,6 +37,9 @@ func main() {
 		return
 	}
 
+	go getTrackAddressOnTimer(mongodb)
+
+	// 主循环, 不退出
 	loop(client, mongodb)
 }
 
@@ -82,5 +87,23 @@ func loop(client *ethclient.Client, mongodb *mongo.Client) {
 			go handler.HandleBlock(header.Number, client, mongodb)
 		}
 
+	}
+}
+
+func getTrackAddressOnTimer(mongodb *mongo.Client) {
+	userModels.InitService(mongodb) // 初始化db, 可以直接使用user的service等
+
+	// for循环更新获取
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	// 第一次执行
+	err := handler.GetTrackAddressMapOnTimer()
+	if err != nil {
+		utils.Fatalf("[ getTrackAddressOnTimer ] GetTrackAddressOnTimer failed, err:  %v", err)
+	}
+
+	for range ticker.C {
+		handler.GetTrackAddressMapOnTimer()
 	}
 }

@@ -8,6 +8,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// 用户状态
+const (
+	USER_STATUS_NORMAL int = iota // 正常
+
+	// 跟踪功能被禁用, 比如跟踪数量太大了
+	USER_STATUS_TRACK_BLOCKED
+
+	// ...
+
+	USER_STATUS_UNKNOWN = 9999 // root管理员用户
+)
+
 type User struct {
 	BasicInfo `json:",inline" bson:",inline"`
 	ReferInfo `json:",inline" bson:",inline"`
@@ -15,17 +27,20 @@ type User struct {
 }
 
 type BasicInfo struct {
-	Username       string    `json:"username" bson:"username"`
-	Nickname       string    `json:"nickname" bson:"nickname"`
-	Email          string    `json:"email" bson:"email"`
-	Address        string    `json:"address" bson:"address"`
-	Phone          string    `json:"phone" bson:"phone"`
-	Passwd         string    `json:"-" bson:"passwd"`
-	RegisterIp     string    `json:"registerIp" bson:"registerIp"`
-	RegisterRegion string    `json:"registerRegion" bson:"registerRegion"`
-	IsConfirmed    bool      `json:"-" bson:"isConfirmed"`
-	RegisterAt     time.Time `json:"registerAt" bson:"registerAt"`
-	UpdatedAt      time.Time `json:"-" bson:"updatedAt"`
+	Username       string `json:"username" bson:"username"`
+	Nickname       string `json:"nickname" bson:"nickname"`
+	Email          string `json:"email" bson:"email"`
+	Address        string `json:"address" bson:"address"`
+	Phone          string `json:"phone" bson:"phone"`
+	Passwd         string `json:"-" bson:"passwd"`
+	RegisterIp     string `json:"registerIp" bson:"registerIp"`
+	RegisterRegion string `json:"registerRegion" bson:"registerRegion"`
+	IsConfirmed    bool   `json:"-" bson:"isConfirmed"` // reserved
+
+	// 该字段表示用户状态, 比如是否被禁用等
+	Status     int       `json:"status" bson:"status"`
+	RegisterAt time.Time `json:"registerAt" bson:"registerAt"`
+	UpdatedAt  time.Time `json:"-" bson:"updatedAt"`
 }
 
 type ReferInfo struct {

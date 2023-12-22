@@ -126,3 +126,44 @@ func (m *TrackAddressModel) DeleteByUsernameAndAddr(username, address string) er
 
 	return err
 }
+
+func (m *TrackAddressModel) GetTrackAddressMap(page, pageSize int64) (UserTrackAddressMap, int, error) {
+	umap := make(UserTrackAddressMap)
+	var err error
+	var totalCount int
+
+	skip := (page - 1) * pageSize
+	for {
+		cursor, err := m.Collection.Find(context.Background(), bson.M{}, options.Find().SetLimit(pageSize).SetSkip(skip))
+		if err != nil {
+			return umap, 0, err
+		}
+
+		count := 0
+		for cursor.Next(context.Background()) {
+			var addr UserTrackedAddress
+			if err := cursor.Decode(&addr); err != nil {
+				cursor.Close(context.Background())
+				return umap, 0, err
+			}
+			count++
+			totalCount++
+
+			umap[addr.Address] = append(umap[addr.Address], addr)
+		}
+
+		if err := cursor.Err(); err != nil {
+			cursor.Close(context.Background())
+			return umap, 0, err
+		}
+
+		if count < int(pageSize) {
+			// reached the end of data
+			break
+		}
+		skip += pageSize
+	}
+
+	// utils.Tracef("[ GetTrackAddressMap ]  unique addresses count: %v", len(umap))
+	return umap, totalCount, err
+}

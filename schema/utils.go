@@ -23,4 +23,6 @@ func InitTables(mongodb *mongo.Client) {
 	utils.DoInitTable(config.DatabaseName, config.ConfigTableName, ConfigIndexModel, mongodb)
 	utils.DoInitTable(config.DatabaseName, config.GlobalTrendTableName, GlobalTrendIndexModel, mongodb)
 
+	utils.DoInitTable(config.DatabaseName, config.TrackSwapTableName, TrackSwapIndexModel, mongodb)
+
 }

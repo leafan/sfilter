@@ -212,3 +212,7 @@ func DeleteTrackedAddress(username, address string) error {
 func AdminGetAllUsersWithOptionFilter(options *options.FindOptions, filter *primitive.M) ([]User, int64, error) {
 	return um.GetAllUsers(options, filter)
 }
+
+func AdminGetTrackAddressMap() (UserTrackAddressMap, int, error) {
+	return tm.GetTrackAddressMap(1, 1000)
+}
