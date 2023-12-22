@@ -2,11 +2,14 @@ package models
 
 import (
 	"context"
+	"sfilter/config"
 	"sfilter/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserModel struct {
@@ -77,4 +80,30 @@ func (m *UserModel) ResetUserPassword(username, passwd string) error {
 	}
 
 	return nil
+}
+
+func (m *UserModel) GetAllUsers(findOpts *options.FindOptions, filter *primitive.M) ([]User, int64, error) {
+	var result []User
+	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)
+	defer cancel()
+
+	cursor, err := m.Collection.Find(ctx, filter, findOpts)
+	if err != nil {
+		return result, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	countOpts := &options.CountOptions{
+		Limit: &config.COUNT_UPPER_SIZE,
+	}
+	countOpts.SetMaxTime(config.MONGO_FIND_TIMEOUT * time.Second)
+
+	totalCount, err := m.Collection.CountDocuments(ctx, filter, countOpts)
+	if err != nil {
+		utils.Warnf("[ GetAllUsers ] Count error: %v\n", err)
+		return result, 0, err
+	}
+
+	err = cursor.All(ctx, &result)
+	return result, totalCount, err
 }

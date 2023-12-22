@@ -4,7 +4,9 @@ import (
 	"time"
 
 	"github.com/go-pkgz/auth/token"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"sfilter/user/config"
 	"sfilter/user/services"
@@ -14,6 +16,7 @@ import (
 var um UserModel
 var vm VerifyCodeModel
 var lm LoginHistoryModel
+var tm TrackAddressModel
 
 func InitService(db *mongo.Client) {
 	// 初始化table
@@ -32,6 +35,10 @@ func InitService(db *mongo.Client) {
 		lm.Collection = db.Database(config.DatabaseName).Collection(config.LoginHistoryTableName)
 	}
 
+	if tm.Collection == nil {
+		tm.Collection = db.Database(config.DatabaseName).Collection(config.TrackAddressTableName)
+	}
+
 	// 初始化数据
 	checkOrCreatAdmin()
 }
@@ -47,15 +54,26 @@ func GetUser(username string) (*User, error) {
 }
 
 func CreateUser(user *User) error {
-	err := um.CreatUser(user)
+	var err error
+	user.RegisterRegion, err = services.GetIpLocation(user.RegisterIp)
+	if err != nil {
+		utils.Errorf("[ CreateUser ] getip location failed, err: %v", err)
+		return err
+	}
+
+	err = um.CreatUser(user)
 	return err
 }
 
 // 用于 oauth 等场景, 直接获取或者直接注册
-func GetOrCreateUser(user *token.User) (*User, error) {
-	localUser := &User{}
+func GetUserByToken(user *token.User) (*User, error) {
+	dbUser, err := um.GetUserByNameOrEmail(user.Name)
+	if err != nil {
+		utils.Warnf("[ GetUserByToken ] GetUser err: %v", err)
+		return nil, err
+	}
 
-	return localUser, nil
+	return dbUser, nil
 }
 
 func CheckUserPass(username, passwd string) bool {
@@ -146,4 +164,51 @@ func CreatOneLoginHistory(username, ip string) error {
 	}
 
 	return lm.CreatOne(&entry)
+}
+
+func GetTrackedAddresses(username string) ([]UserTrackedAddress, int64, error) {
+	return tm.GetTrackAddressesByUsername(username, nil, nil)
+}
+
+func GetTrackedAddressesWithOptionFilter(username string, options *options.FindOptions, filter *primitive.M) ([]UserTrackedAddress, int64, error) {
+	return tm.GetTrackAddressesByUsername(username, options, filter)
+}
+
+func CreateTrackedAddress(username, address, memo string, priority int) error {
+	taddr := &UserTrackedAddress{
+		Username: username,
+		AddressInfo: AddressInfo{
+			Address:  address,
+			Memo:     memo,
+			Priority: priority,
+		},
+	}
+
+	return tm.CreatOne(taddr)
+}
+
+func GetEntryByUserAndAddress(username, address string) (*UserTrackedAddress, error) {
+	return tm.GetEntryByUserAndAddress(username, address)
+}
+
+func GetUserTrackAddressCount(username string) (int64, error) {
+	return tm.GetUserTrackAddressCount(username)
+}
+
+func UpdateTrackedAddress(username, address, memo string, priority int) error {
+	addrinfo := &AddressInfo{
+		Memo:     memo,
+		Priority: priority,
+	}
+
+	return tm.UpdateTrackedAddress(username, address, addrinfo)
+}
+
+func DeleteTrackedAddress(username, address string) error {
+	return tm.DeleteByUsernameAndAddr(username, address)
+}
+
+// //// Admin /////
+func AdminGetAllUsersWithOptionFilter(options *options.FindOptions, filter *primitive.M) ([]User, int64, error) {
+	return um.GetAllUsers(options, filter)
 }

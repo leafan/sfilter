@@ -28,6 +28,7 @@ var (
 	VerifyCodeMaxNum    = 3 // 某一段时间之内某ip允许的最大请求验证码数
 
 	LoginHistoryTableName = "logins"
+	TrackAddressTableName = "trackaddr"
 )
 
 var (
@@ -64,6 +65,10 @@ func initEnvConfig() {
 	}
 	if os.Getenv("JWT_SECRET") != "" {
 		JWTSecret = os.Getenv("JWT_SECRET")
+	}
+
+	if os.Getenv("DATABASE_USER") != "" {
+		DatabaseName = os.Getenv("DATABASE_USER")
 	}
 
 }

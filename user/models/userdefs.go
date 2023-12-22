@@ -9,26 +9,27 @@ import (
 )
 
 type User struct {
-	BasicInfo `bson:",inline"`
-	ReferInfo `bson:",inline"`
-	RoleInfo  `bson:",inline"`
+	BasicInfo `json:",inline" bson:",inline"`
+	ReferInfo `json:",inline" bson:",inline"`
+	RoleInfo  `json:",inline" bson:",inline"`
 }
 
 type BasicInfo struct {
-	Username    string    `json:"username" bson:"username"`
-	Nickname    string    `json:"nickname" bson:"nickname"`
-	Email       string    `json:"email" bson:"email"`
-	Address     string    `json:"address" bson:"address"`
-	Phone       string    `json:"phone" bson:"phone"`
-	Passwd      string    `json:"-" bson:"passwd"`
-	RegisterIp  string    `json:"-" bson:"registerIp"`
-	IsConfirmed bool      `json:"-" bson:"isConfirmed"`
-	RegisterAt  time.Time `json:"registerAt" bson:"registerAt"`
-	UpdatedAt   time.Time `json:"-" bson:"updatedAt"`
+	Username       string    `json:"username" bson:"username"`
+	Nickname       string    `json:"nickname" bson:"nickname"`
+	Email          string    `json:"email" bson:"email"`
+	Address        string    `json:"address" bson:"address"`
+	Phone          string    `json:"phone" bson:"phone"`
+	Passwd         string    `json:"-" bson:"passwd"`
+	RegisterIp     string    `json:"registerIp" bson:"registerIp"`
+	RegisterRegion string    `json:"registerRegion" bson:"registerRegion"`
+	IsConfirmed    bool      `json:"-" bson:"isConfirmed"`
+	RegisterAt     time.Time `json:"registerAt" bson:"registerAt"`
+	UpdatedAt      time.Time `json:"-" bson:"updatedAt"`
 }
 
 type ReferInfo struct {
-	Parent    string  `json:"-" bson:"parent"`            // 我的邀请人
+	Parent    string  `json:"parent" bson:"parent"`       // 我的邀请人
 	ReferCode *string `json:"referCode" bson:"referCode"` // 我的邀请码
 	ReferNum  int     `json:"-" bson:"referNum"`          // 我的邀请人数, 暂时不用
 }

@@ -1,9 +1,0 @@
-package models
-
-const (
-	USER_ROLE_BASIC int = iota
-
-	USER_ROLE_LEVEL1
-	USER_ROLE_LEVEL2
-	USER_ROLE_LEVEL3
-)

@@ -11,3 +11,16 @@ type ResetPasswdForm struct {
 	PasswdOld string `json:"passwdOld" binding:"required"`
 	PasswdNew string `json:"passwdNew" binding:"required"`
 }
+
+// 新增跟踪地址
+type TrackAddressForm struct {
+	Address  string `json:"address" binding:"required"`
+	Memo     string `json:"memo" binding:"required"`
+	Priority int    `json:"priority"`
+}
+
+// 修改跟踪地址
+type UpdateTrackAddressForm struct {
+	Memo     string `json:"memo" binding:"required"`
+	Priority int    `json:"priority"`
+}

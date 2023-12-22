@@ -11,6 +11,7 @@ func initTables(db *mongo.Client) {
 	utils.DoInitTable(config.DatabaseName, config.UserTableName, UserIndexModel, db)
 	utils.DoInitTable(config.DatabaseName, config.VerifyCodeTableName, VerifyCodeIndexModel, db)
 	utils.DoInitTable(config.DatabaseName, config.LoginHistoryTableName, LoginHistoryIndexModel, db)
+	utils.DoInitTable(config.DatabaseName, config.TrackAddressTableName, TrackAddressIndexModel, db)
 }
 
 func checkOrCreatAdmin() {

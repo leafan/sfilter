@@ -11,7 +11,7 @@ package auth
 import (
 	"sfilter/user/config"
 	"sfilter/user/models"
-	
+
 	"github.com/go-pkgz/auth/avatar"
 	"github.com/go-pkgz/auth/logger"
 
@@ -24,7 +24,7 @@ func NewAuthService(db *mongo.Client) *auth.Service {
 	models.InitService(db)
 
 	opts := getAuthOptions()
-	opts.ClaimsUpd = UserClaimsUpdate(models.GetOrCreateUser)
+	opts.ClaimsUpd = UserClaimsUpdate(models.GetUserByToken)
 
 	// validator allows to reject some valid tokens with user-defined logic
 	opts.Validator = token.ValidatorFunc(ValidateTokenClaims)

@@ -31,9 +31,8 @@ func AuthChainMiddleWare() gin.HandlerFunc {
 			c.Next()
 		} else {
 			c.JSON(http.StatusUnauthorized, "chain is wrong")
+			c.Abort()
 		}
-
-		c.Abort()
 	}
 }
 

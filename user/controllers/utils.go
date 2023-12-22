@@ -1,10 +1,16 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"sfilter/config"
 	"sfilter/user/models"
 	"sfilter/utils"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 预检查, 防止sql注入等
@@ -46,4 +52,63 @@ func isValidEmail(email string) bool {
 		return false
 	}
 	return matched
+}
+
+func preCheckRegister(form *models.RegisterForm) error {
+	err := isValidCredentials(form)
+	if err != nil {
+		return err
+	}
+
+	// 检查验证码是否正确
+	deadline := time.Now().Add(-10 * time.Minute) // 最近10min
+	vcode, err := models.GetVerifyCodeByUser(form.Username, deadline)
+	if err != nil || vcode.Code != form.AuthCode {
+		return fmt.Errorf("wrong verify code")
+	}
+
+	// 目前beta阶段, 必须要有refercode 且refer人存在
+	if form.ReferCode == "" || !models.IsExistedReferCode(form.ReferCode) {
+		return fmt.Errorf("wrong params: refer code not exists")
+	}
+
+	// username或email是否已存在
+	if models.IsExistedUsernameOrEmail(form.Username) {
+		return fmt.Errorf("username or email has existed, please change one")
+	}
+
+	return nil
+}
+
+func ParsePageLimitParams(c *gin.Context) (int64, int64, error) {
+	page := c.DefaultQuery("page", "1")
+	limit := c.DefaultQuery("pageSize", "10")
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		return 0, 0, errors.New("invalid page parameter")
+	}
+
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		return 0, 0, errors.New("invalid limit parameter")
+	}
+
+	if pageInt <= 0 {
+		pageInt = 1
+	}
+
+	if pageInt > config.MONGO_PAGE_UPPER {
+		pageInt = config.MONGO_PAGE_UPPER
+	}
+
+	if limitInt < config.MONGO_LIMIT_DOWN {
+		limitInt = config.MONGO_LIMIT_DOWN
+	}
+
+	if limitInt > config.MONGO_LIMIT_UPPER {
+		limitInt = config.MONGO_LIMIT_UPPER
+	}
+
+	return int64(pageInt), int64(limitInt), nil
 }

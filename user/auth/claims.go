@@ -12,7 +12,7 @@ import (
 // 暂时不用, 如黑名单等
 // middleware 中判断token成功后使用
 func ValidateTokenClaims(t string, claims token.Claims) bool {
-	utils.Warnf("[ ValidateTokenClaims ] trace here. user: %v", claims.User.Name)
+	// utils.Warnf("[ ValidateTokenClaims ] trace here. user: %v", claims.User.Name)
 
 	return true
 }
@@ -27,13 +27,14 @@ func UserClaimsUpdate(userDataFetcher func(user *token.User) (*models.User, erro
 			return claims
 		}
 
-		// utils.Tracef("[ UserClaimsUpdate ] ip: %v, user: %v", claims.User.IP, claims.User)
 		userData, err := userDataFetcher(claims.User)
 		if err != nil {
 			return claims
 		}
 
 		claims.User.SetStrAttr("role", fmt.Sprintf("%d", userData.Role))
+
+		utils.Tracef("[ UserClaimsUpdate ] login success ip: %v, user: %v", claims.User.IP, claims.User)
 
 		return claims
 	}
