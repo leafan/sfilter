@@ -80,7 +80,7 @@ func CreateTrackedAddress(c *gin.Context) {
 		return
 	}
 
-	if count > models.GetRoleTrackCount(user.Role) {
+	if count > models.GetRoleTrackAddressCount(user.Role) {
 		ResFailure(c, 403, "Too many tracked address, please upgrade your level or contact deepeye team")
 		return
 	}

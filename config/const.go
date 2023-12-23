@@ -1,6 +1,9 @@
 package config
 
-import "math/big"
+import (
+	"math/big"
+	"time"
+)
 
 const DEVELOPMENT = true
 
@@ -34,6 +37,9 @@ const GlobalTrendTableSaveTime = SecondsForOneWeek
 
 const TrackSwapTableName = "trackswap"
 const TrackSwapTableSaveTime = SecondsForOneMonth
+
+const UpdateTrackAddressInterval = 1 * time.Minute // 定时更新用户跟踪地址列表
+const CheckTrackAddressInterval = 60 * time.Minute // 定时检查用户记录是否到达上限
 
 const NeverExpireTime = 0
 

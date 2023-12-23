@@ -15,6 +15,7 @@ const (
 	USER_ROLE_LEVEL_ROOT = 9999 // root管理员用户
 )
 
+// 允许新增地址个数
 const (
 	ROLE_BASIC_ADDRESS_COUNT    = 10
 	ROLE_PREMIUM_ADDRESS_COUNT  = 100
@@ -26,7 +27,19 @@ const (
 	ROLE_ROOT_ADDRESS_COUNT = 100000
 )
 
-func GetRoleTrackCount(roleStr string) int64 {
+// 允许保存的地址最大数
+const (
+	ROLE_BASIC_TRACK_SWAP_COUNT    = 1000
+	ROLE_PREMIUM_TRACK_SWAP_COUNT  = 1000 * 10
+	ROLE_ELITE_TRACK_SWAP_COUNT    = 1000 * 100
+	ROLE_INVESTOR_TRACK_SWAP_COUNT = 1000 * 1000
+
+	// ...
+
+	ROLE_ROOT_TRACK_SWAP_COUNT = 1000 * 1000 * 10
+)
+
+func GetRoleTrackAddressCount(roleStr string) int64 {
 	role, err := strconv.Atoi(roleStr)
 	if err != nil {
 		return ROLE_BASIC_ADDRESS_COUNT
@@ -43,4 +56,23 @@ func GetRoleTrackCount(roleStr string) int64 {
 	}
 
 	return ROLE_BASIC_ADDRESS_COUNT
+}
+
+func GetRoleTrackSwapCount(roleStr string) int64 {
+	role, err := strconv.Atoi(roleStr)
+	if err != nil {
+		return ROLE_BASIC_ADDRESS_COUNT
+	}
+
+	if role == USER_ROLE_LEVEL_PREMIUM {
+		return ROLE_PREMIUM_TRACK_SWAP_COUNT
+	} else if role == USER_ROLE_LEVEL_ELITE {
+		return ROLE_ELITE_TRACK_SWAP_COUNT
+	} else if role == USER_ROLE_LEVEL_INVESTOR {
+		return ROLE_INVESTOR_TRACK_SWAP_COUNT
+	} else if role == USER_ROLE_LEVEL_ROOT {
+		return ROLE_ROOT_TRACK_SWAP_COUNT
+	}
+
+	return ROLE_BASIC_TRACK_SWAP_COUNT
 }

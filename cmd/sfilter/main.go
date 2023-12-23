@@ -93,17 +93,27 @@ func loop(client *ethclient.Client, mongodb *mongo.Client) {
 func getTrackAddressOnTimer(mongodb *mongo.Client) {
 	userModels.InitService(mongodb) // 初始化db, 可以直接使用user的service等
 
-	// for循环更新获取
-	ticker := time.NewTicker(1 * time.Minute)
-	defer ticker.Stop()
-
 	// 第一次执行
 	err := handler.GetTrackAddressMapOnTimer()
 	if err != nil {
 		utils.Fatalf("[ getTrackAddressOnTimer ] GetTrackAddressOnTimer failed, err:  %v", err)
 	}
 
-	for range ticker.C {
-		handler.GetTrackAddressMapOnTimer()
-	}
+	go func() {
+		updateTimer := time.NewTicker(config.UpdateTrackAddressInterval)
+		defer updateTimer.Stop()
+
+		for range updateTimer.C {
+			handler.GetTrackAddressMapOnTimer()
+		}
+	}()
+
+	go func() {
+		checkTimer := time.NewTicker(config.CheckTrackAddressInterval)
+		defer checkTimer.Stop()
+
+		for range checkTimer.C {
+			handler.CheckAndDeleteUserSwapsUpLimit(mongodb)
+		}
+	}()
 }
