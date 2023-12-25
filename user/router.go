@@ -110,5 +110,6 @@ func Run(r *gin.Engine) {
 	gWithAdminAuth := g.Group("/admin").Use(adminAuthMiddleware)
 	{
 		gWithAdminAuth.GET("/users", controllers.AdminGetAllUsers)
+		gWithAdminAuth.PATCH("/users", controllers.AdminUpdateRole)
 	}
 }

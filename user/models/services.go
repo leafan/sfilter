@@ -121,6 +121,10 @@ func ResetUserPassword(username, newpass string) error {
 	return um.ResetUserPassword(username, newpass)
 }
 
+func ResetUserRole(username string, role int) error {
+	return um.ResetUserRole(username, role)
+}
+
 // for verifycode, 只获取最近10分钟的有效数据
 func GetVerifyCodeByUser(username string, deadline time.Time) (*VerifyCode, error) {
 	return vm.GetCodeByUsername(username, deadline)

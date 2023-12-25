@@ -24,3 +24,9 @@ type UpdateTrackAddressForm struct {
 	Memo     string `json:"memo" binding:"required"`
 	Priority int    `json:"priority"`
 }
+
+// 修改用户role
+type AdminUpdateUserRoleForm struct {
+	Username string `json:"username" binding:"required"`
+	Role     int    `json:"role"  binding:"required"`
+}

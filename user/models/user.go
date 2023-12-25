@@ -82,6 +82,30 @@ func (m *UserModel) ResetUserPassword(username, passwd string) error {
 	return nil
 }
 
+func (m *UserModel) ResetUserRole(username string, role int) error {
+	filter := bson.D{{Key: "username", Value: username}}
+	info := struct {
+		Role      int       `bson:"role"`
+		UpdatedAt time.Time `bson:"updatedAt"`
+	}{
+		Role:      role,
+		UpdatedAt: time.Now(),
+	}
+
+	update := bson.D{
+		{Key: "$set", Value: info},
+	}
+
+	_, err := m.Collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		utils.Warnf("[ ResetUserRole ] failed. username: %v, err: %v\n", username, err)
+	} else {
+		utils.Infof("[ ResetUserRole ] success reset role for user: %v", username)
+	}
+
+	return nil
+}
+
 func (m *UserModel) GetAllUsers(findOpts *options.FindOptions, filter *primitive.M) ([]User, int64, error) {
 	var result []User
 	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)

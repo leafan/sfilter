@@ -1,6 +1,8 @@
 package models
 
-import "strconv"
+import (
+	"strconv"
+)
 
 const (
 	USER_ROLE_BASIC int = iota // 默认, 允许10个地址?
@@ -38,6 +40,17 @@ const (
 
 	ROLE_ROOT_TRACK_SWAP_COUNT = 1000 * 1000 * 10
 )
+
+func IsValidRole(role int) bool {
+	if role == USER_ROLE_BASIC ||
+		role == USER_ROLE_LEVEL_PREMIUM ||
+		role == USER_ROLE_LEVEL_ELITE ||
+		role == USER_ROLE_LEVEL_INVESTOR {
+		return true
+	}
+
+	return false
+}
 
 func GetRoleTrackAddressCount(roleStr string) int64 {
 	role, err := strconv.Atoi(roleStr)

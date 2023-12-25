@@ -33,7 +33,7 @@ func AdminGetAllUsers(c *gin.Context) {
 
 	info, count, err := models.AdminGetAllUsersWithOptionFilter(options, filter)
 	if err != nil {
-		ResFailure(c, 500, "Get data failed.")
+		ResFailure(c, 500, "Get data failed: "+err.Error())
 		return
 	}
 
@@ -44,8 +44,43 @@ func AdminGetAllUsers(c *gin.Context) {
 		List:  info,
 		Count: count,
 	}
-	utils.ResSuccess(c, data)
 
+	utils.ResSuccess(c, data)
+}
+
+func AdminUpdateRole(c *gin.Context) {
+	user, err := token.GetUserInfo(c.Request)
+	if err != nil {
+		ResFailure(c, 401, "Wrong Claims.")
+		return
+	}
+
+	if user.Attributes["role"] != fmt.Sprintf("%d", models.USER_ROLE_LEVEL_ROOT) {
+		ResFailure(c, 401, "No privilige to execute")
+		return
+	}
+
+	var update models.AdminUpdateUserRoleForm
+	err = c.ShouldBind(&update)
+	if err != nil {
+		ResFailure(c, 401, "Wrong Params.")
+		return
+	}
+
+	if !models.IsValidRole(update.Role) {
+		// gutils.Tracef("wrong valid role, role: %v", update.Role)
+		ResFailure(c, 401, "Wrong role param")
+		return
+	}
+
+	// modify role
+	err = models.ResetUserRole(update.Username, update.Role)
+	if err != nil {
+		ResFailure(c, 401, err.Error())
+		return
+	}
+
+	utils.ResSuccess(c, "update role success.")
 }
 
 func parseAdminAllUsersOptions(c *gin.Context) (*options.FindOptions, error) {
