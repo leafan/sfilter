@@ -18,7 +18,7 @@ func SaveTransferEvent(_transfer *schema.Transfer, mongodb *mongo.Client) {
 	_transfer.CreatedAt = time.Now()
 	_, err := collection.InsertOne(context.Background(), _transfer)
 	if err != nil {
-		utils.Warnf("[ SaveTransferEvent ] InsertOne error: %v, trasnfer: %v, LogIndexWithTx: %v\n", err, _transfer, _transfer.LogIndexWithTx)
+		// utils.Warnf("[ SaveTransferEvent ] InsertOne error: %v, trasnfer: %v, LogIndexWithTx: %v\n", err, _transfer, _transfer.LogIndexWithTx)
 	}
 }
 

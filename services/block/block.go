@@ -30,15 +30,28 @@ func IsBlockProceeded(blkNo int64, mongodb *mongo.Client) bool {
 	return true
 }
 
-func SaveBlockProceeded(bps *schema.BlockProceeded, mongodb *mongo.Client) {
+func SetBlockProceeded(bps *schema.BlockProceeded, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
 
 	bps.CreatedAt = time.Now()
 
 	_, err := collection.InsertOne(context.Background(), bps)
 	if err != nil {
-		utils.Warnf("[ SaveBlockProceeded ] InsertOne error: %v, block no: %v\n", err, bps.BlockNo)
+		utils.Warnf("[ SetBlockProceeded ] InsertOne error: %v, block no: %v\n", err, bps.BlockNo)
 		return
 	}
 
+}
+
+func SetUnProceeded(blockNo int64, mongodb *mongo.Client) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.BlockProceededTableName)
+
+	filter := bson.M{"blockNo": blockNo}
+
+	_, err := collection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		utils.Errorf("[ SetUnProceeded ] set failed, error: %v, blockNo: %v, ", err, blockNo)
+	}
+
+	utils.Infof("[ SetUnProceeded ] set success")
 }

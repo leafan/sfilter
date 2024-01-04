@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"sfilter/config"
+	"sfilter/handler/facet"
 	"sfilter/schema"
 	service_block "sfilter/services/block"
 	"sfilter/services/chain"
@@ -95,6 +96,9 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	// 更新 用户跟踪地址逻辑
 	HandleUserTrackSwaps(blk, mongodb, swaps)
 
+	// 更新 facet 逻辑
+	facet.HandleFacetLogic(blk, mongodb)
+
 	// etc.. todo
 
 	// record the proceeded block.
@@ -114,7 +118,7 @@ func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {
 		EthPrice: block.EthPrice,
 	}
 
-	service_block.SaveBlockProceeded(bps, mongodb)
+	service_block.SetBlockProceeded(bps, mongodb)
 
 }
 

@@ -191,6 +191,10 @@ func CreateTrackedAddress(username, address, memo string, priority int) error {
 	return tm.CreatOne(taddr)
 }
 
+func GetEntryByUserAndMemo(username, memo string) (*UserTrackedAddress, error) {
+	return tm.GetEntryByUserAndMemo(username, memo)
+}
+
 func GetEntryByUserAndAddress(username, address string) (*UserTrackedAddress, error) {
 	return tm.GetEntryByUserAndAddress(username, address)
 }

@@ -18,7 +18,7 @@ import (
 
 func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client, ethPrice float64) *schema.Block {
 	if service_block.IsBlockProceeded(blockNumber.Int64(), mongodb) {
-		utils.Warnf("[ getBlock ] Block is proceeded number: ", blockNumber)
+		utils.Warnf("[ getBlock ] Block is proceeded number: %v", blockNumber)
 		return nil
 	}
 
@@ -29,7 +29,7 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 
 	block, err := ethblocks.GetBlockByNumber(ctx, client, blockNumber)
 	if err != nil {
-		utils.Errorf("[ getBlock ] GetBlockByNumber error: ", err)
+		utils.Errorf("[ getBlock ] GetBlockByNumber(%v) error: %v", blockNumber, err)
 		return nil
 	}
 	oneBlk.Block = block

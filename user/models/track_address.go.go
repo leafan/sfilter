@@ -19,8 +19,9 @@ type TrackAddressModel struct {
 func (m *TrackAddressModel) GetTrackAddressesByUsername(username string, optionsClient *options.FindOptions, filterClient *primitive.M) ([]UserTrackedAddress, int64, error) {
 	filter := filterClient
 	if filter == nil {
-		filter = &bson.M{"username": username}
+		filter = &bson.M{}
 	}
+	(*filter)["username"] = username
 
 	findOpts := optionsClient
 	if findOpts == nil {
@@ -55,6 +56,18 @@ func (m *TrackAddressModel) GetTrackAddressesByUsername(username string, options
 // 判断是否已经存在
 func (m *TrackAddressModel) GetEntryByUserAndAddress(username, address string) (*UserTrackedAddress, error) {
 	filter := bson.M{"username": username, "address": address}
+
+	var result UserTrackedAddress
+	err := m.Collection.FindOne(context.Background(), filter).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (m *TrackAddressModel) GetEntryByUserAndMemo(username, memo string) (*UserTrackedAddress, error) {
+	filter := bson.M{"username": username, "memo": memo}
 
 	var result UserTrackedAddress
 	err := m.Collection.FindOne(context.Background(), filter).Decode(&result)

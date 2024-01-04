@@ -125,7 +125,7 @@ func doHandleOneSwap(_swap *schema.Swap, mongodb *mongo.Client) {
 		// 记录该用户状态, 用于检查是否达到存储上限
 		trackUserMap[uswap.Username] = true
 
-		utils.Tracef("[ doHandleOneSwap ] save one now, user: %v", uswap.Username)
+		// utils.Tracef("[ doHandleOneSwap ] save one now, user: %v", uswap.Username)
 	}
 
 }

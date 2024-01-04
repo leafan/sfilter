@@ -18,6 +18,8 @@ import (
 	userModels "sfilter/user/models"
 	"sfilter/utils"
 
+	sblock "sfilter/services/block"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -31,7 +33,12 @@ func main() {
 
 	if *block != 0 {
 		utils.Infof("\n\n\nStart block test now...\n\n\n")
+
+		// 先把block id set 未处理
+		sblock.SetUnProceeded(*block, mongodb)
+
 		handler.HandleBlock(big.NewInt(*block), client, mongodb)
+
 		utils.Infof("\n\nFinished block test...\n\n")
 
 		return

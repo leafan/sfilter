@@ -52,6 +52,13 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 
 			// 所有的最新transfer集合, 支持 token, operator 等条件查询
 			ethGroup.GET("/transfers", encrypt.GetTransferEvents)
+
+			// 所有的铭文查询
+			ethGroup.GET("/facets", encrypt.GetFacets)
+
+			// 所有的facet查询
+			ethGroup.GET("/inscriptions", encrypt.GetInscriptions)
+
 		}
 
 	}

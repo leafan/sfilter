@@ -1,6 +1,7 @@
 package models
 
 import (
+	"sfilter/utils"
 	"strconv"
 )
 
@@ -55,6 +56,7 @@ func IsValidRole(role int) bool {
 func GetRoleTrackAddressCount(roleStr string) int64 {
 	role, err := strconv.Atoi(roleStr)
 	if err != nil {
+		utils.Tracef("[ GetRoleTrackAddressCount ] strconv role(%v) failed: %v", roleStr, err)
 		return ROLE_BASIC_ADDRESS_COUNT
 	}
 

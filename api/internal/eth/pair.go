@@ -30,7 +30,11 @@ func GetPair(c *gin.Context) {
 		return
 	}
 
-	utils.ResSuccess(c, data)
+	var info []*schema.Pair
+	info = append(info, data)
+	updateWrongData(info)
+
+	utils.ResSuccess(c, info[0])
 }
 
 // hot pair(token): 最近n天 24h tx 数排名
@@ -56,8 +60,8 @@ func GetHotPairs(c *gin.Context) {
 	updateWrongData(info)
 
 	data := struct {
-		List  []schema.Pair `json:"list"`
-		Count int64         `json:"count"`
+		List  []*schema.Pair `json:"list"`
+		Count int64          `json:"count"`
 	}{
 		List:  info,
 		Count: count,
@@ -160,7 +164,7 @@ func parsePairFilterOptions(c *gin.Context) *primitive.M {
 	return &filter
 }
 
-func updateWrongData(info []schema.Pair) {
+func updateWrongData(info []*schema.Pair) {
 	for _, _pair := range info {
 		if time.Since(_pair.UpdatedAt) > 1*time.Hour {
 			_pair.TxNumIn1h = 0

@@ -32,6 +32,15 @@ var (
 // mongodb 查询时的上限值, 超过则吐10000
 var COUNT_UPPER_SIZE = int64(10000)
 
+// 定义facet项目名称, 目前只知道 facetswap..
+func GetFacetProjectName(addr string) string {
+	if addr == "0x00000000000000000000000000000000000FacE7" {
+		return "Facet"
+	}
+
+	return "Unknown"
+}
+
 func init() {
 
 	// 如果本地有env, 则以本地为主

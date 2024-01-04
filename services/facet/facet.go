@@ -1,4 +1,4 @@
-package swap
+package facet
 
 import (
 	"context"
@@ -12,23 +12,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func SaveSwapTx(swap *schema.Swap, mongodb *mongo.Client) error {
-	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
+func SaveFacet(fct *schema.FacetModel, mongodb *mongo.Client) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.FacetTableName)
 
-	swap.CreatedAt = time.Now()
-
-	_, err := collection.InsertOne(context.Background(), swap)
+	_, err := collection.InsertOne(context.Background(), fct)
 	if err != nil {
-		// utils.Warnf("[ saveSwapTx ] InsertOne error: %v, swap tx: %v\n", err, swap.TxHash)
+		utils.Warnf("[ SaveFacet ] InsertOne error: %v, fct: %v, hash: %v\n", err, fct, fct.TxHash)
 	}
-
-	return err
 }
 
-func GetSwapEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Database) ([]schema.Swap, int64, error) {
-	collection := mongodb.Collection(config.SwapTableName)
+func GetFacets(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Database) ([]schema.FacetModel, int64, error) {
+	collection := mongodb.Collection(config.FacetTableName)
 
-	var result []schema.Swap
+	var result []schema.FacetModel
 	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)
 	defer cancel()
 
@@ -38,6 +34,7 @@ func GetSwapEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *m
 	}
 	defer cursor.Close(ctx)
 
+	// 限制 count 上限, 否则会卡死, 查询太久的也没有意义
 	countOpts := &options.CountOptions{
 		Limit: &config.COUNT_UPPER_SIZE,
 	}
@@ -45,7 +42,7 @@ func GetSwapEvents(findOpt *options.FindOptions, filter *primitive.M, mongodb *m
 
 	totalCount, err := collection.CountDocuments(ctx, filter, countOpts)
 	if err != nil {
-		utils.Warnf("[ GetSwapEvents ] Count error: %v\n", err)
+		utils.Warnf("[ GetFacets ] Count error: %v\n", err)
 		return result, 0, err
 	}
 

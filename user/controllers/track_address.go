@@ -73,6 +73,12 @@ func CreateTrackedAddress(c *gin.Context) {
 		return
 	}
 
+	_, err = models.GetEntryByUserAndMemo(user.Name, addr.Memo)
+	if err == nil {
+		ResFailure(c, 401, "Memo exists.")
+		return
+	}
+
 	// 判断是否已经创建了太多地址, 如果是请升级
 	count, err := models.GetUserTrackAddressCount(user.Name)
 	if err != nil {
@@ -80,7 +86,13 @@ func CreateTrackedAddress(c *gin.Context) {
 		return
 	}
 
-	if count > models.GetRoleTrackAddressCount(user.Role) {
+	role, ok := user.Attributes["role"]
+	if !ok {
+		ResFailure(c, 500, "Wrong roles")
+		return
+	}
+
+	if count > models.GetRoleTrackAddressCount(role.(string)) {
 		ResFailure(c, 403, "Too many tracked address, please upgrade your level or contact deepeye team")
 		return
 	}

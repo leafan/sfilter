@@ -36,8 +36,8 @@ func GetGlobalInfo(c *gin.Context) {
 
 	data := struct {
 		Global *schema.GlobalInfo `json:"global"`
-		Hot    []schema.Pair      `json:"hot"`
-		New    []schema.Pair      `json:"new"`
+		Hot    []*schema.Pair     `json:"hot"`
+		New    []*schema.Pair     `json:"new"`
 	}{
 		Global: global,
 		Hot:    hot,
@@ -47,8 +47,13 @@ func GetGlobalInfo(c *gin.Context) {
 	utils.ResSuccess(c, data)
 }
 
-func getHotPairs(db *mongo.Database) ([]schema.Pair, error) {
+func getHotPairs(db *mongo.Database) ([]*schema.Pair, error) {
 	filter := bson.M{}
+	date := time.Now().Add(-1 * time.Hour)
+	filter["updatedAt"] = bson.M{
+		"$gte": date,
+	}
+
 	options := options.Find().SetSort(bson.D{{Key: "txNumIn1h", Value: -1}}).SetLimit(5)
 
 	filter["$and"] = []bson.M{
@@ -67,11 +72,15 @@ func getHotPairs(db *mongo.Database) ([]schema.Pair, error) {
 	return hot, nil
 }
 
-func getNewHotPairs(db *mongo.Database) ([]schema.Pair, error) {
+func getNewHotPairs(db *mongo.Database) ([]*schema.Pair, error) {
 	filter := bson.M{}
 	date := time.Now().Add(-time.Duration(24*7) * time.Hour) // 最近7天的新币
 	filter["firstAddPoolTime"] = bson.M{
 		"$gte": date,
+	}
+	dateUpdatedAt := time.Now().Add(-24 * time.Hour)
+	filter["updatedAt"] = bson.M{
+		"$gte": dateUpdatedAt,
 	}
 
 	options := options.Find().SetSort(bson.D{{Key: "txNumIn24h", Value: -1}}).SetLimit(5)

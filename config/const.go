@@ -50,7 +50,7 @@ const MONGO_LIMIT_UPPER = 50
 const MONGO_LIMIT_DOWN = 5
 const MONGO_PAGE_UPPER = 1000
 
-const MONGO_FIND_TIMEOUT = 2
+const MONGO_FIND_TIMEOUT = 5
 
 // 用于获取历史高度上的eth价格.. 如果是回溯的时候，10个区块才调用一次即可(特殊处理)
 const INFURA_KEY_ADDR = "https://mainnet.infura.io/v3/06a6594cfd1a404591470c2f81a7ac93"
@@ -65,3 +65,11 @@ var ValidChains = []string{
 	// "arbi",
 	// "bsc",
 }
+
+// facet 定义
+
+const FacetTableName = "facet"
+const FacetSaveTime = int32(SecondsForOneMonth)
+
+const InscriptionTableName = "inscription"
+const InscriptionSaveTime = int32(SecondsForOneMonth)
