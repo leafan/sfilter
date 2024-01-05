@@ -44,9 +44,9 @@ type BasicInfo struct {
 }
 
 type ReferInfo struct {
-	Parent    string  `json:"parent" bson:"parent"`       // 我的邀请人
-	ReferCode *string `json:"referCode" bson:"referCode"` // 我的邀请码
-	ReferNum  int     `json:"-" bson:"referNum"`          // 我的邀请人数, 暂时不用
+	Parent    string  `json:"parent" bson:"parent"` // 我的邀请人
+	ReferCode *string `json:"-" bson:"referCode"`   // 我的邀请码
+	ReferNum  int     `json:"-" bson:"referNum"`    // 我的邀请人数, 暂时不用
 }
 
 type RoleInfo struct {
@@ -73,11 +73,16 @@ var UserIndexModel = []mongo.IndexModel{
 		Keys: bson.D{{Key: "referCode", Value: -1}},
 		Options: options.Index().SetName("referCode_index").
 			SetUnique(true).
-			SetPartialFilterExpression(bson.M{"referCode": bson.M{"$type": "string"}}),
+			SetPartialFilterExpression(bson.M{"apiKey": bson.M{"$gt": ""}}),
 	},
 	{
 		Keys:    bson.D{{Key: "registerAt", Value: -1}},
 		Options: options.Index().SetName("registerAt_index"),
+	},
+	{
+		Keys: bson.D{{Key: "apiKey", Value: -1}},
+		Options: options.Index().SetName("apiKey_index").SetUnique(true).
+			SetPartialFilterExpression(bson.M{"apiKey": bson.M{"$gt": ""}}),
 	},
 	{
 		Keys:    bson.D{{Key: "referNum", Value: -1}},

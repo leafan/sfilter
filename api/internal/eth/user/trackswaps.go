@@ -15,10 +15,17 @@ import (
 )
 
 func GetTrackSwaps(c *gin.Context) {
+	var username string
 	user, err := token.GetUserInfo(c.Request)
 	if err != nil {
-		utils.ResFailure(c, 401, "Wrong Claims.")
-		return
+		// 判断apikey
+		username = c.GetString("user")
+		if username == "" {
+			utils.ResFailure(c, 401, "Wrong Claims/ApiKey.")
+			return
+		}
+	} else {
+		username = user.Name
 	}
 
 	db := utils.GetChainDatabase(c.Param("chain"))
@@ -29,7 +36,7 @@ func GetTrackSwaps(c *gin.Context) {
 	}
 
 	// 将用户名传入查询
-	filter := parseTrackSwapFilterOptions(user.Name, c)
+	filter := parseTrackSwapFilterOptions(username, c)
 
 	info, count, err := swap.GetTrackSwaps(options, filter, db)
 	if err != nil {

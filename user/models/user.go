@@ -33,6 +33,20 @@ func (m *UserModel) GetUserByNameOrEmail(user string) (*User, error) {
 	return &result, nil
 }
 
+func (m *UserModel) GetUserByApiKey(apiKey string) (*User, error) {
+	filter := bson.M{}
+
+	filter["apiKey"] = apiKey
+
+	var result User
+	err := m.Collection.FindOne(context.Background(), filter).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 func (m *UserModel) GetUserByReferCode(refercode string) (*User, error) {
 	filter := bson.M{"referCode": refercode}
 
@@ -101,6 +115,30 @@ func (m *UserModel) ResetUserRole(username string, role int) error {
 		utils.Warnf("[ ResetUserRole ] failed. username: %v, err: %v\n", username, err)
 	} else {
 		utils.Infof("[ ResetUserRole ] success reset role for user: %v", username)
+	}
+
+	return nil
+}
+
+func (m *UserModel) UpdateUserApiKey(username, apiKey string) error {
+	filter := bson.D{{Key: "username", Value: username}}
+	info := struct {
+		ApiKey    string    `bson:"apiKey"`
+		UpdatedAt time.Time `bson:"updatedAt"`
+	}{
+		ApiKey:    apiKey,
+		UpdatedAt: time.Now(),
+	}
+
+	update := bson.D{
+		{Key: "$set", Value: info},
+	}
+
+	_, err := m.Collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		utils.Warnf("[ UpdateUserApiKey ] update failed. username: %v, err: %v\n", username, err)
+	} else {
+		utils.Infof("[ UpdateUserApiKey ] udpate success for user: %v", username)
 	}
 
 	return nil

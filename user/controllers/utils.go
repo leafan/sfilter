@@ -15,7 +15,7 @@ import (
 
 // 预检查, 防止sql注入等
 func isValidCredentials(form *models.RegisterForm) error {
-	if len(form.Username) < 3 || len(form.Username) > 30 {
+	if len(form.Username) < 3 || len(form.Username) > 100 {
 		return fmt.Errorf("wrong params: username too long or too short")
 	}
 
@@ -68,9 +68,9 @@ func preCheckRegister(form *models.RegisterForm) error {
 	}
 
 	// 目前beta阶段, 必须要有refercode 且refer人存在
-	if form.ReferCode == "" || !models.IsExistedReferCode(form.ReferCode) {
-		return fmt.Errorf("wrong params: refer code not exists")
-	}
+	// if form.ReferCode == "" || !models.IsExistedReferCode(form.ReferCode) {
+	// 	return fmt.Errorf("wrong params: refer code not exists")
+	// }
 
 	// username或email是否已存在
 	if models.IsExistedUsernameOrEmail(form.Username) {

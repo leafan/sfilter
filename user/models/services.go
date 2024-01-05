@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/go-pkgz/auth/token"
@@ -47,6 +48,20 @@ func GetUser(username string) (*User, error) {
 	user, err := um.GetUserByNameOrEmail(username)
 	if err != nil {
 		utils.Warnf("[ GetUser ] GetUser err: %v", err)
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func GetUserInfoByAPIKey(apiKey string) (*User, error) {
+	if apiKey == "" {
+		return nil, errors.New("wrong apikey")
+	}
+
+	user, err := um.GetUserByApiKey(apiKey)
+	if err != nil {
+		utils.Warnf("[ GetUserInfoByAPIKey ] GetUser err: %v", err)
 		return nil, err
 	}
 
@@ -119,6 +134,10 @@ func IsExistedUsernameOrEmail(username string) bool {
 
 func ResetUserPassword(username, newpass string) error {
 	return um.ResetUserPassword(username, newpass)
+}
+
+func UpdateUserApiKey(username, apikey string) error {
+	return um.UpdateUserApiKey(username, apikey)
 }
 
 func ResetUserRole(username string, role int) error {

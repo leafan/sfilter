@@ -72,6 +72,16 @@ func GetUserInfo(c *gin.Context) {
 		return
 	}
 
+	// 如果没有 apikey, 则生成一个
+	if info.ApiKey == "" {
+		apiKey := utils.GenerateAsciiCode(32)
+		err = models.UpdateUserApiKey(info.Username, apiKey)
+		if err != nil {
+			ResFailure(c, 401, "System error, please retry")
+			return
+		}
+	}
+
 	// 获取 login history
 	histories, _ := models.GetUserLoginHistories(user.Name)
 

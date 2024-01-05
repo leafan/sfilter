@@ -19,6 +19,18 @@ func GenerateVerifyCode(length int) string {
 	return string(code)
 }
 
+func GenerateAsciiCode(length int) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	charset := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	code := make([]byte, length)
+	for i := range code {
+		code[i] = charset[r.Intn(len(charset))]
+	}
+
+	return string(code)
+}
+
 func HashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

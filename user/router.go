@@ -21,9 +21,14 @@ import (
 
 // 对外的 middleware, 在其他地方需要认证成功的时候使用
 var authMiddleware gin.HandlerFunc
+var apiKeyAuthMiddleware gin.HandlerFunc
 
 func GetUserAuthMiddleware() gin.HandlerFunc {
 	return authMiddleware
+}
+
+func GetApiKeyAuthMiddleware() gin.HandlerFunc {
+	return apiKeyAuthMiddleware
 }
 
 type Server struct {
@@ -58,9 +63,34 @@ func AuthAdminMiddleWare() gin.HandlerFunc {
 		} else {
 			utils.Errorf("[ AuthAdminMiddleWare ] auth failed. err: %v, user role: %v", err, user.Attributes["role"])
 			c.JSON(http.StatusUnauthorized, "claim is wrong")
+
+			c.Abort()
+		}
+	}
+}
+
+// AuthAPIKeyMiddleware 是一个用于 API Key 认证的中间件
+func AuthAPIKeyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 从请求中获取传入的 API 密钥
+		clientAPIKey := c.Query("apikey")
+		// utils.Tracef("apikey: %v", clientAPIKey)
+
+		user, err := models.GetUserInfoByAPIKey(clientAPIKey)
+
+		// 检查传入的 API 密钥是否与预期的 API 密钥匹配
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API Key"})
+
+			c.Abort()
+			return
 		}
 
-		c.Abort()
+		// 将用户信息存储在请求上下文中
+		c.Set("user", user.Username)
+
+		// 如果 API 密钥有效，允许请求继续处理
+		c.Next()
 	}
 }
 
@@ -77,7 +107,7 @@ func Run(r *gin.Engine) {
 	authRoutes, avaRoutes := server.Auth.Handlers()
 
 	authMiddleware = wrapHttpToGinMiddleware(server.Auth.Middleware())
-	adminAuthMiddleware := AuthAdminMiddleWare()
+	apiKeyAuthMiddleware = AuthAPIKeyMiddleware()
 
 	// /auth/login; /auth/logout; /auth/user
 	r.Any("/auth/*action", gin.WrapH(authRoutes))  // add auth handlers
@@ -91,14 +121,11 @@ func Run(r *gin.Engine) {
 	}
 
 	gWithAuth := g.Use(authMiddleware)
-
 	{
 		// 用户设置
 		gWithAuth.GET("/info", controllers.GetUserInfo)
 		gWithAuth.POST("/passwd/reset", controllers.ResetPassword)
-	}
 
-	{
 		// 用户跟踪地址设置
 		gWithAuth.GET("/trackaddr", controllers.GetTrackedAddresses) // 获取列表
 
@@ -107,9 +134,11 @@ func Run(r *gin.Engine) {
 		gWithAuth.DELETE("/trackaddr/:address", controllers.DeleteTrackedAddress) // 删除
 	}
 
+	adminAuthMiddleware := AuthAdminMiddleWare()
 	gWithAdminAuth := g.Group("/admin").Use(adminAuthMiddleware)
 	{
 		gWithAdminAuth.GET("/users", controllers.AdminGetAllUsers)
 		gWithAdminAuth.PATCH("/users", controllers.AdminUpdateRole)
 	}
+
 }
