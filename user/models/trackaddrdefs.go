@@ -42,7 +42,7 @@ import (
 type UserTrackAddressMap map[string][]UserTrackedAddress
 
 type UserTrackedAddress struct {
-	Username string `json:"-" bson:"username"` // 按username来吧, 可读性高一些, 都是唯一的
+	Username string `json:"username" bson:"username"` // 按username来吧, 可读性高一些, 都是唯一的
 
 	AddressInfo `json:",inline" bson:",inline"`
 

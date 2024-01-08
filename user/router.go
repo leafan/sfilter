@@ -7,6 +7,7 @@ import (
 	lAuth "sfilter/user/auth"
 	"sfilter/user/config"
 	"sfilter/user/controllers"
+	"sfilter/user/controllers/admin"
 	"sfilter/user/models"
 	"sfilter/utils"
 
@@ -137,8 +138,13 @@ func Run(r *gin.Engine) {
 	adminAuthMiddleware := AuthAdminMiddleWare()
 	gWithAdminAuth := g.Group("/admin").Use(adminAuthMiddleware)
 	{
-		gWithAdminAuth.GET("/users", controllers.AdminGetAllUsers)
-		gWithAdminAuth.PATCH("/users", controllers.AdminUpdateRole)
+		// users
+		gWithAdminAuth.GET("/users", admin.AdminGetAllUsers)
+		gWithAdminAuth.PATCH("/users", admin.AdminUpdateRole)
+
+		// track address
+		gWithAdminAuth.GET("/trackaddrs", admin.AdminGetAllTrackedAddress)
+
 	}
 
 }

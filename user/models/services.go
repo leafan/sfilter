@@ -243,3 +243,7 @@ func AdminGetAllUsersWithOptionFilter(options *options.FindOptions, filter *prim
 func AdminGetTrackAddressMap() (UserTrackAddressMap, int, error) {
 	return tm.GetTrackAddressMap(1, 1000)
 }
+
+func AdminGetAllTrackAddrsWithOptionFilter(options *options.FindOptions, filter *primitive.M) ([]UserTrackedAddress, int64, error) {
+	return tm.GetAllTrackAddrs(options, filter)
+}

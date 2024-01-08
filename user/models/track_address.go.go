@@ -180,3 +180,36 @@ func (m *TrackAddressModel) GetTrackAddressMap(page, pageSize int64) (UserTrackA
 	// utils.Tracef("[ GetTrackAddressMap ]  unique addresses count: %v", len(umap))
 	return umap, totalCount, err
 }
+
+/////// Admin ////////
+
+func (m *TrackAddressModel) GetAllTrackAddrs(optionsClient *options.FindOptions, filter *primitive.M) ([]UserTrackedAddress, int64, error) {
+	findOpts := optionsClient
+	if findOpts == nil {
+		findOpts = options.Find().SetSort(bson.D{{Key: "updatedAt", Value: -1}}).SetLimit(10)
+	}
+
+	var result []UserTrackedAddress
+	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second)
+	defer cancel()
+
+	cursor, err := m.Collection.Find(ctx, filter, findOpts)
+	if err != nil {
+		return result, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	countOpts := &options.CountOptions{
+		Limit: &config.COUNT_UPPER_SIZE,
+	}
+	countOpts.SetMaxTime(config.MONGO_FIND_TIMEOUT * time.Second)
+
+	totalCount, err := m.Collection.CountDocuments(ctx, filter, countOpts)
+	if err != nil {
+		utils.Warnf("[ GetAllTrackAddrs ] Count error: %v\n", err)
+		return result, 0, err
+	}
+
+	err = cursor.All(ctx, &result)
+	return result, totalCount, err
+}

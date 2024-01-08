@@ -68,13 +68,14 @@ func updateGlobalInfoFor1h(info *schema.GlobalInfo, mongodb *mongo.Client) {
 
 	// 一般情况下长度都是正常的
 	length := len(trends)
-	if err != nil || length < 120 {
+	if err != nil || length < 108 {
 		utils.Warnf("[ updateGlobalInfoFor1h ] err or length is to short. err: %v, len: %v\n", err, length)
 		return
 	}
 
-	latest := trends[length-60:]
-	last := trends[length-120 : length-60]
+	half := length / 2
+	latest := trends[half:]
+	last := trends[0:half]
 
 	// 更新 TxNumIn1h, VolumeByUsdIn1h
 	for _, trend := range latest {
@@ -100,18 +101,20 @@ func updateGlobalInfoFor1h(info *schema.GlobalInfo, mongodb *mongo.Client) {
 func updateGlobalInfoFor24h(info *schema.GlobalInfo, mongodb *mongo.Client) {
 	// 1min柱子, 2天有 60*24=2880根, 1根柱子大小 36B 以内, 共 100k不到
 	end := time.Now()
-	start := end.Add(-(60*24*2 + 1) * time.Minute) // 倒查2小时
+	start := end.Add(-(60*24*2 + 1) * time.Minute) // 倒查48小时
 	trends, err := global.GetTrendsByTimeRange(start, end, mongodb)
 
-	// 一般情况下长度都是正常的
+	// 一般情况下长度都是正常的, 如果不一样, 可能是某小时丢数据了或者卡块了
+	// 允许一定的误差, 也就是丢失 60 个块数据
 	length := len(trends)
-	if err != nil || length < 60*24*2 {
+	if err != nil || length < (60*24*2-60) {
 		utils.Warnf("[ updateGlobalInfoFor24h ] err or length is to short. err: %v, len: %v\n", err, length)
 		return
 	}
 
-	latest := trends[length-60*24:]
-	last := trends[length-60*24*2 : length-60*24]
+	half := length / 2
+	latest := trends[half:] //  保证最新长度
+	last := trends[0:half]
 
 	// 更新 TxNumIn1h, VolumeByUsdIn1h
 	for _, trend := range latest {

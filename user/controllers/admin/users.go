@@ -1,29 +1,16 @@
-package controllers
+package admin
 
 import (
-	"fmt"
 	"sfilter/api/utils"
 	"sfilter/user/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-pkgz/auth/token"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func AdminGetAllUsers(c *gin.Context) {
-	user, err := token.GetUserInfo(c.Request)
-	if err != nil {
-		ResFailure(c, 401, "Wrong Claims.")
-		return
-	}
-
-	if user.Attributes["role"] != fmt.Sprintf("%d", models.USER_ROLE_LEVEL_ROOT) {
-		ResFailure(c, 401, "No privilige to execute")
-		return
-	}
-
 	options, err := parseAdminAllUsersOptions(c)
 	if err != nil {
 		return
@@ -33,7 +20,7 @@ func AdminGetAllUsers(c *gin.Context) {
 
 	info, count, err := models.AdminGetAllUsersWithOptionFilter(options, filter)
 	if err != nil {
-		ResFailure(c, 500, "Get data failed: "+err.Error())
+		utils.ResFailure(c, 500, "Get data failed: "+err.Error())
 		return
 	}
 
@@ -49,34 +36,23 @@ func AdminGetAllUsers(c *gin.Context) {
 }
 
 func AdminUpdateRole(c *gin.Context) {
-	user, err := token.GetUserInfo(c.Request)
-	if err != nil {
-		ResFailure(c, 401, "Wrong Claims.")
-		return
-	}
-
-	if user.Attributes["role"] != fmt.Sprintf("%d", models.USER_ROLE_LEVEL_ROOT) {
-		ResFailure(c, 401, "No privilige to execute")
-		return
-	}
-
 	var update models.AdminUpdateUserRoleForm
-	err = c.ShouldBind(&update)
+	err := c.ShouldBind(&update)
 	if err != nil {
-		ResFailure(c, 401, "Wrong Params.")
+		utils.ResFailure(c, 401, "Wrong Params.")
 		return
 	}
 
 	if !models.IsValidRole(update.Role) {
 		// gutils.Tracef("wrong valid role, role: %v", update.Role)
-		ResFailure(c, 401, "Wrong role param")
+		utils.ResFailure(c, 401, "Wrong role param")
 		return
 	}
 
 	// modify role
 	err = models.ResetUserRole(update.Username, update.Role)
 	if err != nil {
-		ResFailure(c, 401, err.Error())
+		utils.ResFailure(c, 401, err.Error())
 		return
 	}
 
@@ -84,9 +60,9 @@ func AdminUpdateRole(c *gin.Context) {
 }
 
 func parseAdminAllUsersOptions(c *gin.Context) (*options.FindOptions, error) {
-	page, limit, err := ParsePageLimitParams(c)
+	page, limit, err := utils.ParsePageLimitParams(c)
 	if err != nil {
-		ResFailure(c, 400, err.Error())
+		utils.ResFailure(c, 400, err.Error())
 		return nil, err
 	}
 
