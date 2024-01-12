@@ -6,7 +6,6 @@ import (
 	"sfilter/schema"
 	userModels "sfilter/user/models"
 	"sfilter/utils"
-	gutils "sfilter/utils"
 
 	"sfilter/services/swap"
 
@@ -33,7 +32,7 @@ func GetTrackAddressMapOnTimer() error {
 	if err != nil {
 		return err
 	}
-	gutils.Infof("[ GetTrackAddressMapOnTimer ] time consumed: %v, unique address count: %v, total trackAddressMap kv count: %v\n", time.Since(start), len(trackAddressMap), totalCount)
+	utils.Infof("[ GetTrackAddressMapOnTimer ] time consumed: %v, unique address count: %v, total trackAddressMap kv count: %v\n", time.Since(start), len(trackAddressMap), totalCount)
 
 	return nil
 }

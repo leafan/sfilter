@@ -84,8 +84,14 @@ func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
 	HandlePairLogic(blk, mongodb)
 	HandleLiquidityLogic(blk, mongodb)
 
-	transferMap := HandleTransfer(blk, mongodb)
-	swaps := HandleSwapAndKline(blk, transferMap, mongodb)
+	// 获取transfer信息
+	transferMapForSwap, transfers := HandleTransfer(blk, mongodb)
+
+	// 获取swaps
+	swaps := HandleSwapAndKline(blk, transferMapForSwap, mongodb)
+
+	// 更新transfer的usd value等
+	UpSaveTransferInfoBySwaps(transfers, swaps, mongodb)
 
 	// trade info 是更新最近24h或7天的数据, 因此老数据就别掺和了
 	if time.Since(time.Unix(int64(blk.Block.Time()), 0)).Seconds() < config.SecondsForOneWeek {

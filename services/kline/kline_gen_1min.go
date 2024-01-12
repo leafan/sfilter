@@ -40,6 +40,7 @@ func Get1MinKlineWithFullGenerated(pair string, end time.Time, hours int, mongod
 					kline.ClosePrice = last.ClosePrice
 					kline.HighPrice = last.ClosePrice
 					kline.LowPrice = last.ClosePrice
+					kline.PriceInUsd = last.PriceInUsd
 
 					// 加1分钟
 					kline.UnixTime = last.UnixTime + 60

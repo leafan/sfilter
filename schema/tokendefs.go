@@ -14,6 +14,8 @@ type TokenInfoOnChain struct {
 	Name    string `json:"name" bson:"name"`       // 名称
 	Symbol  string `json:"symbol" bson:"symbol"`   // 符号
 
+	PriceInUsd float64 `json:"priceInUsd" bson:"priceInUsd"`
+
 	TotalSupply string `json:"totalSupply" bson:"totalSupply"` // 总供应量
 	Decimal     uint8  `json:"decimal" bson:"decimal"`         // 小数位数
 }

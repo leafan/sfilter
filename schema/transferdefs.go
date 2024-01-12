@@ -25,7 +25,7 @@ type Transfer struct {
 	Amount       float64  `json:"amount" bson:"amount"`
 	AmountBigInt *big.Int `json:"-" bson:"-"` // 暂时保留
 
-	AmountInUsd float64 `json:"amountInUsd" bson:"amountInUsd"` // 先保留, 不好计算..
+	TransferValueInUsd float64 `json:"transferValueInUsd" bson:"transferValueInUsd"`
 
 	BlockNo  uint64 `json:"blockNo" bson:"blockNo"`   // 区块号
 	TxHash   string `json:"txHash" bson:"txHash"`     // 交易哈希

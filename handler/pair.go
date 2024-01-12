@@ -29,19 +29,19 @@ func handlePairCreated(block *schema.Block, _log *types.Log, mongodb *mongo.Clie
 
 		block.PairCreatedNum++
 
-		updateTokenInfo(_pair, mongodb)
+		updatePairTokenInfo(_pair, mongodb)
 
 		// 插入或更新pair
 		pair.UpSertPairCreatedInfo(_pair, mongodb)
 	}
 }
 
-func updateTokenInfo(_pair *schema.Pair, mongodb *mongo.Client) {
+func updatePairTokenInfo(_pair *schema.Pair, mongodb *mongo.Client) {
 	token0, err0 := chain.GetTokenInfo(_pair.Token0, mongodb)
 	token1, err1 := chain.GetTokenInfo(_pair.Token1, mongodb)
 	if err0 != nil || err1 != nil {
 		// pair create的时候, 一般不会出错..
-		utils.Warnf("[ updateTokenInfo ] getTokenInfo error. token0: %v, err0: %v, token1: %v, err1: %v\n", _pair.Token0, err0, _pair.Token1, err1)
+		utils.Warnf("[ updatePairTokenInfo ] getTokenInfo error. token0: %v, err0: %v, token1: %v, err1: %v\n", _pair.Token0, err0, _pair.Token1, err1)
 
 		_pair.Decimal0 = 0
 		_pair.Decimal1 = 0

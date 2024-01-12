@@ -12,6 +12,7 @@ import (
 )
 
 // 先执行pair creat的操作
+// 在执行 handle liquidity 动作
 func HandleLiquidityLogic(block *schema.Block, mongodb *mongo.Client) {
 	for _, tx := range block.Transactions {
 		if len(tx.Receipt.Logs) > 0 {
@@ -26,6 +27,7 @@ func HandleLiquidityLogic(block *schema.Block, mongodb *mongo.Client) {
 
 func handleAddLiquidity(block *schema.Block, tx *schema.Transaction, l *types.Log, mongodb *mongo.Client) {
 	event := parseLiquidityEvent(tx, l)
+
 	if event != nil {
 		event.EventBlockNo = l.BlockNumber
 		event.EventTime = time.Unix(int64(block.Block.Time()), 0)
@@ -41,7 +43,11 @@ func handleAddLiquidity(block *schema.Block, tx *schema.Transaction, l *types.Lo
 			return
 		}
 
-		updateLiquidityAmount(event, _pair, block)
+		// 修正流动性amount value
+		updateLiquidityEventValue(event, _pair, block)
+
+		// 修正流动性池子大小
+		updatePoolLiquidity(_pair, mongodb, block)
 
 		// 判断如果是第一次添加流动性, 则update pair的firstAdd字段
 		if event.Direction == schema.DIRECTION_BUY_OR_ADD {

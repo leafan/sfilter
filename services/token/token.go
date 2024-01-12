@@ -15,6 +15,17 @@ import (
 
 var tokenLock sync.Mutex
 
+func GetTokenInfo(address string, mongodb *mongo.Client) (*schema.Token, error) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
+
+	filter := bson.D{{Key: "address", Value: address}}
+
+	var result schema.Token
+	err := collection.FindOne(context.Background(), filter).Decode(&result)
+
+	return &result, err
+}
+
 func SaveTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
 
@@ -30,6 +41,34 @@ func SaveTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 		return
 	}
 
+}
+
+// 更新token价格字段
+func UpdateTokenPrice(address string, price float64, mongodb *mongo.Client) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.TokenTableName)
+
+	filter := bson.D{{Key: "address", Value: address}}
+	opt := options.Update().SetUpsert(true)
+
+	info := struct {
+		PriceInUsd float64   `bson:"priceInUsd"`
+		UpdatedAt  time.Time `bson:"updatedAt"`
+	}{
+		PriceInUsd: price,
+		UpdatedAt:  time.Now(),
+	}
+
+	update := bson.M{
+		"$set": info,
+	}
+
+	tokenLock.Lock()
+	defer tokenLock.Unlock()
+
+	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
+	if err != nil {
+		utils.Warnf("[ UpdateTokenPrice ] UpdateOne error: %v, token: %v\n", err, address)
+	}
 }
 
 // 更新 token
@@ -55,7 +94,6 @@ func UpdateTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 	_, err := collection.UpdateOne(context.Background(), filter, update, opt)
 	if err != nil {
 		utils.Warnf("[ UpdateTokenInfo ] UpdateOne error: %v, token: %v\n", err, token.Address)
-		return
 	}
 
 }

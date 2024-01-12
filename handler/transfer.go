@@ -2,21 +2,23 @@ package handler
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/services/token"
 	"sfilter/services/transfer"
 	"strings"
 	"time"
-    "math"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleTransfer(block *schema.Block, mongodb *mongo.Client) schema.TxTokenTransfersMap {
+func HandleTransfer(block *schema.Block, mongodb *mongo.Client) (schema.TxTokenTransfersMap, []*schema.Transfer) {
 	maps := make(schema.TxTokenTransfersMap)
+	var transferSlices []*schema.Transfer
 
 	for _, tx := range block.Transactions {
 		if len(tx.Receipt.Logs) > 0 {
@@ -24,13 +26,12 @@ func HandleTransfer(block *schema.Block, mongodb *mongo.Client) schema.TxTokenTr
 				if len(_log.Topics) > 0 {
 					transfer := parseTransferEvent(block, _log)
 					if transfer != nil {
-						// log.Printf("[ HandleTransfer ] token addr: %v, txWithIndex: %v\n\n", transfer.Token, transfer.LogIndexWithTx)
-
-						handleTransfer(transfer, mongodb)
-
 						// 保存进 map, 方便swap的时候查找
 						key := fmt.Sprintf("%v_%v", tx.OriginTx.Hash().String(), transfer.Token)
 						maps[key] = append(maps[key], transfer)
+
+						// 保存到slice, 方便到时候修改在保存
+						transferSlices = append(transferSlices, transfer)
 					}
 				}
 			}
@@ -38,11 +39,33 @@ func HandleTransfer(block *schema.Block, mongodb *mongo.Client) schema.TxTokenTr
 		}
 	}
 
-	return maps
+	return maps, transferSlices
 }
 
-func handleTransfer(_transfer *schema.Transfer, mongodb *mongo.Client) {
-	transfer.SaveTransferEvent(_transfer, mongodb)
+func UpSaveTransferInfoBySwaps(transfers []*schema.Transfer, swaps []*schema.Swap, mongodb *mongo.Client) {
+	mainTokenPriceMap := make(map[string]float64)
+
+	// 先获取本区块交易中的价格
+	for _, _swap := range swaps {
+		mainTokenPriceMap[_swap.MainToken] = _swap.PriceInUsd
+	}
+
+	for _, _transfer := range transfers {
+		// 更新 usd value
+		// 如果本区块的swap有交易过, 则直接update
+		price, ok := mainTokenPriceMap[_transfer.Token]
+		if ok {
+			_transfer.TransferValueInUsd = _transfer.Amount * price
+		} else {
+			// 否则调用链上价格数据update
+			_token, err := token.GetTokenInfo(_transfer.Token, mongodb)
+			if err == nil {
+				_transfer.TransferValueInUsd = _transfer.Amount * _token.PriceInUsd
+			}
+		}
+
+		transfer.SaveTransferEvent(_transfer, mongodb)
+	}
 }
 
 func parseTransferEvent(block *schema.Block, l *types.Log) *schema.Transfer {
@@ -69,17 +92,17 @@ func parseTransferEvent(block *schema.Block, l *types.Log) *schema.Transfer {
 		if err == nil {
 			transfer.TokenSymbol = token.Symbol
 
-            if token.Decimal <= 9 { // 没到丢精度的程度
-                amount, _ := transfer.AmountBigInt.Float64()
-                transfer.Amount = amount / math.Pow10(int(token.Decimal))
-            } else {
-                // 如果某个token少于1e9, 那可以当0看了
-                tmpBig := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token.Decimal)-9), nil)
-                tmpBig = tmpBig.Div(transfer.AmountBigInt, tmpBig)
+			if token.Decimal <= 9 { // 没到丢精度的程度
+				amount, _ := transfer.AmountBigInt.Float64()
+				transfer.Amount = amount / math.Pow10(int(token.Decimal))
+			} else {
+				// 如果某个token少于1e9, 那可以当0看了
+				tmpBig := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token.Decimal)-9), nil)
+				tmpBig = tmpBig.Div(transfer.AmountBigInt, tmpBig)
 
-                amount, _ := tmpBig.Float64()
-                transfer.Amount = amount / 1e9
-            }
+				amount, _ := tmpBig.Float64()
+				transfer.Amount = amount / 1e9
+			}
 		}
 
 		transfer.LogIndexWithTx = fmt.Sprintf("%s_%d", transfer.TxHash, transfer.Position)

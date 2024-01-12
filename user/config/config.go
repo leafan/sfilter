@@ -15,8 +15,8 @@ var (
 	JWTHeaderKey = "Authorization"
 	APIURL       = "https://api.deepeye.cc"
 
-	TokenDuration  = 24 * time.Hour // jwt有效期
-	CookieDuration = 24 * time.Hour // cookie有效期
+	TokenDuration  = 24 * 7 * time.Hour // jwt有效期
+	CookieDuration = 24 * 7 * time.Hour // cookie有效期
 
 	DbAddress    = globalConfig.MONGO_ADDR
 	DatabaseName = "user"

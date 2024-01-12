@@ -90,7 +90,7 @@ func initEnvConfig() {
 
 	aesKey := os.Getenv("API_AES_DATA_KEY")
 	if aesKey != "" {
-		utils.Infof("[ init ] Using API_AES_DATA_KEY: %v", aesKey)
+		// utils.Infof("[ init ] Using API_AES_DATA_KEY: %v", aesKey)
 		API_AES_DATA_KEY = aesKey
 	}
 

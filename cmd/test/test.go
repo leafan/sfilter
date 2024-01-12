@@ -1,16 +1,16 @@
 package main
 
 import (
-	tutils "sfilter/api/utils"
+	"sfilter/services/chain"
 	"sfilter/utils"
 )
 
 func test() {
 	utils.Infof("****** Debug start ******\n\n")
 
-	// chain.TEST_POOL()
+	chain.TEST_TOKEN()
 	// services.TEST_EMAIL_AWS()
-	tutils.TEST_ENCRYPT()
+	// tutils.TEST_ENCRYPT()
 
 	utils.Infof("****** Debug end  ******\n\n\n")
 }

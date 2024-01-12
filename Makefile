@@ -24,9 +24,11 @@ run:
 	@make start
 	
 sapi:
+	pkill -f '^.*sapi$$' 2>&1 || true
 	go run cmd/api/main.go
 
 sfilter:
+	pkill -f '^.*sfilter_eth$$' 2>&1 || true
 	go run cmd/sfilter/main.go
 
 restart:

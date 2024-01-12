@@ -42,7 +42,7 @@ func HandleSwapAndKline(block *schema.Block, transferMap schema.TxTokenTransfers
 							updateUniV3Swap(swap, _log, mongodb)
 						}
 
-						updateVolumeinfo(swap)
+						updateUsdInfo(swap)
 
 						updateTrader(swap, transferMap)
 
@@ -152,7 +152,9 @@ func handleOneSwapAndKline(swap *schema.Swap, mongodb *mongo.Client) {
 	}
 }
 
-func updateVolumeinfo(swap *schema.Swap) {
+// 更新 volume 的usd value
+// 更新 price 的法币价格
+func updateUsdInfo(swap *schema.Swap) {
 	// 找到quoteToken, 更新 VolumeInUsd.
 	// 如果quoteToken为eth, 则乘以区块中eth价格; 如果为u, 直接加; 其他情况为0
 	quoteToken := swap.Token1
@@ -164,10 +166,13 @@ func updateVolumeinfo(swap *schema.Swap) {
 
 	if utils.CheckExistString(quoteToken, utils.QuoteUsdCoinList) {
 		swap.VolumeInUsd = volumeInUsd
+		swap.PriceInUsd = swap.Price
 	} else if utils.CheckExistString(quoteToken, utils.QuoteEthCoinList) {
 		swap.VolumeInUsd = volumeInUsd * swap.CurrentEthPrice
+		swap.PriceInUsd = swap.Price * swap.CurrentEthPrice
 	} else {
 		swap.VolumeInUsd = 0
+		swap.PriceInUsd = 0
 	}
 }
 

@@ -19,10 +19,10 @@ func HandleFacet(blk *schema.Block, tx *schema.Transaction, data string, mongodb
 
 	err := json.Unmarshal(jsonData, &jsonObj)
 	if err != nil {
-		utils.Errorf("[ HandleFacet ] unmarshal error: %v, data: %v", err, string(jsonData))
+		// utils.Errorf("[ HandleFacet ] unmarshal error: %v, data: %v", err, string(jsonData))
 		return
 	}
-	utils.Infof("[ HandleFacet ] debug.. json: %v", jsonObj)
+	// utils.Infof("[ HandleFacet ] debug.. json: %v", jsonObj)
 
 	doHandleFacet(blk, tx, &jsonObj, string(jsonData), mongodb)
 }

@@ -83,6 +83,7 @@ func updateKLineWithNewData(kline *schema.KLine, swap *schema.Swap) {
 	curPrice := swap.Price
 
 	kline.ClosePrice = curPrice // 不管新老柱子, 先更新close
+	kline.PriceInUsd = swap.PriceInUsd
 
 	if kline.UnixTime == 0 {
 		// 新柱子

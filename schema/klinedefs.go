@@ -82,6 +82,8 @@ type KLineCreatTime struct {
 type DeepEyeInfo struct {
 	TxNum       int     `json:"txNum" bson:"txNum"`             // 该周期内的交易数
 	VolumeInUsd float64 `bson:"volumeInUsd" json:"volumeInUsd"` // 以usd计价的volume
+
+	PriceInUsd float64 `bson:"priceInUsd" json:"priceInUsd"` // 以usd计价的法币价格
 }
 
 type KLinesForHour [60]KLine // 分钟K线，1小时60根

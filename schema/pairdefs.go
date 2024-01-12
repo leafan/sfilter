@@ -46,6 +46,15 @@ type InfoOnChain struct {
 	Decimal0 uint8 `json:"decimal0" bson:"decimal0"`
 	Decimal1 uint8 `json:"decimal1" bson:"decimal1"`
 
+	// 池子流动性, 包含屌丝币价值
+	LiquidityInUsd float64 `json:"liquidityInUsd" bson:"liquidityInUsd"`
+	// 价值币流动性, 即使是 eth/usdt，也只算一半
+	// 这么处理原因是 v3池子可能不是 对等的, 可能屌丝币很多导致失真
+	ValueCoinLiquidity float64 `json:"valueCoinLiquidity" bson:"valueCoinLiquidity"`
+
+	Token0UsdValue float64 `json:"token0UsdValue" bson:"token0UsdValue"`
+	Token1UsdValue float64 `json:"token1UsdValue" bson:"token1UsdValue"`
+
 	PairName string `json:"pairName" bson:"pairName"` // 如 pepe/weths
 }
 
@@ -71,7 +80,8 @@ type TradeInfoForPair struct {
 	PriceChangeIn24h float32 `json:"priceChangeIn24h" bson:"priceChangeIn24h"`
 
 	// 直接float存储, 毕竟这里只是展示, 不需要高精度计算
-	Price float64 `json:"price" bson:"price"`
+	Price      float64 `json:"price" bson:"price"`
+	PriceInUsd float64 `json:"priceInUsd" bson:"priceInUsd"`
 
 	// 1h内的交易金额(usd); float64足够存储, 毕竟 1亿 就已经很大了
 	VolumeByUsdIn1h float64 `json:"volumeByUsdIn1h" bson:"volumeByUsdIn1h"`
@@ -112,6 +122,14 @@ var PairIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "pairName", Value: 1}},
 		Options: options.Index().SetName("pairName_index").SetSparse(true),
+	},
+	{
+		Keys:    bson.D{{Key: "liquidityInUsd", Value: 1}},
+		Options: options.Index().SetName("liquidityInUsd_index").SetSparse(true),
+	},
+	{
+		Keys:    bson.D{{Key: "valueCoinLiquidity", Value: 1}},
+		Options: options.Index().SetName("valueCoinLiquidity_index").SetSparse(true),
 	},
 
 	//  数值加索引方便排序？

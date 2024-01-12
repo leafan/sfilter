@@ -3,8 +3,10 @@ package handler
 import (
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/services/chain"
 	"sfilter/services/kline"
 	services_pair "sfilter/services/pair"
+	"sfilter/services/token"
 	"sfilter/utils"
 	"time"
 
@@ -13,23 +15,39 @@ import (
 
 // trade info 放到pair 中，方便直接查询读取等
 func HandleTradeInfo(block *schema.Block, mongodb *mongo.Client, swaps []*schema.Swap) {
-	// 先取出本次需要更新的token信息
-	pairs := make(map[string]int)
+	pairs := make(map[string]int)      // 取出本次需要更新的pair信息
+	tokens := make(map[string]float64) // 取出本次需要更新的 token 信息
 
 	for _, swap := range swaps {
 		pairs[swap.PairAddr]++
+		tokens[swap.MainToken] = swap.PriceInUsd
 	}
 
+	// 更新pair信息
 	for key := range pairs {
 		updatePairInfo(key, mongodb)
 	}
 
+	// 更新token价格等
+	for _token, _price := range tokens {
+		updateTokenInfo(_token, _price, mongodb)
+	}
+}
+
+func updateTokenInfo(_token string, _price float64, mongodb *mongo.Client) {
+	tokenObj, err := chain.GetTokenInfo(_token, mongodb)
+	if err != nil {
+		return
+	}
+
+	// utils.Infof("[ updateTokenInfo ] token: %v, price: %v", _token, _price)
+	token.UpdateTokenPrice(tokenObj.Address, _price, mongodb)
 }
 
 func updatePairInfo(_pair string, mongodb *mongo.Client) {
 	pair, err := services_pair.GetPairInfo(_pair, mongodb)
 	if err != nil {
-		utils.Errorf("[ updatePairInfo ] GetTokenInfo wrong, return.. err: %v\n\n", err)
+		utils.Errorf("[ updatePairInfo ] GetPairInfo wrong, return.. err: %v\n\n", err)
 		return
 	}
 
@@ -139,6 +157,7 @@ func updatePairPrice1h(klines1Min []schema.KLine, pair *schema.Pair) {
 	}
 	pair.VolumeByUsdIn1h = volume
 	pair.Price = klines1Min[len(klines1Min)-1].ClosePrice
+	pair.PriceInUsd = klines1Min[len(klines1Min)-1].PriceInUsd
 
 	if len(klines1Min) < 61 { // 前一小时最后一分钟即可
 		return

@@ -50,9 +50,11 @@ type Swap struct {
 
 	Trader string `json:"trader" bson:"trader"` // 交易者
 
-	Sender            string  `json:"sender" bson:"sender"`                       // 发送者
-	Recipient         string  `json:"recipient" bson:"recipient"`                 // 接收者
-	Price             float64 `json:"price" bson:"price"`                         // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
+	Sender     string  `json:"sender" bson:"sender"`       // 发送者
+	Recipient  string  `json:"recipient" bson:"recipient"` // 接收者
+	Price      float64 `json:"price" bson:"price"`         // 买卖价格, 以 mainToken(/decimal) / quoteToken(/decimal) * 1e18
+	PriceInUsd float64 `json:"priceInUsd" bson:"priceInUsd"`
+
 	AmountOfMainToken float64 `json:"amountOfMainToken" bson:"amountOfMainToken"` // 主代币数量
 
 	AmountOfMainBig  string `json:"-" bson:"amountOfMainBig"`

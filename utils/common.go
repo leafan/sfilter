@@ -76,7 +76,7 @@ func GetQuoteToken(token0, token1 string) string {
 }
 
 // 根据一个token的amount, 计算出其usd值
-func CalculateVolumeInUsd(token string, amount *big.Int, decimal uint8, ethPrice float64) float64 {
+func CalculateVolumeInUsd(token string, amount *big.Float, decimal uint8, ethPrice float64) float64 {
 	var base float64
 
 	if CheckExistString(token, QuoteUsdCoinList) {
@@ -87,11 +87,15 @@ func CalculateVolumeInUsd(token string, amount *big.Int, decimal uint8, ethPrice
 		return 0
 	}
 
-	// 由于到这里计算的一定是价值币, 因此不会有奇葩币, 乘以 1e9 即可
-	tokenExponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimal)-9), nil)
-	amount = amount.Div(amount, tokenExponent)
+	// 由于到这里计算的一定是价值币, 因此不会有奇葩币, 乘以 1e6 即可
+	// 这里也不能乘过大的数, 容易造成  amount 溢出
+	tokenExponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil)
+	amount = amount.Mul(amount, big.NewFloat(1e6))
+	amount = amount.Quo(amount, new(big.Float).SetInt(tokenExponent))
 
-	return float64(amount.Int64()) * base / 1e9
+	amountFloat, _ := amount.Float64()
+
+	return amountFloat * base / 1e6
 }
 
 func IsValueCoin(token string) bool {

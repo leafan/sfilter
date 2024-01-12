@@ -1,12 +1,18 @@
 package handler
 
+// !!!!!
+// int64 很容易被 1e18 溢出	！
+
 import (
 	"math/big"
 	"sfilter/schema"
+	"sfilter/services/chain"
+	"sfilter/services/pair"
 	"sfilter/utils"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // v2 add
@@ -115,14 +121,14 @@ func parseUniV3RemoveLiquidity(l *types.Log, tx *schema.Transaction) *schema.Liq
 	return event
 }
 
-func updateLiquidityAmount(event *schema.LiquidityEvent, _pair *schema.Pair, block *schema.Block) {
+func updateLiquidityEventValue(event *schema.LiquidityEvent, _pair *schema.Pair, block *schema.Block) {
 	event.PairName = _pair.PairName
 
 	var amount, amount0, amount1 float64
 
-	amount0 = utils.CalculateVolumeInUsd(_pair.Token0, utils.GetBigIntOrZero(event.Amount0), _pair.Decimal0, block.EthPrice)
+	amount0 = utils.CalculateVolumeInUsd(_pair.Token0, utils.GetBigFloatOrZero(event.Amount0), _pair.Decimal0, block.EthPrice)
 
-	amount1 = utils.CalculateVolumeInUsd(_pair.Token1, utils.GetBigIntOrZero(event.Amount1), _pair.Decimal1, block.EthPrice)
+	amount1 = utils.CalculateVolumeInUsd(_pair.Token1, utils.GetBigFloatOrZero(event.Amount1), _pair.Decimal1, block.EthPrice)
 
 	amount = amount0 + amount1
 
@@ -134,4 +140,72 @@ func updateLiquidityAmount(event *schema.LiquidityEvent, _pair *schema.Pair, blo
 	}
 
 	event.AmountInUsd = amount
+}
+
+// 去链上获取流动性池子大小
+// 直接获取token0及token1的balance, 再确认价值币
+func updatePoolLiquidity(_pair *schema.Pair, mongodb *mongo.Client, block *schema.Block) {
+	token0BalanceInt, err0 := chain.BalanceOf(_pair.Address, _pair.Token0)
+	token1BalanceInt, err1 := chain.BalanceOf(_pair.Address, _pair.Token1)
+	if err0 != nil || err1 != nil {
+		utils.Warnf("[ updatePoolLiquidity ] get balance err0: %v, err1: %v\n", err0, err1)
+		return
+	}
+
+	token0Balance := utils.GetBigFloatOrZero(token0BalanceInt.String())
+	token1Balance := utils.GetBigFloatOrZero(token1BalanceInt.String())
+
+	amount0 := utils.CalculateVolumeInUsd(_pair.Token0, token0Balance, _pair.Decimal0, block.EthPrice)
+	amount1 := utils.CalculateVolumeInUsd(_pair.Token1, token1Balance, _pair.Decimal1, block.EthPrice)
+
+	// utils.Warnf("[ updatePoolLiquidity ] before.. block: %v, pair: %v liquidity now.. amount0: %v, balance0: %v,  amount1: %v, balance1: %v", block.BlockNo, _pair.Address, amount0, token0Balance, amount1, token1Balance)
+
+	// 计算pool价值币value直接相加即可
+	_pair.ValueCoinLiquidity = amount0 + amount1
+
+	// 计算 liquidity
+	// 1. 如果双方为0, 则为0
+	// 2. 如果双方均不为0, 则直接相加
+	// 3. 如果某一方为0, 另一方不为0, 则根据价格计算为0方价值
+	if (amount0 != 0 && amount1 == 0) || (amount0 == 0 && amount1 != 0) {
+		// 因为price的计算时, 已经针对价值币进行了分类
+		// 因此到这里的时候, 如果一方为0, 那肯定价格就是0价值方价格
+		// 所以直接乘以价格即可
+		if _pair.Price > 0 {
+			token0Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(_pair.Decimal0)), nil)
+			token1Exponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(_pair.Decimal1)), nil)
+
+			if amount1 == 0 { // token0是价值币, token1为屌丝币
+				// int64 很容易被 1e18 溢出	！当price大于100时就溢出了!
+				// 所以换成 big.Float....
+				amount1BigInt := token1Balance.Mul(token1Balance, big.NewFloat(_pair.Price*1e18)) // 防止价格过低的屌丝币, 乘上一个基数
+
+				amount1BigInt = amount1BigInt.Quo(amount1BigInt, new(big.Float).SetInt(token1Exponent))
+
+				// 此时的amount1BigInt表示该屌丝币兑换成对端价值币后的数量
+				// 所以还需要乘以对端的decimal才表示真实的 amount
+				amount1BigInt = amount1BigInt.Mul(amount1BigInt, new(big.Float).SetInt(token0Exponent))
+
+				// 再除以基数
+				amount1BigInt = amount1BigInt.Quo(amount1BigInt, big.NewFloat(1e18))
+
+				amount1 = utils.CalculateVolumeInUsd(_pair.Token0, amount1BigInt, _pair.Decimal0, block.EthPrice)
+			} else { // 反之
+				amount0BigInt := token0Balance.Mul(token0Balance, big.NewFloat(_pair.Price*1e18))
+				amount0BigInt = amount0BigInt.Quo(amount0BigInt, new(big.Float).SetInt(token0Exponent))
+				amount0BigInt = amount0BigInt.Mul(amount0BigInt, new(big.Float).SetInt(token1Exponent))
+
+				amount0BigInt = amount0BigInt.Quo(amount0BigInt, big.NewFloat(1e18))
+				amount0 = utils.CalculateVolumeInUsd(_pair.Token1, amount0BigInt, _pair.Decimal1, block.EthPrice)
+			}
+		}
+	}
+	_pair.LiquidityInUsd = amount0 + amount1
+
+	_pair.Token0UsdValue = amount0
+	_pair.Token1UsdValue = amount1
+
+	// update pair liquidity info
+	// utils.Infof("[ updatePoolLiquidity ] update pair: %v liquidity now.. amount0: %v, amount1: %v", _pair.Address, amount0, amount1)
+	pair.UpSertOnChainInfo(_pair.Address, &_pair.InfoOnChain, mongodb)
 }
