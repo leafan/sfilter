@@ -10,6 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const (
+	TRANSFER_EVENT_UNKNOWN int = iota
+
+	TRANSFER_EVENT_TRANSFER // 正常的transfer
+	TRANSFER_EVENT_SWAP     // swap性质的transfer
+
+)
+
 // 定义一个map, 以tx_token为key, value为该tx内该token的交易list
 // 目的: 用于swap的时候谁是真正的token受益方(操作方)
 type TxTokenTransfersMap map[string][]*Transfer
@@ -32,6 +40,8 @@ type Transfer struct {
 	Position uint   `json:"position" bson:"position"` // 交易在本区块中的序号
 
 	LogIndexWithTx string `json:"-" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
+
+	TransferType int `json:"transferType" bson:"transferType"`
 
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"` // transfer时间
 
@@ -71,5 +81,9 @@ var TransferIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "to", Value: 1}},
 		Options: options.Index().SetName("to_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "transferType", Value: 1}},
+		Options: options.Index().SetName("transferType_index"),
 	},
 }

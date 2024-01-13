@@ -76,12 +76,6 @@ func parseTransferOptions(c *gin.Context) (*options.FindOptions, error) {
 func parseTransferFilterOptions(c *gin.Context) *primitive.M {
 	filter := bson.M{}
 
-	blockNo := c.DefaultQuery("blockNo", "0")
-	blockNoInt, err := strconv.Atoi(blockNo)
-	if err == nil && blockNoInt > 0 {
-		filter["blockNo"] = blockNoInt
-	}
-
 	token := c.DefaultQuery("token", "")
 	if token != "" && utils.IsValidEthereumAddress(token) {
 		filter["token"] = token
@@ -96,6 +90,9 @@ func parseTransferFilterOptions(c *gin.Context) *primitive.M {
 	if to != "" && utils.IsValidEthereumAddress(to) {
 		filter["to"] = to
 	}
+
+	// 默认只查询 正常transfer 交易, 排除掉transfer交易
+	filter["transferType"] = 1
 
 	recentdays := c.DefaultQuery("recentdays", "1")
 	recentdaysInt, err := strconv.Atoi(recentdays)

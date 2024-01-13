@@ -43,11 +43,16 @@ func HandleTransfer(block *schema.Block, mongodb *mongo.Client) (schema.TxTokenT
 }
 
 func UpSaveTransferInfoBySwaps(transfers []*schema.Transfer, swaps []*schema.Swap, mongodb *mongo.Client) {
+	// 本区块内有过交易的 token 的 price 保存
 	mainTokenPriceMap := make(map[string]float64)
+
+	// 记录本区块内所有的txHash
+	txhashMap := make(map[string]bool)
 
 	// 先获取本区块交易中的价格
 	for _, _swap := range swaps {
 		mainTokenPriceMap[_swap.MainToken] = _swap.PriceInUsd
+		txhashMap[_swap.TxHash] = true
 	}
 
 	for _, _transfer := range transfers {
@@ -62,6 +67,15 @@ func UpSaveTransferInfoBySwaps(transfers []*schema.Transfer, swaps []*schema.Swa
 			if err == nil {
 				_transfer.TransferValueInUsd = _transfer.Amount * _token.PriceInUsd
 			}
+		}
+
+		// 更新是否是swap类型的transfer
+		_transfer.TransferType = schema.TRANSFER_EVENT_TRANSFER
+
+		// 如果该hash里面也有swap交易, 直接认为是swap类型
+		_, ok = txhashMap[_transfer.TxHash]
+		if ok {
+			_transfer.TransferType = schema.TRANSFER_EVENT_SWAP
 		}
 
 		transfer.SaveTransferEvent(_transfer, mongodb)

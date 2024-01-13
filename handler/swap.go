@@ -67,7 +67,7 @@ func updateBlockInfo(blk *schema.Block, swap *schema.Swap) {
 }
 
 /*
-找出真正的受益方或者trader
+找出真正的受益方或者trader, 默认值为 operator
 
 if buy:
 
@@ -137,6 +137,11 @@ func updateTrader(swap *schema.Swap, transferMap schema.TxTokenTransfersMap) {
 			}
 
 		}
+	}
+
+	// 如果此时还为空, 则直接认为是trader吧
+	if swap.Trader == "" {
+		swap.Trader = swap.Operator
 	}
 
 }
