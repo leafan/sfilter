@@ -13,7 +13,7 @@ import (
 	"github.com/cloudfresco/ethblocks"
 
 	"sfilter/config"
-	"sfilter/handler"
+	handler "sfilter/handler/sfilter"
 	"sfilter/schema"
 	userModels "sfilter/user/models"
 	"sfilter/utils"
