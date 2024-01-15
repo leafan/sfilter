@@ -23,6 +23,7 @@ import (
 // 对外的 middleware, 在其他地方需要认证成功的时候使用
 var authMiddleware gin.HandlerFunc
 var apiKeyAuthMiddleware gin.HandlerFunc
+var adminAuthMiddleware gin.HandlerFunc
 
 func GetUserAuthMiddleware() gin.HandlerFunc {
 	return authMiddleware
@@ -30,6 +31,9 @@ func GetUserAuthMiddleware() gin.HandlerFunc {
 
 func GetApiKeyAuthMiddleware() gin.HandlerFunc {
 	return apiKeyAuthMiddleware
+}
+func GetAdminAuthMiddleware() gin.HandlerFunc {
+	return adminAuthMiddleware
 }
 
 type Server struct {
@@ -109,6 +113,7 @@ func Run(r *gin.Engine) {
 
 	authMiddleware = wrapHttpToGinMiddleware(server.Auth.Middleware())
 	apiKeyAuthMiddleware = AuthAPIKeyMiddleware()
+	adminAuthMiddleware = AuthAdminMiddleWare()
 
 	// /auth/login; /auth/logout; /auth/user
 	r.Any("/auth/*action", gin.WrapH(authRoutes))  // add auth handlers
@@ -135,7 +140,6 @@ func Run(r *gin.Engine) {
 		gWithAuth.DELETE("/trackaddr/:address", controllers.DeleteTrackedAddress) // 删除
 	}
 
-	adminAuthMiddleware := AuthAdminMiddleWare()
 	gWithAdminAuth := g.Group("/admin").Use(adminAuthMiddleware)
 	{
 		// users

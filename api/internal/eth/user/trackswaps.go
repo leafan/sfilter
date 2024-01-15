@@ -107,7 +107,7 @@ func parseTrackSwapFilterOptions(username string, c *gin.Context) *primitive.M {
 	}
 
 	// 根据token地址查询, 可能为token0或token1
-	token := c.DefaultQuery("token", "")
+	token := c.DefaultQuery("_token", "")
 	if token != "" && utils.IsValidEthereumAddress(token) {
 		orCondition := []bson.M{
 			{"token0": token},

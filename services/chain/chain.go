@@ -173,7 +173,7 @@ func IsContract(address string) bool {
 
 // 获取eth价格,
 // 如果配置了height, 需要client支持archive查询功能, 可以用infura
-func GetEthPrice(client *ethclient.Client, height *big.Int) float64 {
+func GetEthPrice(client *ethclient.Client, height *big.Int) (float64, error) {
 	if height != nil {
 		client = getInfuraClient() // 当指定高度时, 则需要去infura上获取
 	}
@@ -182,8 +182,15 @@ func GetEthPrice(client *ethclient.Client, height *big.Int) float64 {
 	priceSqrt, err := getSingleProp(ETH_UNI_POOL, "slot0", client, height)
 
 	if err != nil {
-		utils.Warnf("[ GetEthPrice ] getSingleProp error: %v, height: %v\n", err, height)
-		return 0
+		utils.Warnf("[ GetEthPrice ] get price from chain error, will retry via infura. error: %v, height: %v\n", err, height)
+
+		client = getInfuraClient() // 出错了, 重新获取一次
+		priceSqrt, err = getSingleProp(ETH_UNI_POOL, "slot0", client, height)
+		if err != nil {
+			utils.Errorf("[ GetEthPrice ] failed in **infura** again! error: %v, height: %v\n", err, height)
+
+			return 0, err
+		}
 	}
 
 	price := priceSqrt.(*big.Int)
@@ -201,8 +208,8 @@ func GetEthPrice(client *ethclient.Client, height *big.Int) float64 {
 
 	ret = float64(int(ret*100)) / 100
 
-	utils.Debugf("[ GetEthPrice ] block height: %v, price: %v", height, ret)
-	return ret
+	// utils.Debugf("[ GetEthPrice ] block height: %v, price: %v", height, ret)
+	return ret, nil
 }
 
 func TEST_CHAIN() {

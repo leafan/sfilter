@@ -27,15 +27,23 @@ func Infof(format string, args ...interface{}) {
 	log.Printf(ColorGreen+format+ColorReset, args...)
 }
 
-func Errorf(format string, args ...interface{}) {
-	log.Printf(ColorRed+format+ColorReset, args...)
-}
-
 func Warnf(format string, args ...interface{}) {
 	log.Printf(ColorYellow+format+ColorReset, args...)
+}
+
+func Errorf(format string, args ...interface{}) {
+	log.Printf(ColorRed+format+ColorReset, args...)
+
+	// 告警
+	content := fmt.Sprintf(format, args...)
+	SendWecommDebugMsg(content)
 }
 
 // 这个函数会退出
 func Fatalf(format string, args ...interface{}) {
 	log.Fatalf(ColorRed+format+ColorReset, args...)
+
+	// 告警
+	content := fmt.Sprintf(format, args...)
+	SendWecommDebugMsg(content)
 }

@@ -70,7 +70,7 @@ func CheckAndDeleteUserSwapsUpLimit(mongodb *mongo.Client) {
 // 这里要注意某些用户的容量并及时告警
 func HandleUserTrackSwaps(block *schema.Block, mongodb *mongo.Client, swaps []*schema.Swap) {
 	if len(trackAddressMap) <= 0 {
-		utils.Errorf("[ HandleUserTrackSwaps ] len trackAddressMap is zero? no init?")
+		utils.Warnf("[ HandleUserTrackSwaps ] len trackAddressMap is zero? no init?")
 		return
 	}
 

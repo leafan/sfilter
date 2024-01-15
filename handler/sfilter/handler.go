@@ -18,9 +18,9 @@ import (
 )
 
 func HandleBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client) {
-	block := getBlock(blockNumber, client, mongodb, 0)
+	block, err := getBlock(blockNumber, client, mongodb, 0)
 
-	if block != nil {
+	if err == nil {
 		handleOneBlock(block, mongodb)
 	}
 }
@@ -49,7 +49,10 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 		}
 
 		if times%config.GetPriceIntervalForRetrive == 0 {
-			ethPrice = chain.GetEthPrice(client, big.NewInt(i))
+			ethPrice, err = chain.GetEthPrice(client, big.NewInt(i))
+			if err != nil {
+				continue // eth价格必须取到, 如果没取到, 回溯
+			}
 		}
 
 		ch <- struct{}{} // 当协程处理不过来的时候, 这里会阻塞，写不进去
@@ -58,7 +61,11 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 		go func(i int64, ethPrice float64) {
 			defer wg.Done()
 
-			block := getBlock(big.NewInt(i), client, mongodb, ethPrice)
+			block, err := getBlock(big.NewInt(i), client, mongodb, ethPrice)
+			if err != nil {
+				return
+			}
+
 			<-ch // 处理完了, 释放一个协程位置
 
 			// 先释放协程, 再往后走, 因为这里面有 sleep
