@@ -5,15 +5,13 @@ import (
 	"time"
 )
 
-const DEVELOPMENT = true
-
 const SecondsForOneDay = (60 * 60 * 24)
 const SecondsForOneWeek = (SecondsForOneDay * 7)
 const SecondsForOneMonth = (SecondsForOneDay * 30)
 const SecondsForOneYear = (SecondsForOneMonth * 12)
 
 const BlocksPerDay = 250 * 24
-const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
+const SleepIntervalforRetrive = 200 // 单位ms, 每隔多久取一次区块
 
 // api configure
 
@@ -40,8 +38,6 @@ const TrackSwapTableSaveTime = SecondsForOneMonth
 
 const UpdateTrackAddressInterval = 1 * time.Minute // 定时更新用户跟踪地址列表
 const CheckTrackAddressInterval = 60 * time.Minute // 定时检查用户记录是否到达上限
-
-const NeverExpireTime = 0
 
 const MaxConcurrentRoutineNums = 10   // 最大并行的协程数, 避免节点扛不住
 const GlobalUpdateIntervalBlocks = 10 // 每隔多少个区块update一次全局24h趋势数据

@@ -3,7 +3,6 @@ package api
 import (
 	"sfilter/api/router"
 	"sfilter/api/utils"
-	"sfilter/config"
 	app_utils "sfilter/utils"
 
 	"github.com/gin-gonic/gin"
@@ -48,14 +47,6 @@ func (server *Server) configureMiddleware() {
 	)
 
 	server.Engine.Use(utils.Cors())
-
-	whitelist := make(map[string]bool)
-	whitelist[config.ProxyFromIp] = true
-
-	// 设置白名单访问
-	if !config.DEVELOPMENT {
-		server.Engine.Use(utils.IPWhiteList(whitelist))
-	}
 }
 
 func ping(c *gin.Context) {

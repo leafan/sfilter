@@ -16,8 +16,10 @@ import (
 func SaveTrackSwap(uswap *schema.TrackSwap, mongodb *mongo.Client) error {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.TrackSwapTableName)
 
-	uswap.CreatedAt = time.Now()
+	// 先查找是否已存在, 如果hash和user
+	// todo
 
+	uswap.CreatedAt = time.Now()
 	_, err := collection.InsertOne(context.Background(), uswap)
 	if err != nil {
 		utils.Warnf("[ SaveTrackSwap ] InsertOne error: %v, swap tx: %v\n", err, uswap.TxHash)

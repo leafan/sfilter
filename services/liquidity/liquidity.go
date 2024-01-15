@@ -7,6 +7,7 @@ import (
 	"sfilter/utils"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -49,5 +50,19 @@ func SaveLiquidityEvent(event *schema.LiquidityEvent, mongodb *mongo.Client) {
 
 	event.CreatedAt = time.Now()
 
-	collection.InsertOne(context.Background(), event)
+	_, err := collection.InsertOne(context.Background(), event)
+
+	if err != nil && config.DevelopmentMode {
+		// 如果是重复键值导致的插入失败, 且当前为修复模式, 则直接update
+		filter := bson.D{{Key: "logIndexWithTx", Value: event.LogIndexWithTx}}
+		opts := options.Update().SetUpsert(true)
+
+		update := bson.D{
+			{Key: "$set", Value: event},
+		}
+		_, err := collection.UpdateOne(context.Background(), filter, update, opts)
+		if err != nil {
+			utils.Warnf("[ SaveLiquidityEvent ] failed. hash: %v, err: %v\n", event.EventTxHash, err)
+		}
+	}
 }

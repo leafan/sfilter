@@ -109,7 +109,8 @@ func doHandleOneSwap(_swap *schema.Swap, mongodb *mongo.Client) {
 				MainToken: _swap.MainToken,
 				Direction: _swap.Direction,
 
-				TxHash: _swap.TxHash,
+				TxHash:         _swap.TxHash,
+				LogIndexWithTx: _swap.LogIndexWithTx,
 
 				Price:             _swap.Price,
 				AmountOfMainToken: _swap.AmountOfMainToken,

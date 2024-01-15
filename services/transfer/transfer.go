@@ -7,6 +7,7 @@ import (
 	"sfilter/utils"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,8 +18,19 @@ func SaveTransferEvent(_transfer *schema.Transfer, mongodb *mongo.Client) {
 
 	_transfer.CreatedAt = time.Now()
 	_, err := collection.InsertOne(context.Background(), _transfer)
-	if err != nil {
-		// utils.Warnf("[ SaveTransferEvent ] InsertOne error: %v, trasnfer: %v, LogIndexWithTx: %v\n", err, _transfer, _transfer.LogIndexWithTx)
+
+	if err != nil && config.DevelopmentMode {
+		// 如果是重复键值导致的插入失败, 且当前为修复模式, 则直接update
+		filter := bson.D{{Key: "logIndexWithTx", Value: _transfer.LogIndexWithTx}}
+		opts := options.Update().SetUpsert(true)
+
+		update := bson.D{
+			{Key: "$set", Value: _transfer},
+		}
+		_, err := collection.UpdateOne(context.Background(), filter, update, opts)
+		if err != nil {
+			utils.Warnf("[ SaveSwapTx ] failed. hash: %v, err: %v\n", _transfer.TxHash, err)
+		}
 	}
 }
 

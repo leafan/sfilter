@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"sfilter/schema"
 	"sfilter/services/liquidity"
 	"sfilter/services/pair"
@@ -33,6 +34,8 @@ func handleAddLiquidity(block *schema.Block, tx *schema.Transaction, l *types.Lo
 		event.EventTime = time.Unix(int64(block.Block.Time()), 0)
 		event.EventTxHash = l.TxHash.String()
 		event.EventGasPrice = tx.Receipt.EffectiveGasPrice.String()
+
+		event.LogIndexWithTx = fmt.Sprintf("%s_%d", event.EventTxHash, l.Index)
 
 		event.UpdatedAt = time.Now()
 		event.CreatedAt = time.Now()

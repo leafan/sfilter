@@ -182,7 +182,7 @@ func GetEthPrice(client *ethclient.Client, height *big.Int) (float64, error) {
 	priceSqrt, err := getSingleProp(ETH_UNI_POOL, "slot0", client, height)
 
 	if err != nil {
-		utils.Warnf("[ GetEthPrice ] get price from chain error, will retry via infura. error: %v, height: %v\n", err, height)
+		utils.Warnf("[ GetEthPrice ] get price error, will retry via infura. error: %v, height: %v\n", err, height)
 
 		client = getInfuraClient() // 出错了, 重新获取一次
 		priceSqrt, err = getSingleProp(ETH_UNI_POOL, "slot0", client, height)

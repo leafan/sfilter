@@ -7,6 +7,7 @@ import (
 	"sfilter/utils"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,8 +19,19 @@ func SaveSwapTx(swap *schema.Swap, mongodb *mongo.Client) error {
 	swap.CreatedAt = time.Now()
 
 	_, err := collection.InsertOne(context.Background(), swap)
-	if err != nil {
-		// utils.Warnf("[ saveSwapTx ] InsertOne error: %v, swap tx: %v\n", err, swap.TxHash)
+
+	if err != nil && config.DevelopmentMode {
+		// 如果是重复键值导致的插入失败, 且当前为修复模式, 则直接update
+		filter := bson.D{{Key: "logIndexWithTx", Value: swap.LogIndexWithTx}}
+		opts := options.Update().SetUpsert(true)
+
+		update := bson.D{
+			{Key: "$set", Value: swap},
+		}
+		_, err := collection.UpdateOne(context.Background(), filter, update, opts)
+		if err != nil {
+			utils.Warnf("[ SaveSwapTx ] failed. hash: %v, err: %v\n", swap.TxHash, err)
+		}
 	}
 
 	return err

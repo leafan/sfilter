@@ -9,6 +9,8 @@ import (
 )
 
 var (
+	DevelopmentMode = false
+
 	MONGO_ADDR       = "mongodb://127.0.0.1:27017"
 	DatabaseName     = "deepeye"
 	API_AES_DATA_KEY = "deepeye@leafan16"

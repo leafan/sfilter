@@ -53,7 +53,8 @@ type TrackSwapInfo struct {
 	AmountOfMainToken float64 `json:"amountOfMainToken" bson:"amountOfMainToken"`
 	VolumeInUsd       float64 ` json:"volumeInUsd" bson:"volumeInUsd"`
 
-	TxHash string `json:"txhash" bson:"txhash"`
+	TxHash         string `json:"txhash" bson:"txhash"`
+	LogIndexWithTx string `json:"-" bson:"logIndexWithTx"`
 
 	SwapTime time.Time `json:"swapTime" bson:"swapTime"`
 }
@@ -67,6 +68,10 @@ var TrackSwapIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "swapTime", Value: -1}},
 		Options: options.Index().SetName("swapTime_index").SetExpireAfterSeconds(config.TrackSwapTableSaveTime),
+	},
+	{
+		Keys:    bson.D{{Key: "logIndexWithTx", Value: 1}},
+		Options: options.Index().SetName("logIndexWithTx_index").SetUnique(true),
 	},
 	{
 		Keys:    bson.D{{Key: "username", Value: -1}},

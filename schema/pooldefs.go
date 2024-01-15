@@ -28,6 +28,8 @@ type LiquidityEvent struct {
 	EventTxHash   string    `json:"eventTxHash" bson:"eventTxHash"`
 	EventGasPrice string    `json:"eventGasPrice" bson:"eventGasPrice"`
 
+	LogIndexWithTx string `json:"-" bson:"logIndexWithTx"`
+
 	UpdatedAt time.Time `json:"-" bson:"updatedAt"`
 	CreatedAt time.Time `json:"-" bson:"createdAt"`
 }
@@ -39,7 +41,11 @@ var LiquidityEventIndexModel = []mongo.IndexModel{
 	},
 	{
 		Keys:    bson.D{{Key: "poolAddress", Value: 1}},
-		Options: options.Index().SetName("poolAddress_index").SetUnique(true),
+		Options: options.Index().SetName("poolAddress_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "logIndexWithTx", Value: 1}},
+		Options: options.Index().SetName("logIndexWithTx_index").SetUnique(true),
 	},
 	{
 		Keys:    bson.D{{Key: "operator", Value: 1}},

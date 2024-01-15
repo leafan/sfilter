@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 
+	"sfilter/config"
 	"sfilter/schema"
 	service_block "sfilter/services/block"
 	"sfilter/services/chain"
@@ -30,7 +31,13 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 	oneBlk := new(schema.Block)
 
 	if ethPrice == 0 {
-		ethPrice, err = chain.GetEthPrice(client, blockNumber)
+		if config.DevelopmentMode {
+			ethPrice, err = chain.GetEthPrice(client, blockNumber)
+		} else {
+			// 直接通过本地链上读取, 不要走 infura
+			ethPrice, err = chain.GetEthPrice(client, nil)
+		}
+
 		if err != nil {
 			return nil, err
 		}

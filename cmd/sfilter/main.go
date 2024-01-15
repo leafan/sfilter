@@ -34,13 +34,13 @@ func main() {
 	if *block != 0 {
 		utils.Infof("\n\n\nStart block test now...\n\n\n")
 
+		config.DevelopmentMode = true
+
 		// 先把block id set 未处理
 		sblock.SetUnProceeded(*block, mongodb)
-
 		handler.HandleBlock(big.NewInt(*block), client, mongodb)
 
 		utils.Infof("\n\nFinished block test...\n\n")
-
 		return
 	}
 
@@ -79,15 +79,14 @@ func loop(client *ethclient.Client, mongodb *mongo.Client) {
 	headers := make(chan *types.Header)
 	sub, err := client.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
-		panic(err)
+		utils.Fatalf("SubscribeNewHead error: %v", err)
 	}
 	utils.Infof("[ loop ] start SubscribeNewHead now..\n\n")
 
 	for {
 		select {
 		case err := <-sub.Err():
-			utils.Fatalf("SubscribeBlocks error: ", err)
-			return
+			utils.Fatalf("SubscribeBlocks error: %v", err)
 
 		case header := <-headers:
 			utils.Infof("[ loop ] Get new header now. number: %v\n", header.Number)
