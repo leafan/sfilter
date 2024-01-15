@@ -1,4 +1,4 @@
-.PHONY: sapi sfilter run ps build stop restart  creat
+.PHONY:  run ps build stop restart creat filter api wiser
 
 default: build
 
@@ -23,13 +23,18 @@ creat:
 run:
 	@make start
 	
-sapi:
+api:
 	pkill -f '^.*sapi$$' 2>&1 || true
 	go run cmd/api/main.go
 
-sfilter:
+filter:
 	pkill -f '^.*sfilter_eth$$' 2>&1 || true
 	go run cmd/sfilter/main.go
+
+wiser:
+	pkill -f '^.*swiser_eth$$' 2>&1 || true
+	go run cmd/wiser/main.go
+
 
 restart:
 	@make --no-print-directory stop
@@ -78,6 +83,8 @@ build:
 	@echo "\033[0;34mbuild now...\033[0m"
 
 	go build -o sapi cmd/api/main.go
+	go build -o swiser cmd/wiser/main.go
+
 	@make eth
 
 eth:

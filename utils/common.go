@@ -110,9 +110,14 @@ func IsValueCoin(token string) bool {
 
 // 一些常见的销毁地址
 func IsDeadAddress(token string) bool {
-	if CheckExistString(token, CommonRuneAddresses) {
-		return true
-	}
+	return CheckExistString(token, CommonRuneAddresses)
+}
 
+func Contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
 	return false
 }

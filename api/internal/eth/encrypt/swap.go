@@ -92,10 +92,7 @@ func parseSwapFilterOptions(c *gin.Context) *primitive.M {
 
 	trader := c.DefaultQuery("trader", "")
 	if trader != "" && utils.IsValidEthereumAddress(trader) {
-		filter["$or"] = []bson.M{
-			{"trader": trader},
-			{"operator": trader},
-		}
+		filter["trader"] = trader
 	}
 
 	pairAddr := c.DefaultQuery("pairAddr", "")

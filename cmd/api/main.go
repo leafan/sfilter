@@ -11,8 +11,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 func main() {

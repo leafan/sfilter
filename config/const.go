@@ -67,9 +67,14 @@ var ValidChains = []string{
 }
 
 // facet 定义
-
 const FacetTableName = "facet"
 const FacetSaveTime = int32(SecondsForOneMonth)
 
 const InscriptionTableName = "inscription"
 const InscriptionSaveTime = int32(SecondsForOneMonth)
+
+// wiser 定义
+const WiserTableName = "wiser"
+
+const BiDealTableName = "deals"
+const BiDealSaveTime = int32(SecondsForOneYear)

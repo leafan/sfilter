@@ -25,6 +25,11 @@ func InitTables(mongodb *mongo.Client) {
 
 	utils.DoInitTable(config.DatabaseName, config.TrackSwapTableName, TrackSwapIndexModel, mongodb)
 
-	utils.DoInitTable(config.FacetTableName, config.FacetTableName, FacetIndexModel, mongodb)
-	utils.DoInitTable(config.InscriptionTableName, config.InscriptionTableName, InscriptionIndexModel, mongodb)
+	// facet
+	utils.DoInitTable(config.DatabaseName, config.FacetTableName, FacetIndexModel, mongodb)
+	utils.DoInitTable(config.DatabaseName, config.InscriptionTableName, InscriptionIndexModel, mongodb)
+
+	// wiser
+	utils.DoInitTable(config.DatabaseName, config.WiserTableName, WiserIndexModel, mongodb)
+	utils.DoInitTable(config.DatabaseName, config.BiDealTableName, BiDealIndexModel, mongodb)
 }

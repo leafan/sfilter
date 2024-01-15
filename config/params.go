@@ -61,7 +61,7 @@ func initEnvConfig() {
 
 	ws_addr := os.Getenv("WS_ADDR")
 	if ws_addr != "" {
-		utils.Infof("[ init ] Using node ws addr: %v", ws_addr)
+		utils.Infof("[ init ] Using ws addr: %v", ws_addr)
 		WS_ADDR = ws_addr
 	}
 

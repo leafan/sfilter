@@ -140,9 +140,10 @@ func updateTrader(swap *schema.Swap, transferMap schema.TxTokenTransfersMap) {
 	}
 
 	// 如果此时还为空, 则直接认为是trader吧
-	if swap.Trader == "" {
-		swap.Trader = swap.Operator
-	}
+	// 逻辑删除, 因为如果to都没有, 则不是一笔合法买入而可能是一个arbi等, 排除掉影响分析
+	// if swap.Trader == "" {
+	// 	swap.Trader = swap.Operator
+	// }
 
 }
 
