@@ -86,6 +86,7 @@ func parseTrackSwapOptions(c *gin.Context) (*options.FindOptions, error) {
 func parseTrackSwapFilterOptions(username string, c *gin.Context) *primitive.M {
 	filter := bson.M{
 		"username": username,
+		"$or":      []bson.M{},
 	}
 
 	direction := c.DefaultQuery("direction", "0")
@@ -96,10 +97,8 @@ func parseTrackSwapFilterOptions(username string, c *gin.Context) *primitive.M {
 
 	trader := c.DefaultQuery("trader", "")
 	if trader != "" {
-		filter["$or"] = []bson.M{
-			{"address": trader},
-			{"memo": trader},
-		}
+		orCondition := []bson.M{{"address": trader}, {"memo": trader}}
+		filter["$or"] = append(filter["$or"].([]bson.M), orCondition...)
 	}
 
 	pairAddr := c.DefaultQuery("pairAddr", "")
@@ -110,11 +109,12 @@ func parseTrackSwapFilterOptions(username string, c *gin.Context) *primitive.M {
 	// 根据token地址查询, 可能为token0或token1
 	token := c.DefaultQuery("token", "")
 	if token != "" && utils.IsValidEthereumAddress(token) {
-		filter["$or"] = []bson.M{
+		orCondition := []bson.M{
 			{"token0": token},
 			{"token1": token},
 			{"pairAddr": token},
 		}
+		filter["$or"] = append(filter["$or"].([]bson.M), orCondition...)
 	}
 
 	recentdays := c.DefaultQuery("recentdays", "1")

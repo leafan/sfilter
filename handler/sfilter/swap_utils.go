@@ -182,9 +182,8 @@ func updateUniV3Swap(swap *schema.Swap, l *types.Log, mongodb *mongo.Client) {
 		return
 	}
 
-	if utils.CheckExistString(swap.Token0, utils.QuoteUsdCoinList) {
-		swap.MainToken = swap.Token1
-	} else if utils.CheckExistString(swap.Token0, utils.QuoteEthCoinList) {
+	quoteToken := utils.GetQuoteToken(swap.Token0, swap.Token1)
+	if swap.Token0 == quoteToken {
 		swap.MainToken = swap.Token1
 	} else {
 		swap.MainToken = swap.Token0

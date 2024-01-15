@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/wiser"
@@ -70,12 +71,22 @@ func (w *Wiser) Run() {
 }
 
 func (w *Wiser) WiserSearcher() {
-	accounts, err := wiser.GetActiveAccounts(w.Config.AccountActiveSeconds, int64(w.Config.DbBlockReadSize), w.DB)
-	if err != nil {
-		utils.Errorf("[ WiserSearcher ] GetActiveAccounts error:  %v", err)
-		return
+	var accounts schema.ActiveAccount
+	if w.Config.DebugAccount != "" && w.Config.DebugToken != "" {
+		// 同时不为空, 彻底的测试某个地址的某个token
+		tokens := []string{w.Config.DebugToken}
+		accounts = schema.ActiveAccount{
+			w.Config.DebugAccount: tokens,
+		}
+	} else {
+		var err error
+		accounts, err = wiser.GetActiveAccounts(w.Config.AccountActiveSeconds, int64(w.Config.DbBlockReadSize), w.Config.DebugAccount, w.DB)
+		if err != nil {
+			utils.Errorf("[ WiserSearcher ] GetActiveAccounts error:  %v", err)
+			return
+		}
 	}
-	// utils.Infof("[ WiserSearcher ] accounts: %v, err: %v", accounts, err)
+	// utils.Infof("[ WiserSearcher ] accounts: %v", accounts)
 
 	for account := range accounts {
 		// 分析出买卖记录并存储
@@ -88,7 +99,7 @@ func (w *Wiser) WiserSearcher() {
 
 // 分析某个账号是否是优秀地址
 func (w *Wiser) InspectAccount(account string) {
-	// utils.Warnf("\n\n[ InspectAccount ] empty function now, todo!!!\n\n")
+	utils.Warnf("\n\n[ InspectAccount ] empty function now, todo!!!\n\n")
 	// todo...
 }
 
@@ -140,7 +151,7 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 				}
 
 				// 保存sell信息
-				deal.SellTxHash = att.TxHash
+				deal.SellTxHashWithToken = fmt.Sprintf("%v_%v", att.TxHash, token)
 				deal.SellBlockNo = att.BlockNo
 
 				deal.SellPrice = att.PriceInUSD
@@ -159,16 +170,12 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 					utils.Errorf("[ InspectAccountBiDeals ] wrong block! buyBlock: %v, sellBlock: %v", deal.BuyBlockNo, deal.SellBlockNo)
 					continue
 				}
-				deal.HoldBlocks = deal.SellBlockNo - deal.BuyBlockNo
 
 				// 定义bideal类型
-				deal.BiDealType = schema.BI_DEAL_TYPE_CLASSIC
+				deal.HoldBlocks = deal.SellBlockNo - deal.BuyBlockNo
+				deal.BiDealType = w.getDealType(deal.HoldBlocks)
 
-				if deal.HoldBlocks <= uint64(w.Config.ArbitrageBlockInterval) {
-					deal.BiDealType = schema.BI_DEAL_TYPE_ARBI
-				} else if deal.HoldBlocks <= uint64(w.Config.FrontrunBlockInterval) {
-					deal.BiDealType = schema.BI_DEAL_TYPE_FRONTRUN
-				}
+				wiser.PrintDeal(deal)
 
 				deals = append(deals, deal) // 是一笔完整买卖, 存入deals数组
 
@@ -179,8 +186,7 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 		// 是否要判断下最后一笔的交易状态，如果还持有当前币种未卖出, 则按当前价格计算盈利?
 		// 结论: 不判断, 因为这不属于该用户的主动行为
 
-		utils.Infof("[ InspectAccountBiDeals ] len deals: %v", len(deals))
-		// wiser.Print(deals)
+		utils.Infof("[ InspectAccountBiDeals ] token %v has %v deals.", token, len(deals))
 
 		for _, deal := range deals {
 			wiser.SaveDeal(deal, w.DB)
@@ -223,4 +229,21 @@ func (w *Wiser) GetAccountTradesForToken(account, token string) ([]schema.Accoun
 
 	// utils.Infof("[ GetAccountTradesForToken ] account: %v, token: %v, atts: %v", account, token, atts)
 	return atts, nil
+}
+
+// 根据交易间隔区块数获取 deal type
+func (w *Wiser) getDealType(blockInterval uint64) int {
+	dealType := schema.BI_DEAL_TYPE_CLASSIC
+
+	if blockInterval <= uint64(w.Config.ArbitrageBlockInterval) {
+		dealType = schema.BI_DEAL_TYPE_ARBI
+	} else if blockInterval <= uint64(w.Config.FrontrunBlockInterval) {
+		dealType = schema.BI_DEAL_TYPE_FRONTRUN
+	} else if blockInterval <= uint64(w.Config.GambleBlockInterval) {
+		dealType = schema.BI_DEAL_TYPE_GAMBLE_TRADE
+	} else if blockInterval <= uint64(w.Config.RushBlockInterval) {
+		dealType = schema.BI_DEAL_TYPE_RUSH_TRADE
+	}
+
+	return dealType
 }

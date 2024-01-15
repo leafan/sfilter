@@ -1,12 +1,12 @@
 package utils
 
 import (
-    "context"
+	"context"
+
 	"go.mongodb.org/mongo-driver/mongo"
-    
+
 	"go.mongodb.org/mongo-driver/bson"
 )
-
 
 func DoInitTable(database, collectionName string, index []mongo.IndexModel, mongodb *mongo.Client) {
 	collection := mongodb.Database(database).Collection(collectionName)
@@ -14,7 +14,7 @@ func DoInitTable(database, collectionName string, index []mongo.IndexModel, mong
 	filter := bson.M{"name": collectionName}
 	cols, err := collection.Database().ListCollectionNames(context.Background(), filter)
 	if err != nil {
-		Fatalf("[ InitTables] ListCollectionNames err: ", err)
+		Fatalf("[ InitTables] ListCollectionNames err: %v", err)
 	}
 
 	if len(cols) == 0 {

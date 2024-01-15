@@ -15,13 +15,19 @@ import (
 
 // 按页读取所有数据并保存到map返回
 // 按页读取的目的是为了防止把mongo卡死
-func GetActiveAccounts(seconds int, pageSize int64, mongodb *mongo.Client) (schema.ActiveAccount, error) {
+func GetActiveAccounts(seconds int, pageSize int64, debugAccount string, mongodb *mongo.Client) (schema.ActiveAccount, error) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
 
 	filter := bson.M{}
 	date := time.Now().Add(-time.Duration(seconds) * time.Second)
 	filter["swapTime"] = bson.M{
 		"$gte": date,
+	}
+
+	//  如果定义了 debug account, 则只找对应account数据
+	if debugAccount != "" {
+		utils.Infof("[ GetActiveAccounts ] debug account now: %v", debugAccount)
+		filter["trader"] = debugAccount
 	}
 
 	// 升序排列
@@ -180,24 +186,25 @@ func GetAccountTransfersByToken(seconds int, pageSize int64, account, token stri
 	return atts, nil
 }
 
-func Print(deals []*schema.BiDeal) {
+func PrintDeals(deals []*schema.BiDeal) {
 	for _, deal := range deals {
-		printDeal(deal)
+		PrintDeal(deal)
 	}
 }
 
-func printDeal(deal *schema.BiDeal) {
-	utils.Infof("\t**** [ printDeal ] **** Account: %v", deal.Account)
-	fmt.Println("Token: ", deal.Token)
+func PrintDeal(deal *schema.BiDeal) {
+	utils.Infof("\t**** [ printDeal ] **** Account: %v, Token: %v", deal.Account, deal.Token)
+
 	fmt.Println("BuyTxHash: ", deal.BuyTxHash)
 	fmt.Println("BuyBlockNo: ", deal.BuyBlockNo)
 	fmt.Println("BuyValue: ", deal.BuyValue)
-	fmt.Println("SellTxHash: ", deal.SellTxHash)
+	fmt.Println("SellTxHashWithToken: ", deal.SellTxHashWithToken)
 	fmt.Println("SellBlockNo: ", deal.SellBlockNo)
 	fmt.Println("SellValue: ", deal.SellValue)
 	fmt.Println("Earn: ", deal.Earn)
 	fmt.Println("EarnChange: ", deal.EarnChange)
 	fmt.Println("HoldBlocks: ", deal.HoldBlocks)
+
 	fmt.Printf("\n\n")
 }
 

@@ -1,4 +1,4 @@
-.PHONY:  run ps build stop restart creat filter api wiser
+.PHONY:  run ps build stop restart creat filter api wiser deepeye
 
 default: build
 
@@ -20,20 +20,39 @@ creat:
 
 	@echo "\n\033[0;34mFinished...\033[0m"
 
+deepeye:
+	@make build
+
+	@echo "\n\033[0;34mKill process...\033[0m"
+	pkill -f '^.*sfilter_deepeye$$' 2>&1 || true
+	pkill -f '^.*sapi_deepeye$$' 2>&1 || true
+
+	@echo "\n\033[0;34mCopy file...\033[0m"
+	cp sfilter_eth /root/deepeye/sfilter_deepeye
+	cp sapi /root/deepeye/sapi_deepeye
+
+	@echo "\n\033[0;34mStart process...\033[0m"
+
+	# cd /root/deepeye/ && nohup ./sapi_deepeye > /root/deepeye/logs/sapi_deepeye_$(shell date +%s).log 2>&1 &
+	cd /root/deepeye/ && nohup ./sfilter_deepeye > /root/deepeye/logs/sfilter_deepeye_$(shell date +%s).log 2>&1 &
+
+	@echo "\n\033[0;34mFinished...\033[0m"
+
+
 run:
 	@make start
 	
 api:
 	pkill -f '^.*sapi$$' 2>&1 || true
-	go run cmd/api/main.go
+	go run cmd/api/main.go $(ARGS)
 
 filter:
 	pkill -f '^.*sfilter_eth$$' 2>&1 || true
-	go run cmd/sfilter/main.go
+	go run cmd/sfilter/main.go $(ARGS)
 
 wiser:
 	pkill -f '^.*swiser_eth$$' 2>&1 || true
-	go run cmd/wiser/main.go
+	go run cmd/wiser/main.go $(ARGS)
 
 
 restart:

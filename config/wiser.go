@@ -10,6 +10,12 @@ type WiserConfig struct {
 
 	ArbitrageBlockInterval int // arbi机器人的买卖间隔区块数
 	FrontrunBlockInterval  int // frontrun机器人的买卖间隔区块数
+	GambleBlockInterval    int // Game投机交易买卖间隔区块数
+	RushBlockInterval      int // 高频交易间隔区块数
+
+	// for debug..
+	DebugAccount string // 调试账号
+	DebugToken   string // 调试token
 }
 
 var DefaultWiserConfig = &WiserConfig{
@@ -19,8 +25,11 @@ var DefaultWiserConfig = &WiserConfig{
 	// AccountActiveSeconds:   60 * 60 * 24 * 7,
 	AccountActiveSeconds: 60 * 60 * 24, // debug
 
-	LatestSwapSeconds: 60 * 60 * 24 * 2,
+	LatestSwapSeconds: 60 * 60 * 24 * 30,
 
 	ArbitrageBlockInterval: 0,
-	FrontrunBlockInterval:  5,
+	FrontrunBlockInterval:  5,   // 1min
+	GambleBlockInterval:    24,  // 5min
+	RushBlockInterval:      128, // 30min
+
 }

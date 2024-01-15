@@ -16,10 +16,21 @@ type ActiveAccount map[string]TokenList
 const (
 	BI_DEAL_TYPE_UNKNOWN int = iota
 
-	BI_DEAL_TYPE_CLASSIC //  正常交易
+	BI_DEAL_TYPE_CLASSIC //  正常趋势交易
 
-	BI_DEAL_TYPE_ARBI     // arbitrage 交易机器人
-	BI_DEAL_TYPE_FRONTRUN // frontrun夹子机器人
+	// arbitrage 交易机器, 定义为同区块进出
+	// 或者是 usdt->eth->xxx, 导致该deal买入eth又卖出eth
+	// 不应该被统计到合理deal里面, 一般都是 usdt->eth 价值币之间的转换
+	BI_DEAL_TYPE_ARBI
+
+	// frontrun夹子机器人, 定义为3-5(由配置确定)以内的区块卖出
+	BI_DEAL_TYPE_FRONTRUN
+
+	// 超高频投机交易, 定义为5min之内的进出
+	BI_DEAL_TYPE_GAMBLE_TRADE
+
+	// 高频交易, 定义为30min之内的进出
+	BI_DEAL_TYPE_RUSH_TRADE
 )
 
 // 优秀地址定义
@@ -50,9 +61,8 @@ type BiDeal struct {
 	// sell
 	// 第一笔卖出tx. 由于一定只有一笔sell, 因此可以用sell tx做为deal的 unique key
 	// 由于可能出现一笔tx里面卖出多笔token, 所以需要 sellTxHash_Token 为key
-	// 是否修改key等观察数据后再确定
-	SellTxHash  string `json:"sellTxHash" bson:"sellTxHash"`
-	SellBlockNo uint64 `json:"sellBlockNo" bson:"sellBlockNo"`
+	SellTxHashWithToken string `json:"sellTxHashWithToken" bson:"sellTxHashWithToken"`
+	SellBlockNo         uint64 `json:"sellBlockNo" bson:"sellBlockNo"`
 
 	SellValue  float64 `json:"sellValue" bson:"sellValue"`
 	SellAmount float64 `json:"sellAmount" bson:"sellAmount"`
@@ -119,8 +129,8 @@ var BiDealIndexModel = []mongo.IndexModel{
 	},
 	{
 		// 以sell tx 为 unique key
-		Keys:    bson.D{{Key: "sellTxHash", Value: 1}},
-		Options: options.Index().SetName("sellTxHash_index").SetUnique(true),
+		Keys:    bson.D{{Key: "sellTxHashWithToken", Value: 1}},
+		Options: options.Index().SetName("sellTxHashWithToken_index").SetUnique(true),
 	},
 	{
 		Keys:    bson.D{{Key: "account", Value: 1}},
