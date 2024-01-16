@@ -47,8 +47,9 @@ type Wiser struct {
 
 // 一笔买卖的定义, bi 包含双向的意思
 type BiDeal struct {
-	Account string `json:"account" bson:"account"` // 用户地址
-	Token   string `json:"token" bson:"token"`     // token地址
+	Account   string `json:"account" bson:"account"`     // 用户地址
+	Token     string `json:"token" bson:"token"`         // token地址
+	TokenName string `json:"tokenName" bson:"tokenName"` // 方便人阅读
 
 	// buy
 	BuyTxHash  string `json:"buyTxHash" bson:"buyTxHash"` // 第一笔买入tx
@@ -74,7 +75,7 @@ type BiDeal struct {
 	EarnChange float64 `json:"earnChange" bson:"earnChange"` //盈利比例
 	HoldBlocks uint64  `json:"holdBlocks" bson:"holdBlocks"` // 持有的区块数
 
-	BiDealType int `json:"asterType" bson:"asterType"`
+	BiDealType int `json:"biDealType" bson:"biDealType"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
@@ -156,6 +157,10 @@ var BiDealIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "earnChange", Value: 1}},
 		Options: options.Index().SetName("earnChange_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "biDealType", Value: 1}},
+		Options: options.Index().SetName("biDealType_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "holdBlocks", Value: 1}},

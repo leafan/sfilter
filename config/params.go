@@ -15,6 +15,9 @@ var (
 	DatabaseName     = "deepeye"
 	API_AES_DATA_KEY = "deepeye@leafan16"
 
+	// 用于获取历史高度上的eth价格.. 如果是回溯的时候，10个区块才调用一次即可(特殊处理)
+	INFURA_API_KEY = "https://mainnet.infura.io/v3/06a6594cfd1a404591470c2f81a7ac93"
+
 	WS_ADDR = "ws://127.0.0.1:8546"
 
 	RetriveOldBlockNum         = BlocksPerDay * 3
@@ -59,6 +62,12 @@ func initEnvConfig() {
 	if mongoAddr != "" {
 		utils.Infof("[ init ] Using mongo addr: %v", mongoAddr)
 		MONGO_ADDR = mongoAddr
+	}
+
+	infura_apikey := os.Getenv("INFURA_API_KEY")
+	if infura_apikey != "" {
+		utils.Infof("[ init ] Using infura_apikey: %v", infura_apikey)
+		INFURA_API_KEY = infura_apikey
 	}
 
 	ws_addr := os.Getenv("WS_ADDR")

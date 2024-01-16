@@ -3,9 +3,8 @@ package admin
 import (
 	"sfilter/api/utils"
 	"sfilter/schema"
-	"sfilter/services/liquidity"
+	"sfilter/services/wiser"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,15 +22,15 @@ func AdminGetAllDeals(c *gin.Context) {
 
 	filter := parseDealFilter(c)
 
-	info, count, err := liquidity.GetLiquidityEvents(options, filter, db)
+	info, count, err := wiser.GetBiDeals(options, filter, db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
 	}
 
 	data := struct {
-		List  []schema.LiquidityEvent `json:"list"`
-		Count int64                   `json:"count"`
+		List  []schema.BiDeal `json:"list"`
+		Count int64           `json:"count"`
 	}{
 		List:  info,
 		Count: count,
@@ -81,21 +80,10 @@ func parseDealFilter(c *gin.Context) *primitive.M {
 		filter["token"] = token
 	}
 
-	// 时间段
-	recentdays := c.DefaultQuery("recentdays", "7")
-	recentdaysInt, err := strconv.Atoi(recentdays)
-	if err == nil {
-		if recentdaysInt < 1 {
-			recentdaysInt = 1
-		} else if recentdaysInt > 180 {
-			recentdaysInt = 180
-		}
-
-		date := time.Now().Add(-time.Duration(recentdaysInt) * time.Hour * 24)
-		filter["createdAt"] = bson.M{
-			"$gte": date,
-		}
-
+	biDealType := c.DefaultQuery("biDealType", "0")
+	_type, err := strconv.Atoi(biDealType)
+	if err == nil && (_type > 0 && _type < 10) {
+		filter["biDealType"] = _type
 	}
 
 	return &filter

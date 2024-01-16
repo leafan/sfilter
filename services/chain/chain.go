@@ -89,7 +89,7 @@ func getClient() *ethclient.Client {
 
 func getInfuraClient() *ethclient.Client {
 	if infuraClient == nil {
-		cli, err := ethblocks.GetClient(config.INFURA_KEY_ADDR)
+		cli, err := ethblocks.GetClient(config.INFURA_API_KEY)
 		if err != nil {
 			utils.Fatalf("infuraClient error! err: ", err)
 		}

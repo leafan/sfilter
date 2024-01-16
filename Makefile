@@ -15,7 +15,7 @@ creat:
 
 	@echo "\n\033[0;34mStart process...\033[0m"
 
-	cd /data_v1/deepeye/ && nohup ./sapi_creat > /data_v1/deepeye/logs/sapi_creat_$(shell date +%s).log 2>&1 &
+	# cd /data_v1/deepeye/ && nohup ./sapi_creat > /data_v1/deepeye/logs/sapi_creat_$(shell date +%s).log 2>&1 &
 	cd /data_v1/deepeye/ && nohup ./sfilter_creat > /data_v1/deepeye/logs/sfilter_creat_$(shell date +%s).log 2>&1 &
 
 	@echo "\n\033[0;34mFinished...\033[0m"
@@ -30,10 +30,11 @@ deepeye:
 	@echo "\n\033[0;34mCopy file...\033[0m"
 	cp sfilter_eth /root/deepeye/sfilter_deepeye
 	cp sapi /root/deepeye/sapi_deepeye
+	cp swiser /root/deepeye/swiser_deepeye
 
 	@echo "\n\033[0;34mStart process...\033[0m"
 
-	# cd /root/deepeye/ && nohup ./sapi_deepeye > /root/deepeye/logs/sapi_deepeye_$(shell date +%s).log 2>&1 &
+	cd /root/deepeye/ && nohup ./sapi_deepeye > /root/deepeye/logs/sapi_deepeye_$(shell date +%s).log 2>&1 &
 	cd /root/deepeye/ && nohup ./sfilter_deepeye > /root/deepeye/logs/sfilter_deepeye_$(shell date +%s).log 2>&1 &
 
 	@echo "\n\033[0;34mFinished...\033[0m"

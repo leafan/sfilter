@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/services/chain"
 	"sfilter/services/wiser"
 	"sfilter/utils"
 	"sort"
@@ -112,17 +113,25 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 			continue
 		}
 
+		// 取出token名称
+		tokenObj, err := chain.GetTokenInfoForRead(token)
+		if err != nil {
+			utils.Warnf("[ GetTokenInfoForRead ] failed to get token: %v, err: %v", token, err)
+			continue
+		}
+
 		// 将买入卖出记录拆分成一笔一笔的 买卖
 		var deals []*schema.BiDeal
 		var deal *schema.BiDeal
 		var startOver = true // 是否重新计算一笔买卖, 初始化为true
 
 		for _, att := range atts { // atts 按时间从旧到新排列
-			if att.Type == schema.WISER_TYPE_SWAP && att.Direction == schema.DIRECTION_BUY_OR_ADD { // 买入且为swap交易
+			if att.Type == schema.WISER_TYPE_SWAP && att.Direction == schema.DIRECTION_BUY_OR_ADD && att.Amount > 0 { // 买入且为swap交易
 				if startOver {
 					deal = &schema.BiDeal{
-						Account: account,
-						Token:   token,
+						Account:   account,
+						Token:     token,
+						TokenName: tokenObj.Name,
 
 						BuyTxHash:  att.TxHash,
 						BuyBlockNo: att.BlockNo,
@@ -138,7 +147,9 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 					deal.BuyValue += att.USDValue
 					deal.BuyAmount += att.Amount
 
-					deal.BuyPrice = deal.BuyValue / deal.BuyAmount
+					if deal.BuyAmount > 0 {
+						deal.BuyPrice = deal.BuyValue / deal.BuyAmount
+					}
 				}
 			}
 
@@ -163,7 +174,11 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 				deal.SellType = att.Type
 
 				// 结算deal数据
-				deal.EarnChange = (deal.SellPrice - deal.BuyPrice) / deal.BuyPrice
+				if deal.BuyPrice > 0 {
+					deal.EarnChange = (deal.SellPrice - deal.BuyPrice) / deal.BuyPrice
+				} else {
+					deal.EarnChange = 0 // 0表示异常, 正常情况，不可能刚好相等
+				}
 				deal.Earn = deal.EarnChange * deal.BuyValue // earn先以当前价格全部卖出计算
 
 				if deal.SellBlockNo < deal.BuyBlockNo {

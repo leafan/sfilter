@@ -45,7 +45,7 @@ func NewServer() *Server {
 	clientOptions := options.Client().ApplyURI(config.DbAddress)
 	mongodb, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
-		utils.Fatalf("connect mongo error: ", err)
+		utils.Fatalf("connect mongo error: %v", err)
 	}
 
 	_auth := lAuth.NewAuthService(mongodb)
@@ -66,7 +66,7 @@ func AuthAdminMiddleWare() gin.HandlerFunc {
 		if err == nil && user.Attributes["role"] == adminRoleStr {
 			c.Next()
 		} else {
-			utils.Errorf("[ AuthAdminMiddleWare ] auth failed. err: %v, user role: %v", err, user.Attributes["role"])
+			utils.Errorf("[ AuthAdminMiddleWare ] someone visits admin page but failed! err: %v, user role: %v", err, user.Attributes["role"])
 			c.JSON(http.StatusUnauthorized, "claim is wrong")
 
 			c.Abort()
@@ -112,6 +112,7 @@ func Run(r *gin.Engine) {
 	authRoutes, avaRoutes := server.Auth.Handlers()
 
 	authMiddleware = wrapHttpToGinMiddleware(server.Auth.Middleware())
+
 	apiKeyAuthMiddleware = AuthAPIKeyMiddleware()
 	adminAuthMiddleware = AuthAdminMiddleWare()
 

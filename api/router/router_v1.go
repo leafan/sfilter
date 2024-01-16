@@ -17,8 +17,11 @@ func SetUpV1Router(router *gin.Engine) {
 		chain.SetupChainRoutes(apiV1Group)
 	}
 
+	adminGroup := router.Group("/admin")
+	userAuthMiddleware := user.GetUserAuthMiddleware() // 需要先用user auth取到token..
 	adminAuthMiddleware := user.GetAdminAuthMiddleware()
-	apiV1WithAdminAuth := apiV1Group.Group("/admin").Use(adminAuthMiddleware)
+
+	apiV1WithAdminAuth := adminGroup.Use(userAuthMiddleware).Use(adminAuthMiddleware)
 	{
 		// get deals
 		apiV1WithAdminAuth.GET("/deals", admin.AdminGetAllDeals)

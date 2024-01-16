@@ -13,7 +13,7 @@ func NewWiser(account, token, db string) *Wiser {
 	clientOptions := options.Client().ApplyURI(config.MONGO_ADDR)
 	mongodb, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
-		utils.Fatalf("connect mongo error: ", err)
+		utils.Fatalf("connect mongo error: %v", err)
 	}
 
 	wiserConfig := config.DefaultWiserConfig
