@@ -61,7 +61,7 @@ func GetUserInfoByAPIKey(apiKey string) (*User, error) {
 
 	user, err := um.GetUserByApiKey(apiKey)
 	if err != nil {
-		utils.Warnf("[ GetUserInfoByAPIKey ] GetUser err: %v", err)
+		utils.Warnf("[ GetUserInfoByAPIKey ] GetUser error. apikey: %v, err: %v", apiKey, err)
 		return nil, err
 	}
 

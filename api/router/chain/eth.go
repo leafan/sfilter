@@ -69,6 +69,7 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 	apiKeyGroup := ethGroup.Group("/apikey").Use(apiKeyMiddleware)
 	{
 		apiKeyGroup.GET("/trackswaps", user.GetTrackSwaps)
+		apiKeyGroup.GET("/pairs", eth.GetHotPairs)
 	}
 
 	// auth user etc..

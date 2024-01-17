@@ -5,6 +5,7 @@ import (
 	"sfilter/schema"
 	"sfilter/services/chain"
 	"sfilter/services/kline"
+	"sfilter/services/pair"
 	services_pair "sfilter/services/pair"
 	"sfilter/services/token"
 	"sfilter/utils"
@@ -25,12 +26,20 @@ func HandleTradeInfo(block *schema.Block, mongodb *mongo.Client, swaps []*schema
 
 	// 更新pair信息
 	for key := range pairs {
-		updatePairInfo(key, mongodb)
+		updatePairTradeInfo(key, mongodb) // update trade info
+
+		_pair, err := pair.GetPairInfo(key, mongodb)
+		if err == nil {
+			UpdatePoolLiquidity(_pair, mongodb, block)
+		}
+
 	}
 
 	// 更新token价格等
 	for _token, _price := range tokens {
-		updateTokenInfo(_token, _price, mongodb)
+		if _price > 0 {
+			updateTokenInfo(_token, _price, mongodb)
+		}
 	}
 }
 
@@ -44,7 +53,7 @@ func updateTokenInfo(_token string, _price float64, mongodb *mongo.Client) {
 	token.UpdateTokenPrice(tokenObj.Address, _price, mongodb)
 }
 
-func updatePairInfo(_pair string, mongodb *mongo.Client) {
+func updatePairTradeInfo(_pair string, mongodb *mongo.Client) {
 	pair, err := services_pair.GetPairInfo(_pair, mongodb)
 	if err != nil {
 		utils.Errorf("[ updatePairInfo ] GetPairInfo wrong, return.. err: %v\n\n", err)

@@ -144,7 +144,7 @@ func updateLiquidityEventValue(event *schema.LiquidityEvent, _pair *schema.Pair,
 
 // 去链上获取流动性池子大小
 // 直接获取token0及token1的balance, 再确认价值币
-func updatePoolLiquidity(_pair *schema.Pair, mongodb *mongo.Client, block *schema.Block) {
+func UpdatePoolLiquidity(_pair *schema.Pair, mongodb *mongo.Client, block *schema.Block) {
 	token0BalanceInt, err0 := chain.BalanceOf(_pair.Address, _pair.Token0)
 	token1BalanceInt, err1 := chain.BalanceOf(_pair.Address, _pair.Token1)
 	if err0 != nil || err1 != nil {

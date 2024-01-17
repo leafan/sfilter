@@ -87,7 +87,7 @@ func (w *Wiser) WiserSearcher() {
 			return
 		}
 	}
-	// utils.Infof("[ WiserSearcher ] accounts: %v", accounts)
+	utils.Infof("[ WiserSearcher ] accounts len: %v", len(accounts))
 
 	for account := range accounts {
 		// 分析出买卖记录并存储
@@ -154,10 +154,27 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 			}
 
 			if att.Direction == schema.DIRECTION_SELL_OR_DECREASE { // 只要是sell或者send out
-				if startOver || deal == nil {
-					// 说明此时统计周期内第一笔就为卖或者已经统计了第一笔卖了, pass
+				if deal == nil {
+					// 说明周期内还没有买, 是卖的交易
+					continue
+				}
 
-					// utils.Errorf("[ InspectAccountBiDeals ] deal is nil!! please check, account: %v, token: %v, att: %v", account, token, att)
+				if startOver {
+					// 说明此时统计周期内第2+笔卖的交易, 累加卖的数据
+					// todo..
+
+					continue
+				}
+
+				if att.Type == schema.WISER_TYPE_TRANSFER {
+					continue // 先不计算, 当前的transfer的金额不准确, 很多数据是回溯的
+				}
+
+				if att.PriceInUSD <= 0 {
+					utils.Warnf("[ InspectAccountBiDeals ] att.PriceInUSD is 0! token: %v", token)
+					// 此时本应该算是一笔完整交易, 但是由于没有价格, 因此不统计与保存
+					// 重置状态并开始下一笔deal统计
+					startOver = true
 					continue
 				}
 
@@ -177,9 +194,9 @@ func (w *Wiser) InspectAccountBiDeals(account string, tokens []string) {
 				if deal.BuyPrice > 0 {
 					deal.EarnChange = (deal.SellPrice - deal.BuyPrice) / deal.BuyPrice
 				} else {
-					deal.EarnChange = 0 // 0表示异常, 正常情况，不可能刚好相等
+					deal.EarnChange = 0 // 0表示异常, 正常情况, 不可能刚好相等
 				}
-				deal.Earn = deal.EarnChange * deal.BuyValue // earn先以当前价格全部卖出计算
+				deal.Earn = deal.EarnChange * deal.SellValue // 只算卖出时候的usd金额
 
 				if deal.SellBlockNo < deal.BuyBlockNo {
 					utils.Errorf("[ InspectAccountBiDeals ] wrong block! buyBlock: %v, sellBlock: %v", deal.BuyBlockNo, deal.SellBlockNo)
@@ -227,18 +244,26 @@ func (w *Wiser) GetAccountTradesForToken(account, token string) ([]schema.Accoun
 
 	sort.Slice(atts, func(i, j int) bool {
 		if atts[i].BlockNo == atts[j].BlockNo {
-			// 如果blockNo一样
+			// 有些交易是同一个区块里面有买有卖(eg: frontrun), 因此需要处理
+			// 如果hash不一样, 按Position排序, 如果hash都一样, 则swap优先
+			// 如果一笔交易多笔swap, 会出现transfer排在多笔swap后边的情况, 但对我们统计应该无影响
 			if atts[i].BlockNo == atts[j].BlockNo {
-				// 如果类型一样, 则保持原来顺序
-				if atts[i].Type == atts[j].Type {
-					return i < j
+				// 同一笔交易, 防止有些合约不讲武德, transfer与swap事件触发顺序不一致, 因此以swap优先
+				if atts[i].TxHash == atts[j].TxHash {
+					// 如果类型也一样, 按position来, 如果类型不一样, 按swap优先来
+					if atts[i].Type == atts[j].Type {
+						return atts[i].Position < atts[j].Position
+					} else {
+						return atts[i].Type == schema.WISER_TYPE_SWAP
+					}
+				} else {
+					// 如果不是同一个区块, 则按position排序即可
+					return atts[i].Position < atts[j].Position
 				}
-
-				// 如果类型不一样, 则 swap 排到transfer前面, 优先匹配
-				return atts[i].Type == schema.WISER_TYPE_SWAP
 			}
 		}
 
+		// 默认按区块高度排序
 		return atts[i].BlockNo < atts[j].BlockNo
 	})
 

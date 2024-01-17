@@ -35,7 +35,11 @@ func ParsePageLimitParams(c *gin.Context) (int64, int64, error) {
 	}
 
 	if limitInt > config.MONGO_LIMIT_UPPER {
-		limitInt = config.MONGO_LIMIT_UPPER
+		// 特殊处理下, 如果是apikey访问, 允许增大到1000条数据
+		username := c.GetString("user")
+		if username == "" || limitInt > config.MONGO_APIKEY_LIMIT_UPPER {
+			limitInt = config.MONGO_LIMIT_UPPER
+		}
 	}
 
 	return int64(pageInt), int64(limitInt), nil

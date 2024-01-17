@@ -21,7 +21,7 @@ var (
 	WS_ADDR = "ws://127.0.0.1:8546"
 
 	RetriveOldBlockNum         = BlocksPerDay * 3
-	GetPriceIntervalForRetrive = 100 // 每隔多少个区块获取一次eth价格
+	GetPriceIntervalForRetrive = 20 // 每隔多少个区块获取一次eth价格
 
 	SwapSaveTime          = int32(SecondsForOneMonth * 3)
 	TransferTableSavetime = int32(SecondsForOneMonth * 3)

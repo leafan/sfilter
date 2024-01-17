@@ -10,6 +10,7 @@ import (
 	"sfilter/user/controllers/admin"
 	"sfilter/user/models"
 	"sfilter/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pkgz/auth"
@@ -24,6 +25,7 @@ import (
 var authMiddleware gin.HandlerFunc
 var apiKeyAuthMiddleware gin.HandlerFunc
 var adminAuthMiddleware gin.HandlerFunc
+var partnerAuthMiddleware gin.HandlerFunc
 
 func GetUserAuthMiddleware() gin.HandlerFunc {
 	return authMiddleware
@@ -32,8 +34,13 @@ func GetUserAuthMiddleware() gin.HandlerFunc {
 func GetApiKeyAuthMiddleware() gin.HandlerFunc {
 	return apiKeyAuthMiddleware
 }
+
 func GetAdminAuthMiddleware() gin.HandlerFunc {
 	return adminAuthMiddleware
+}
+
+func GetPartnerAuthMiddleware() gin.HandlerFunc {
+	return partnerAuthMiddleware
 }
 
 type Server struct {
@@ -74,13 +81,30 @@ func AuthAdminMiddleWare() gin.HandlerFunc {
 	}
 }
 
+func AuthPartnerMiddleWare() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, err := token.GetUserInfo(c.Request)
+		if err == nil {
+			userRoleInt, err := strconv.Atoi(user.Attributes["role"].(string))
+
+			if err == nil && userRoleInt >= models.USER_ROLE_LEVEL_PARTNER {
+				c.Next()
+				return
+			}
+		}
+
+		utils.Errorf("[ AuthPartnerMiddleWare ] someone visits partner page but failed! err: %v, user role: %v", err, user.Attributes["role"])
+		c.JSON(http.StatusUnauthorized, "claim is wrong")
+
+		c.Abort()
+	}
+}
+
 // AuthAPIKeyMiddleware 是一个用于 API Key 认证的中间件
 func AuthAPIKeyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 从请求中获取传入的 API 密钥
 		clientAPIKey := c.Query("apikey")
-		// utils.Tracef("apikey: %v", clientAPIKey)
-
 		user, err := models.GetUserInfoByAPIKey(clientAPIKey)
 
 		// 检查传入的 API 密钥是否与预期的 API 密钥匹配
@@ -115,6 +139,7 @@ func Run(r *gin.Engine) {
 
 	apiKeyAuthMiddleware = AuthAPIKeyMiddleware()
 	adminAuthMiddleware = AuthAdminMiddleWare()
+	partnerAuthMiddleware = AuthPartnerMiddleWare()
 
 	// /auth/login; /auth/logout; /auth/user
 	r.Any("/auth/*action", gin.WrapH(authRoutes))  // add auth handlers

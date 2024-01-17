@@ -9,6 +9,7 @@ import (
 	"sfilter/services/chain"
 	"sfilter/services/pair"
 	service_swap "sfilter/services/swap"
+	"sfilter/services/token"
 	"sfilter/utils"
 	"time"
 
@@ -42,7 +43,7 @@ func HandleSwapAndKline(block *schema.Block, transferMap schema.TxTokenTransfers
 							updateUniV3Swap(swap, _log, mongodb)
 						}
 
-						updateUsdInfo(swap)
+						updateUsdInfo(swap, mongodb)
 
 						updateTrader(swap, transferMap)
 
@@ -160,7 +161,7 @@ func handleOneSwapAndKline(swap *schema.Swap, mongodb *mongo.Client) {
 
 // 更新 volume 的usd value
 // 更新 price 的法币价格
-func updateUsdInfo(swap *schema.Swap) {
+func updateUsdInfo(swap *schema.Swap, mongodb *mongo.Client) {
 	// 找到quoteToken, 更新 VolumeInUsd.
 	// 如果quoteToken为eth, 则乘以区块中eth价格; 如果为u, 直接加; 其他情况为0
 	quoteToken := swap.Token1
@@ -168,18 +169,21 @@ func updateUsdInfo(swap *schema.Swap) {
 		quoteToken = swap.Token0
 	}
 
-	volumeInUsd := swap.AmountOfMainToken * swap.Price
-
 	if utils.CheckExistString(quoteToken, utils.QuoteUsdCoinList) {
-		swap.VolumeInUsd = volumeInUsd
 		swap.PriceInUsd = swap.Price
 	} else if utils.CheckExistString(quoteToken, utils.QuoteEthCoinList) {
-		swap.VolumeInUsd = volumeInUsd * swap.CurrentEthPrice
 		swap.PriceInUsd = swap.Price * swap.CurrentEthPrice
 	} else {
-		swap.VolumeInUsd = 0
-		swap.PriceInUsd = 0
+		// 从token中取, 还取不到, 那就尴尬一笑
+		_token, err := token.GetTokenInfo(swap.MainToken, mongodb)
+		if err == nil {
+			swap.PriceInUsd = _token.PriceInUsd
+		} else {
+			// utils.Errorf("[ updateUsdInfo ] Temp error! get price in usd error in swap! token: %v", swap.MainToken)
+			swap.PriceInUsd = 0 // 应该报错
+		}
 	}
+	swap.VolumeInUsd = swap.AmountOfMainToken * swap.PriceInUsd
 }
 
 func newSwapStruct(block *schema.Block, _log *types.Log, tx *schema.Transaction) *schema.Swap {

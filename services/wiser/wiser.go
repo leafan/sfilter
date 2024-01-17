@@ -13,8 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// 按页读取所有数据并保存到map返回
-// 按页读取的目的是为了防止把mongo卡死
+// 用mongo的aggregate命令获取
 func GetActiveAccounts(seconds int, pageSize int64, debugAccount string, mongodb *mongo.Client) (schema.ActiveAccount, error) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
 
@@ -110,8 +109,10 @@ func GetAccountSwapsByToken(seconds int, pageSize int64, account, token string, 
 			count++
 
 			//  针对某一笔swap, 处理出对应数据
-			att := getAttFromSwap(swap)
-			atts = append(atts, att)
+			if swap.AmountOfMainToken > 0 {
+				att := getAttFromSwap(swap)
+				atts = append(atts, att)
+			}
 		}
 
 		if err := cursor.Err(); err != nil {
@@ -167,8 +168,10 @@ func GetAccountTransfersByToken(seconds int, pageSize int64, account, token stri
 			count++
 
 			//  针对某一笔swap, 处理出对应数据
-			att := getAttFromTransfer(transfer, account)
-			atts = append(atts, att)
+			if transfer.Amount > 0 {
+				att := getAttFromTransfer(transfer, account)
+				atts = append(atts, att)
+			}
 		}
 
 		if err := cursor.Err(); err != nil {
@@ -193,25 +196,29 @@ func PrintDeals(deals []*schema.BiDeal) {
 }
 
 func PrintDeal(deal *schema.BiDeal) {
-	utils.Infof("\t**** [ printDeal ] **** Account: %v, Token: %v", deal.Account, deal.Token)
+	utils.Infof("\t**** [ printDeal ] **** Account: %v, TokenName: %v", deal.Account, deal.TokenName)
 
+	fmt.Println("Token: ", deal.Token)
 	fmt.Println("BuyTxHash: ", deal.BuyTxHash)
 	fmt.Println("BuyBlockNo: ", deal.BuyBlockNo)
 	fmt.Println("BuyValue: ", deal.BuyValue)
 	fmt.Println("SellTxHashWithToken: ", deal.SellTxHashWithToken)
 	fmt.Println("SellBlockNo: ", deal.SellBlockNo)
 	fmt.Println("SellValue: ", deal.SellValue)
+	fmt.Println("sellType: ", deal.SellType)
 	fmt.Println("Earn: ", deal.Earn)
-	fmt.Println("EarnChange: ", deal.EarnChange)
+	fmt.Println("EarnChange: ", deal.EarnChange*100, "%")
 	fmt.Println("HoldBlocks: ", deal.HoldBlocks)
+	fmt.Println("BiDealType: ", deal.BiDealType)
 
 	fmt.Printf("\n\n")
 }
 
 func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 	att := schema.AccountTokenTrade{
-		BlockNo: swap.BlockNo,
-		TxHash:  swap.TxHash,
+		BlockNo:  swap.BlockNo,
+		TxHash:   swap.TxHash,
+		Position: swap.Position,
 
 		Type:      schema.WISER_TYPE_SWAP,
 		Direction: swap.Direction,
@@ -226,8 +233,9 @@ func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 
 func getAttFromTransfer(transfer schema.Transfer, account string) schema.AccountTokenTrade {
 	att := schema.AccountTokenTrade{
-		BlockNo: transfer.BlockNo,
-		TxHash:  transfer.TxHash,
+		BlockNo:  transfer.BlockNo,
+		TxHash:   transfer.TxHash,
+		Position: transfer.Position,
 
 		Type: schema.WISER_TYPE_TRANSFER,
 
@@ -242,7 +250,11 @@ func getAttFromTransfer(transfer schema.Transfer, account string) schema.Account
 		att.Direction = schema.DIRECTION_SELL_OR_DECREASE
 	}
 
-	att.PriceInUSD = att.USDValue / att.Amount
+	if att.Amount > 0 {
+		att.PriceInUSD = att.USDValue / att.Amount
+	} else {
+		att.PriceInUSD = 0
+	}
 
 	return att
 }

@@ -33,6 +33,15 @@ const (
 	BI_DEAL_TYPE_RUSH_TRADE
 )
 
+const (
+	BI_DEAL_STATUS_UNINIT int = iota
+
+	BI_DEAL_STATUS_BUY  // 买入阶段
+	BI_DEAL_STATUS_SELL // 卖出阶段
+
+	BI_DEAL_STATUS_FINISHED // 结束
+)
+
 // 优秀地址定义
 type Wiser struct {
 	Address string `json:"address" bson:"address"` // 地址
@@ -91,8 +100,9 @@ const (
 // 一个地址的某一个token，经过处理后的交易记录
 // 不存db, 用于内存中计算
 type AccountTokenTrade struct {
-	BlockNo uint64
-	TxHash  string
+	BlockNo  uint64
+	TxHash   string
+	Position uint
 
 	Type      int
 	Direction int

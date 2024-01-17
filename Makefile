@@ -10,13 +10,13 @@ creat:
 	pkill -f '^.*sapi_creat$$' 2>&1 || true
 
 	@echo "\n\033[0;34mCopy file...\033[0m"
-	cp sfilter_eth /data_v1/deepeye/sfilter_creat
-	cp sapi /data_v1/deepeye/sapi_creat
+	cp sfilter_eth /data_v1/creat/sfilter_creat
+	cp sapi /data_v1/creat/sapi_creat
 
 	@echo "\n\033[0;34mStart process...\033[0m"
 
-	# cd /data_v1/deepeye/ && nohup ./sapi_creat > /data_v1/deepeye/logs/sapi_creat_$(shell date +%s).log 2>&1 &
-	cd /data_v1/deepeye/ && nohup ./sfilter_creat > /data_v1/deepeye/logs/sfilter_creat_$(shell date +%s).log 2>&1 &
+	# cd /data_v1/creat/ && nohup ./sapi_creat > /data_v1/creat/logs/sapi_creat_$(shell date +%s).log 2>&1 &
+	cd /data_v1/creat/ && nohup ./sfilter_creat > /data_v1/creat/logs/sfilter_creat_$(shell date +%s).log 2>&1 &
 
 	@echo "\n\033[0;34mFinished...\033[0m"
 
@@ -28,14 +28,14 @@ deepeye:
 	pkill -f '^.*sapi_deepeye$$' 2>&1 || true
 
 	@echo "\n\033[0;34mCopy file...\033[0m"
-	cp sfilter_eth /root/deepeye/sfilter_deepeye
-	cp sapi /root/deepeye/sapi_deepeye
-	cp swiser /root/deepeye/swiser_deepeye
+	cp sfilter_eth /backup/deepeye/sfilter_deepeye
+	cp sapi /backup/deepeye/sapi_deepeye
+	cp swiser /backup/deepeye/swiser_deepeye
 
 	@echo "\n\033[0;34mStart process...\033[0m"
 
-	cd /root/deepeye/ && nohup ./sapi_deepeye > /root/deepeye/logs/sapi_deepeye_$(shell date +%s).log 2>&1 &
-	cd /root/deepeye/ && nohup ./sfilter_deepeye > /root/deepeye/logs/sfilter_deepeye_$(shell date +%s).log 2>&1 &
+	cd /backup/deepeye/ && nohup ./sapi_deepeye > /backup/deepeye/logs/sapi_deepeye_$(shell date +%s).log 2>&1 &
+	cd /backup/deepeye/ && nohup ./sfilter_deepeye > /backup/deepeye/logs/sfilter_deepeye_$(shell date +%s).log 2>&1 &
 
 	@echo "\n\033[0;34mFinished...\033[0m"
 

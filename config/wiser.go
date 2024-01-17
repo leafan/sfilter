@@ -22,8 +22,7 @@ var DefaultWiserConfig = &WiserConfig{
 	WiserSearchInterval: 60 * 60 * 24,
 	DbBlockReadSize:     1000,
 
-	// AccountActiveSeconds:   60 * 60 * 24 * 7,
-	AccountActiveSeconds: 60 * 60 * 24, // debug
+	AccountActiveSeconds: 60 * 60 * 24 * 7,
 
 	LatestSwapSeconds: 60 * 60 * 24 * 30,
 

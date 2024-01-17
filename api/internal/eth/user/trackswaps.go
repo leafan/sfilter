@@ -86,7 +86,6 @@ func parseTrackSwapOptions(c *gin.Context) (*options.FindOptions, error) {
 func parseTrackSwapFilterOptions(username string, c *gin.Context) *primitive.M {
 	filter := bson.M{
 		"username": username,
-		"$or":      []bson.M{},
 	}
 
 	direction := c.DefaultQuery("direction", "0")

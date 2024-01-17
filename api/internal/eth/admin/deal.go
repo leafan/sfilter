@@ -2,6 +2,7 @@ package admin
 
 import (
 	"sfilter/api/utils"
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/wiser"
 	"strconv"
@@ -36,7 +37,13 @@ func AdminGetAllDeals(c *gin.Context) {
 		Count: count,
 	}
 
-	utils.ResSuccess(c, data)
+	enc, err := utils.AesEncrypt(data, config.API_AES_DATA_KEY)
+	if err != nil {
+		utils.ResFailure(c, 500, err.Error())
+		return
+	}
+
+	utils.ResSuccess(c, enc)
 }
 
 func parseDealOptions(c *gin.Context) (*options.FindOptions, error) {

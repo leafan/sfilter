@@ -40,7 +40,7 @@ func isValidCredentials(form *models.RegisterForm) error {
 }
 
 func containsSpecialCharacters(input string) bool {
-	reg := regexp.MustCompile(`[^a-zA-Z0-9@.-]`)
+	reg := regexp.MustCompile(`[^a-zA-Z0-9@.+-_%]`)
 	return reg.MatchString(input)
 }
 

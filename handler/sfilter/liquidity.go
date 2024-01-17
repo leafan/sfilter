@@ -50,7 +50,7 @@ func handleAddLiquidity(block *schema.Block, tx *schema.Transaction, l *types.Lo
 		updateLiquidityEventValue(event, _pair, block)
 
 		// 修正流动性池子大小
-		updatePoolLiquidity(_pair, mongodb, block)
+		UpdatePoolLiquidity(_pair, mongodb, block)
 
 		// 判断如果是第一次添加流动性, 则update pair的firstAdd字段
 		if event.Direction == schema.DIRECTION_BUY_OR_ADD {

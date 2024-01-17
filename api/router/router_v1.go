@@ -17,14 +17,25 @@ func SetUpV1Router(router *gin.Engine) {
 		chain.SetupChainRoutes(apiV1Group)
 	}
 
-	adminGroup := router.Group("/admin")
 	userAuthMiddleware := user.GetUserAuthMiddleware() // 需要先用user auth取到token..
-	adminAuthMiddleware := user.GetAdminAuthMiddleware()
 
-	apiV1WithAdminAuth := adminGroup.Use(userAuthMiddleware).Use(adminAuthMiddleware)
+	partnerGroup := router.Group("/partner")
+	partnerAuthMiddleware := user.GetPartnerAuthMiddleware()
+
+	partnerGroupWithAuth := partnerGroup.Use(userAuthMiddleware).Use(partnerAuthMiddleware)
 	{
 		// get deals
-		apiV1WithAdminAuth.GET("/deals", admin.AdminGetAllDeals)
+		partnerGroupWithAuth.GET("/deals", admin.AdminGetAllDeals)
+	}
+
+	adminGroup := router.Group("/admin")
+	adminAuthMiddleware := user.GetAdminAuthMiddleware()
+
+	adminGroupWithAuth := adminGroup.Use(userAuthMiddleware).Use(adminAuthMiddleware)
+	{
+		// get deals
+		adminGroupWithAuth.GET("/deals", admin.AdminGetAllDeals)
 
 	}
+
 }

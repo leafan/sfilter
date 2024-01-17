@@ -59,7 +59,7 @@ func UpSaveTransferInfoBySwaps(transfers []*schema.Transfer, swaps []*schema.Swa
 		// 更新 usd value
 		// 如果本区块的swap有交易过, 则直接update
 		price, ok := mainTokenPriceMap[_transfer.Token]
-		if ok {
+		if ok && price > 0 {
 			_transfer.TransferValueInUsd = _transfer.Amount * price
 		} else {
 			// 否则调用链上价格数据update

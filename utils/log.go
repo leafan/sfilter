@@ -28,10 +28,12 @@ func Infof(format string, args ...interface{}) {
 }
 
 func Warnf(format string, args ...interface{}) {
+	format = "[ warn ] " + format
 	log.Printf(ColorYellow+format+ColorReset, args...)
 }
 
 func Errorf(format string, args ...interface{}) {
+	format = "[ error ] " + format
 	log.Printf(ColorRed+format+ColorReset, args...)
 
 	// 告警
