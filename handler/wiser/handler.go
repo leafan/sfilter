@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func NewWiser(account, token, db string) *Wiser {
+func NewWiser(account, db string) *Wiser {
 	clientOptions := options.Client().ApplyURI(config.MONGO_ADDR)
 	mongodb, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
@@ -19,9 +19,6 @@ func NewWiser(account, token, db string) *Wiser {
 	wiserConfig := config.DefaultWiserConfig
 	if account != "" {
 		wiserConfig.DebugAccount = account
-	}
-	if token != "" {
-		wiserConfig.DebugToken = token
 	}
 	if db != "" {
 		config.DatabaseName = db

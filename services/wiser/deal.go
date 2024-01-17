@@ -2,6 +2,7 @@ package wiser
 
 import (
 	"context"
+	"fmt"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/utils"
@@ -49,4 +50,33 @@ func SaveDeal(deal *schema.BiDeal, mongodb *mongo.Client) {
 		// 这里失败是正常现象, 因为可能重复计算导致
 		utils.Warnf("[ SaveDeals ] InsertOne error: %v, deal: %v\n", err, deal)
 	}
+}
+
+func PrintDeals(deals []*schema.BiDeal) {
+	for _, deal := range deals {
+		PrintDeal(deal)
+	}
+}
+
+func PrintDeal(deal *schema.BiDeal) {
+	utils.Infof("**** PrintDeal **** Account: %v, TokenName: %v", deal.Account, deal.TokenName)
+
+	fmt.Println("Token: ", deal.Token)
+	fmt.Println("BuyTxHash: ", deal.BuyTxHash)
+	fmt.Println("BuyPair: ", deal.BuyPair)
+	fmt.Println("BuyPairAge: ", deal.BuyPairAge)
+
+	fmt.Println("BuyBlockNo: ", deal.BuyBlockNo)
+	fmt.Println("BuyValue: ", deal.BuyValue)
+
+	fmt.Println("SellTxHashWithToken: ", deal.SellTxHashWithToken)
+	fmt.Println("SellBlockNo: ", deal.SellBlockNo)
+	fmt.Println("SellValue: ", deal.SellValue)
+	fmt.Println("sellType: ", deal.SellType)
+	fmt.Println("Earn: ", deal.Earn)
+	fmt.Println("EarnChange: ", deal.EarnChange*100, "%")
+	fmt.Println("HoldBlocks: ", deal.HoldBlocks)
+	fmt.Println("BiDealType: ", deal.BiDealType)
+
+	fmt.Printf("\n\n")
 }

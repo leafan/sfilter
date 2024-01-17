@@ -8,11 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type TokenList []string
-
-// 活跃账户, key为账户地址, value为交易过的token list
-type ActiveAccount map[string]TokenList
-
 const (
 	BI_DEAL_TYPE_UNKNOWN int = iota
 
@@ -44,14 +39,36 @@ const (
 
 // 优秀地址定义
 type Wiser struct {
-	Address string `json:"address" bson:"address"` // 地址
-	Weight  int    `json:"weight" bson:"weight"`   // 计算出的权重
+	WiserInfo `bson:",inline"` // wiser本身定义
+
+	DealDetail `bson:",inline"` // 统计数据记录
 
 	// 因为会定期计算与更新wiser, 因此记录下当前运算epoch
 	// 方便对比，或累计运算权重
 	Epoch string `json:"epoch" bson:"epoch"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+}
+
+type WiserInfo struct {
+	Address string `json:"address" bson:"address"` // 地址
+
+	Weight int `json:"weight" bson:"weight"` // 计算出的权重
+}
+
+// 统计数据详情
+type DealDetail struct {
+	WinRatio float64 `json:"winRatio" bson:"winRatio"` // 盈利比例
+
+	TradeCount int `json:"dealCount" bson:"dealCount"` // 交易总笔数
+
+	// 每月平均交易次数, 算法从第一笔买到最后一笔卖算周期时长
+	TradeCntPerMonth float64 `json:"tradeCntPerMonth" bson:"tradeCntPerMonth"`
+
+	TotalWinValue    float64 `json:"totalWinValue" bson:"totalWinValue"`       // 盈利总金额
+	EarnValuePerDeal float64 `json:"earnValuePerDeal" bson:"earnValuePerDeal"` // 平均每笔盈利
+
+	EarnRatio float64 `json:"earnRatio" bson:"earnRatio"` // 平均盈利比例
 }
 
 // 一笔买卖的定义, bi 包含双向的意思
@@ -63,6 +80,9 @@ type BiDeal struct {
 	// buy
 	BuyTxHash  string `json:"buyTxHash" bson:"buyTxHash"` // 第一笔买入tx
 	BuyBlockNo uint64 `json:"buyBlockNo" bson:"buyBlockNo"`
+	BuyPair    string `json:"buyPair" bson:"buyPair"` // 买入的pair
+
+	BuyPairAge int `json:"buyPairAge" bson:"buyPairAge"` // 买入时该pair的创建时长
 
 	BuyValue  float64 `json:"buyValue" bson:"buyValue"`
 	BuyAmount float64 `json:"buyAmount" bson:"buyAmount"`
@@ -73,6 +93,7 @@ type BiDeal struct {
 	// 由于可能出现一笔tx里面卖出多笔token, 所以需要 sellTxHash_Token 为key
 	SellTxHashWithToken string `json:"sellTxHashWithToken" bson:"sellTxHashWithToken"`
 	SellBlockNo         uint64 `json:"sellBlockNo" bson:"sellBlockNo"`
+	SellPair            string `json:"sellPair" bson:"sellPair"`
 
 	SellValue  float64 `json:"sellValue" bson:"sellValue"`
 	SellAmount float64 `json:"sellAmount" bson:"sellAmount"`
@@ -97,12 +118,19 @@ const (
 	WISER_TYPE_TRANSFER
 )
 
+// key是token, 数组为token内的所有trade
+type AccountTrades map[string][]AccountTokenTrade
+
 // 一个地址的某一个token，经过处理后的交易记录
 // 不存db, 用于内存中计算
 type AccountTokenTrade struct {
 	BlockNo  uint64
 	TxHash   string
 	Position uint
+
+	TradeTime time.Time
+
+	Pair string // pair address
 
 	Type      int
 	Direction int

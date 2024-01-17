@@ -97,3 +97,46 @@ func UpdateTokenInfo(token *schema.Token, mongodb *mongo.Client) {
 	}
 
 }
+
+func GetTokenMap(pageSize int64, mongodb *mongo.Database) (schema.TokenMap, error) {
+	tokenMap := make(schema.TokenMap)
+
+	collection := mongodb.Collection(config.TokenTableName)
+	filter := bson.M{}
+
+	page := int64(1)
+	skip := (page - 1) * pageSize
+
+	for {
+		cursor, err := collection.Find(context.Background(), filter, options.Find().SetLimit(pageSize).SetSkip(skip))
+		if err != nil {
+			return tokenMap, err
+		}
+
+		count := 0
+		for cursor.Next(context.Background()) {
+			var token schema.Token
+			if err := cursor.Decode(&token); err != nil {
+				cursor.Close(context.Background())
+				return tokenMap, err
+			}
+			count++
+
+			//  针对某一笔swap, 处理出对应数据
+			tokenMap[token.Address] = token
+		}
+
+		if err := cursor.Err(); err != nil {
+			cursor.Close(context.Background())
+			return tokenMap, err
+		}
+
+		if count < int(pageSize) {
+			// reached the end of data
+			break
+		}
+		skip += pageSize
+	}
+
+	return tokenMap, nil
+}

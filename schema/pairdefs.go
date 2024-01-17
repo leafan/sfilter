@@ -8,6 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// 定义 Pair map
+type PairMap map[string]Pair
+
 type Pair struct {
 	InfoOnChain       `bson:",inline"`
 	InfoOnPairCreated `bson:",inline"`

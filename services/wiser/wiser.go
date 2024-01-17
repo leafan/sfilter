@@ -2,7 +2,6 @@ package wiser
 
 import (
 	"context"
-	"fmt"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/utils"
@@ -14,67 +13,53 @@ import (
 )
 
 // 用mongo的aggregate命令获取
-func GetActiveAccounts(seconds int, pageSize int64, debugAccount string, mongodb *mongo.Client) (schema.ActiveAccount, error) {
+func GetActiveAccounts(seconds int, mongodb *mongo.Client) ([]string, error) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
 
-	filter := bson.M{}
-	date := time.Now().Add(-time.Duration(seconds) * time.Second)
-	filter["swapTime"] = bson.M{
-		"$gte": date,
+	var accounts []string
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{Key: "$match", Value: bson.D{
+				{Key: "swapTime", Value: bson.D{
+					{Key: "$gte", Value: time.Now().Add(-time.Duration(seconds) * time.Second)},
+				}},
+			}},
+		},
+		bson.D{
+			{Key: "$group", Value: bson.D{
+				{Key: "_id", Value: "$trader"},
+			}},
+		},
 	}
 
-	//  如果定义了 debug account, 则只找对应account数据
-	if debugAccount != "" {
-		utils.Infof("[ GetActiveAccounts ] debug account now: %v", debugAccount)
-		filter["trader"] = debugAccount
+	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second*100)
+	defer cancel()
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		utils.Errorf("[ GetActiveAccounts ] aggregate failed: %v", err)
+		return accounts, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		utils.Errorf("[ GetActiveAccounts ] cursor failed: %v", err)
+		return accounts, err
 	}
 
-	// 升序排列
-	options := options.Find().SetSort(bson.D{{Key: "swapTime", Value: 1}})
-
-	accounts := make(schema.ActiveAccount)
-
-	page := int64(1)
-	skip := (page - 1) * pageSize
-	for {
-		cursor, err := collection.Find(context.Background(), filter, options.SetLimit(pageSize).SetSkip(skip))
-		if err != nil {
-			return accounts, err
+	for _, result := range results {
+		trader, ok := result["_id"].(string)
+		if ok && trader != "" {
+			accounts = append(accounts, trader)
 		}
-
-		count := 0
-		for cursor.Next(context.Background()) {
-			var swap schema.Swap
-			if err := cursor.Decode(&swap); err != nil {
-				cursor.Close(context.Background())
-				return accounts, err
-			}
-			count++
-
-			//  针对某一笔swap, 处理出对应数据
-			if swap.Trader != "" {
-				if !utils.Contains(accounts[swap.Trader], swap.MainToken) {
-					accounts[swap.Trader] = append(accounts[swap.Trader], swap.MainToken)
-				}
-			}
-		}
-
-		if err := cursor.Err(); err != nil {
-			cursor.Close(context.Background())
-			return accounts, err
-		}
-
-		if count < int(pageSize) {
-			// reached the end of data
-			break
-		}
-		skip += pageSize
 	}
+	// utils.Warnf("[ GetActiveAccounts ] get active accounts len: %v", len(accounts))
 
 	return accounts, nil
 }
 
-func GetAccountSwapsByToken(seconds int, pageSize int64, account, token string, mongodb *mongo.Client) ([]schema.AccountTokenTrade, error) {
+func GetAccountSwaps(seconds int, pageSize int64, account string, mongodb *mongo.Client) (schema.AccountTrades, error) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.SwapTableName)
 
 	filter := bson.M{}
@@ -83,12 +68,11 @@ func GetAccountSwapsByToken(seconds int, pageSize int64, account, token string, 
 		"$gte": date,
 	}
 	filter["trader"] = account
-	filter["mainToken"] = token
 
 	// 升序排列
 	options := options.Find().SetSort(bson.D{{Key: "swapTime", Value: 1}})
 
-	var atts []schema.AccountTokenTrade
+	trades := make(schema.AccountTrades)
 
 	page := int64(1)
 	skip := (page - 1) * pageSize
@@ -96,7 +80,7 @@ func GetAccountSwapsByToken(seconds int, pageSize int64, account, token string, 
 	for {
 		cursor, err := collection.Find(context.Background(), filter, options.SetLimit(pageSize).SetSkip(skip))
 		if err != nil {
-			return atts, err
+			return trades, err
 		}
 
 		count := 0
@@ -104,20 +88,20 @@ func GetAccountSwapsByToken(seconds int, pageSize int64, account, token string, 
 			var swap schema.Swap
 			if err := cursor.Decode(&swap); err != nil {
 				cursor.Close(context.Background())
-				return atts, err
+				return trades, err
 			}
 			count++
 
 			//  针对某一笔swap, 处理出对应数据
 			if swap.AmountOfMainToken > 0 {
 				att := getAttFromSwap(swap)
-				atts = append(atts, att)
+				trades[swap.MainToken] = append(trades[swap.MainToken], att)
 			}
 		}
 
 		if err := cursor.Err(); err != nil {
 			cursor.Close(context.Background())
-			return atts, err
+			return trades, err
 		}
 
 		if count < int(pageSize) {
@@ -127,10 +111,10 @@ func GetAccountSwapsByToken(seconds int, pageSize int64, account, token string, 
 		skip += pageSize
 	}
 
-	return atts, nil
+	return trades, nil
 }
 
-func GetAccountTransfersByToken(seconds int, pageSize int64, account, token string, mongodb *mongo.Client) ([]schema.AccountTokenTrade, error) {
+func GetAccountTransfers(seconds int, pageSize int64, account string, mongodb *mongo.Client) (schema.AccountTrades, error) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.TransferTableName)
 
 	filter := bson.M{}
@@ -142,12 +126,11 @@ func GetAccountTransfersByToken(seconds int, pageSize int64, account, token stri
 		{"from": account},
 		{"to": account},
 	}
-	filter["token"] = token
 
 	// 升序排列
 	options := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
 
-	var atts []schema.AccountTokenTrade
+	trades := make(schema.AccountTrades)
 
 	page := int64(1)
 	skip := (page - 1) * pageSize
@@ -155,7 +138,7 @@ func GetAccountTransfersByToken(seconds int, pageSize int64, account, token stri
 	for {
 		cursor, err := collection.Find(context.Background(), filter, options.SetLimit(pageSize).SetSkip(skip))
 		if err != nil {
-			return atts, err
+			return trades, err
 		}
 
 		count := 0
@@ -163,20 +146,20 @@ func GetAccountTransfersByToken(seconds int, pageSize int64, account, token stri
 			var transfer schema.Transfer
 			if err := cursor.Decode(&transfer); err != nil {
 				cursor.Close(context.Background())
-				return atts, err
+				return trades, err
 			}
 			count++
 
 			//  针对某一笔swap, 处理出对应数据
 			if transfer.Amount > 0 {
 				att := getAttFromTransfer(transfer, account)
-				atts = append(atts, att)
+				trades[transfer.Token] = append(trades[transfer.Token], att)
 			}
 		}
 
 		if err := cursor.Err(); err != nil {
 			cursor.Close(context.Background())
-			return atts, err
+			return trades, err
 		}
 
 		if count < int(pageSize) {
@@ -186,32 +169,7 @@ func GetAccountTransfersByToken(seconds int, pageSize int64, account, token stri
 		skip += pageSize
 	}
 
-	return atts, nil
-}
-
-func PrintDeals(deals []*schema.BiDeal) {
-	for _, deal := range deals {
-		PrintDeal(deal)
-	}
-}
-
-func PrintDeal(deal *schema.BiDeal) {
-	utils.Infof("\t**** [ printDeal ] **** Account: %v, TokenName: %v", deal.Account, deal.TokenName)
-
-	fmt.Println("Token: ", deal.Token)
-	fmt.Println("BuyTxHash: ", deal.BuyTxHash)
-	fmt.Println("BuyBlockNo: ", deal.BuyBlockNo)
-	fmt.Println("BuyValue: ", deal.BuyValue)
-	fmt.Println("SellTxHashWithToken: ", deal.SellTxHashWithToken)
-	fmt.Println("SellBlockNo: ", deal.SellBlockNo)
-	fmt.Println("SellValue: ", deal.SellValue)
-	fmt.Println("sellType: ", deal.SellType)
-	fmt.Println("Earn: ", deal.Earn)
-	fmt.Println("EarnChange: ", deal.EarnChange*100, "%")
-	fmt.Println("HoldBlocks: ", deal.HoldBlocks)
-	fmt.Println("BiDealType: ", deal.BiDealType)
-
-	fmt.Printf("\n\n")
+	return trades, nil
 }
 
 func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
@@ -219,6 +177,9 @@ func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 		BlockNo:  swap.BlockNo,
 		TxHash:   swap.TxHash,
 		Position: swap.Position,
+
+		Pair:      swap.PairAddr,
+		TradeTime: swap.SwapTime,
 
 		Type:      schema.WISER_TYPE_SWAP,
 		Direction: swap.Direction,
@@ -236,6 +197,9 @@ func getAttFromTransfer(transfer schema.Transfer, account string) schema.Account
 		BlockNo:  transfer.BlockNo,
 		TxHash:   transfer.TxHash,
 		Position: transfer.Position,
+
+		Pair:      "", // transfer没有pair概念
+		TradeTime: transfer.Timestamp,
 
 		Type: schema.WISER_TYPE_TRANSFER,
 

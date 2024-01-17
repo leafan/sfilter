@@ -9,6 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// 定义Token map, 避免反复查db
+type TokenMap map[string]Token
+
 type TokenInfoOnChain struct {
 	Address string `json:"address" bson:"address"` // 地址
 	Name    string `json:"name" bson:"name"`       // 名称

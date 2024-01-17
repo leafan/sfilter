@@ -26,6 +26,7 @@ deepeye:
 	@echo "\n\033[0;34mKill process...\033[0m"
 	pkill -f '^.*sfilter_deepeye$$' 2>&1 || true
 	pkill -f '^.*sapi_deepeye$$' 2>&1 || true
+	pkill -f '^.*swiser_deepeye$$' 2>&1 || true
 
 	@echo "\n\033[0;34mCopy file...\033[0m"
 	cp sfilter_eth /backup/deepeye/sfilter_deepeye
