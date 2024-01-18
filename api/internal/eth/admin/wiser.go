@@ -13,25 +13,25 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func AdminGetDeals(c *gin.Context) {
+func AdminGetWisers(c *gin.Context) {
 	db := utils.GetChainDatabase(c.Param("chain"))
 
-	options, err := parseDealOptions(c)
+	options, err := parseWiserOptions(c)
 	if err != nil {
 		return
 	}
 
-	filter := parseDealFilter(c)
+	filter := parseWiserFilter(c)
 
-	info, count, err := wiser.GetBiDeals(options, filter, db)
+	info, count, err := wiser.GetWisers(options, filter, db)
 	if err != nil {
 		utils.ResFailure(c, 500, err.Error())
 		return
 	}
 
 	data := struct {
-		List  []schema.BiDeal `json:"list"`
-		Count int64           `json:"count"`
+		List  []schema.Wiser `json:"list"`
+		Count int64          `json:"count"`
 	}{
 		List:  info,
 		Count: count,
@@ -46,7 +46,7 @@ func AdminGetDeals(c *gin.Context) {
 	utils.ResSuccess(c, enc)
 }
 
-func parseDealOptions(c *gin.Context) (*options.FindOptions, error) {
+func parseWiserOptions(c *gin.Context) (*options.FindOptions, error) {
 	page, limit, err := utils.ParsePageLimitParams(c)
 	if err != nil {
 		utils.ResFailure(c, 400, err.Error())
@@ -55,13 +55,13 @@ func parseDealOptions(c *gin.Context) (*options.FindOptions, error) {
 
 	skip := int64(page*limit - limit)
 	options := &options.FindOptions{Limit: &limit, Skip: &skip}
-	options = options.SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	options = options.SetSort(bson.D{{Key: "weight", Value: -1}})
 
 	// 获取排序
 	var key string
 	var order = -1
 	sortBy := c.DefaultQuery("sortBy", "")
-	if sortBy == "buyAmount" || sortBy == "sellAmount" || sortBy == "holdBlocks" || sortBy == "earnChange" || sortBy == "earn" {
+	if sortBy == "weight" || sortBy == "winRatio" || sortBy == "tradeCount" || sortBy == "tradeCntPerMonth" || sortBy == "totalWinValue" || sortBy == "averageEarnRatio" {
 		key = sortBy
 		orderStr := c.DefaultQuery("descending", "true")
 		if orderStr == "false" {
@@ -74,23 +74,23 @@ func parseDealOptions(c *gin.Context) (*options.FindOptions, error) {
 	return options, nil
 }
 
-func parseDealFilter(c *gin.Context) *primitive.M {
+func parseWiserFilter(c *gin.Context) *primitive.M {
 	filter := bson.M{}
 
-	account := c.DefaultQuery("account", "")
-	if account != "" && utils.IsValidEthereumAddress(account) {
-		filter["account"] = account
+	address := c.DefaultQuery("address", "")
+	if address != "" && utils.IsValidEthereumAddress(address) {
+		filter["address"] = address
 	}
 
-	token := c.DefaultQuery("_token", "")
-	if token != "" && utils.IsValidEthereumAddress(token) {
-		filter["token"] = token
-	}
-
-	biDealType := c.DefaultQuery("biDealType", "0")
-	_type, err := strconv.Atoi(biDealType)
+	wiserType := c.DefaultQuery("type", "0")
+	_type, err := strconv.Atoi(wiserType)
 	if err == nil && (_type > 0 && _type < 10) {
-		filter["biDealType"] = _type
+		filter["type"] = _type
+	}
+
+	epoch := c.DefaultQuery("epoch", "")
+	if epoch != "" {
+		filter["epoch"] = epoch
 	}
 
 	return &filter

@@ -2,6 +2,7 @@ package wiser
 
 import (
 	"context"
+	"fmt"
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/utils"
@@ -181,7 +182,7 @@ func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 		Pair:      swap.PairAddr,
 		TradeTime: swap.SwapTime,
 
-		Type:      schema.WISER_TYPE_SWAP,
+		Type:      schema.TRADE_TYPE_SWAP,
 		Direction: swap.Direction,
 
 		Amount:     swap.AmountOfMainToken,
@@ -192,16 +193,30 @@ func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 	return att
 }
 
+func PrintWiserl(wiser *schema.Wiser) {
+	utils.Infof("**** PrintWiser **** Address: %v", wiser.Address)
+
+	fmt.Println("Weight: ", wiser.Weight)
+	fmt.Println("WinRatio: ", wiser.WinRatio)
+	fmt.Println("TradeCount: ", wiser.TradeCount)
+	fmt.Println("TradeCntPerMonth: ", wiser.TradeCntPerMonth)
+
+	fmt.Println("EarnValuePerDeal: ", wiser.EarnValuePerDeal)
+	fmt.Println("AverageEarnRatio: ", wiser.AverageEarnRatio)
+
+	fmt.Printf("\n\n")
+}
+
 func getAttFromTransfer(transfer schema.Transfer, account string) schema.AccountTokenTrade {
 	att := schema.AccountTokenTrade{
 		BlockNo:  transfer.BlockNo,
 		TxHash:   transfer.TxHash,
 		Position: transfer.Position,
 
-		Pair:      "", // transfer没有pair概念
 		TradeTime: transfer.Timestamp,
 
-		Type: schema.WISER_TYPE_TRANSFER,
+		Pair: "", // transfer没有pair概念
+		Type: schema.TRADE_TYPE_TRANSFER,
 
 		Amount:   transfer.Amount,
 		USDValue: transfer.TransferValueInUsd,

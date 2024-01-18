@@ -11,8 +11,6 @@ import (
 const (
 	BI_DEAL_TYPE_UNKNOWN int = iota
 
-	BI_DEAL_TYPE_CLASSIC //  正常趋势交易
-
 	// arbitrage 交易机器, 定义为同区块进出
 	// 或者是 usdt->eth->xxx, 导致该deal买入eth又卖出eth
 	// 不应该被统计到合理deal里面, 一般都是 usdt->eth 价值币之间的转换
@@ -26,8 +24,11 @@ const (
 
 	// 高频交易, 定义为30min之内的进出
 	BI_DEAL_TYPE_RUSH_TRADE
+
+	BI_DEAL_TYPE_TREND //  正常趋势交易
 )
 
+// 尚未使用
 const (
 	BI_DEAL_STATUS_UNINIT int = iota
 
@@ -37,15 +38,34 @@ const (
 	BI_DEAL_STATUS_FINISHED // 结束
 )
 
+// wiser定义的类型
+const (
+	WISER_TYPE_UNKNOWN int = iota
+
+	WISER_TYPE_FRONTRUN
+	WISER_TYPE_RUSH
+	WISER_TYPE_STEADY
+)
+
+// wiser 交易类型
+const (
+	TRADE_TYPE_UNKNOWN int = iota
+
+	TRADE_TYPE_SWAP
+	TRADE_TYPE_TRANSFER
+)
+
 // 优秀地址定义
 type Wiser struct {
 	WiserInfo `bson:",inline"` // wiser本身定义
 
 	DealDetail `bson:",inline"` // 统计数据记录
 
-	// 因为会定期计算与更新wiser, 因此记录下当前运算epoch
-	// 方便对比，或累计运算权重
+	// 因为会定期计算与更新wiser, 因此记录下当前运算epoch, 方便对比
+	// 暂时不用
 	Epoch string `json:"epoch" bson:"epoch"`
+
+	AddressWithEpoch string `json:"addressWithEpoch" bson:"addressWithEpoch"` // unique key
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
@@ -54,13 +74,19 @@ type WiserInfo struct {
 	Address string `json:"address" bson:"address"` // 地址
 
 	Weight int `json:"weight" bson:"weight"` // 计算出的权重
+	Type   int `json:"type" bson:"type"`     // 统计出的类型
 }
 
 // 统计数据详情
 type DealDetail struct {
 	WinRatio float64 `json:"winRatio" bson:"winRatio"` // 盈利比例
 
-	TradeCount int `json:"dealCount" bson:"dealCount"` // 交易总笔数
+	TradeCount int `json:"tradeCount" bson:"tradeCount"` // 交易总笔数
+
+	// 统计下arbi、frontrun、trend 等交易比例
+	FrontrunTradeRatio float64 `json:"frontrunTradeRatio" bson:"frontrunTradeRatio"`
+	RushTradeRatio     float64 `json:"rushTradeRatio" bson:"rushTradeRatio"`
+	TrendTradeRatio    float64 `json:"trendTradeRatio" bson:"trendTradeRatio"`
 
 	// 每月平均交易次数, 算法从第一笔买到最后一笔卖算周期时长
 	TradeCntPerMonth float64 `json:"tradeCntPerMonth" bson:"tradeCntPerMonth"`
@@ -68,7 +94,7 @@ type DealDetail struct {
 	TotalWinValue    float64 `json:"totalWinValue" bson:"totalWinValue"`       // 盈利总金额
 	EarnValuePerDeal float64 `json:"earnValuePerDeal" bson:"earnValuePerDeal"` // 平均每笔盈利
 
-	EarnRatio float64 `json:"earnRatio" bson:"earnRatio"` // 平均盈利比例
+	AverageEarnRatio float64 `json:"averageEarnRatio" bson:"averageEarnRatio"` // 平均盈利比例
 }
 
 // 一笔买卖的定义, bi 包含双向的意思
@@ -110,14 +136,6 @@ type BiDeal struct {
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
 
-// wiser 定义的一些常量, 只用于wiser模块
-const (
-	WISER_TYPE_UNKNOWN int = iota
-
-	WISER_TYPE_SWAP
-	WISER_TYPE_TRANSFER
-)
-
 // key是token, 数组为token内的所有trade
 type AccountTrades map[string][]AccountTokenTrade
 
@@ -146,6 +164,11 @@ var WiserIndexModel = []mongo.IndexModel{
 		Options: options.Index().SetName("createdAt_index"),
 	},
 	{
+		// 以sell tx 为 unique key
+		Keys:    bson.D{{Key: "addressWithEpoch", Value: 1}},
+		Options: options.Index().SetName("addressWithEpoch_index").SetUnique(true),
+	},
+	{
 		Keys:    bson.D{{Key: "address", Value: 1}},
 		Options: options.Index().SetName("address_index"),
 	},
@@ -153,6 +176,40 @@ var WiserIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "weight", Value: 1}},
 		Options: options.Index().SetName("weight_index"),
+	},
+
+	{
+		Keys:    bson.D{{Key: "winRatio", Value: 1}},
+		Options: options.Index().SetName("winRatio_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "tradeCntPerMonth", Value: 1}},
+		Options: options.Index().SetName("tradeCntPerMonth_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "totalWinValue", Value: 1}},
+		Options: options.Index().SetName("totalWinValue_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "AverageEarnRatio", Value: 1}},
+		Options: options.Index().SetName("AverageEarnRatio_index"),
+	},
+
+	{
+		Keys:    bson.D{{Key: "type", Value: 1}},
+		Options: options.Index().SetName("type_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "frontrunTradeRatio", Value: 1}},
+		Options: options.Index().SetName("frontrunTradeRatio_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "rushTradeRatio", Value: 1}},
+		Options: options.Index().SetName("rushTradeRatio_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "trendTradeRatio", Value: 1}},
+		Options: options.Index().SetName("rtrendTradeRatio_index"),
 	},
 
 	{

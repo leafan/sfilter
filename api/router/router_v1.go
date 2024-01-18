@@ -25,7 +25,8 @@ func SetUpV1Router(router *gin.Engine) {
 	partnerGroupWithAuth := partnerGroup.Use(userAuthMiddleware).Use(partnerAuthMiddleware)
 	{
 		// get deals
-		partnerGroupWithAuth.GET("/deals", admin.AdminGetAllDeals)
+		partnerGroupWithAuth.GET("/deals", admin.AdminGetDeals)
+		partnerGroupWithAuth.GET("/wisers", admin.AdminGetWisers)
 	}
 
 	adminGroup := router.Group("/admin")
@@ -34,7 +35,7 @@ func SetUpV1Router(router *gin.Engine) {
 	adminGroupWithAuth := adminGroup.Use(userAuthMiddleware).Use(adminAuthMiddleware)
 	{
 		// get deals
-		adminGroupWithAuth.GET("/deals", admin.AdminGetAllDeals)
+		adminGroupWithAuth.GET("/deals", admin.AdminGetDeals)
 
 	}
 

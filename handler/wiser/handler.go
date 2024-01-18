@@ -1,33 +1,25 @@
 package handler
 
-import (
-	"context"
-	"sfilter/config"
-	"sfilter/utils"
+type Handler struct {
+	wiser *Wiser
+}
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
+func NewHandler(account, db string, debug bool, wiser bool) *Handler {
+	set := NewSetting(account, db, debug)
 
-func NewWiser(account, db string) *Wiser {
-	clientOptions := options.Client().ApplyURI(config.MONGO_ADDR)
-	mongodb, err := mongo.Connect(context.Background(), clientOptions)
-	if err != nil {
-		utils.Fatalf("connect mongo error: %v", err)
+	hndl := &Handler{}
+
+	if wiser { // 是否开启 wiser searcher
+		hndl.wiser = &Wiser{
+			set: set,
+		}
 	}
 
-	wiserConfig := config.DefaultWiserConfig
-	if account != "" {
-		wiserConfig.DebugAccount = account
-	}
-	if db != "" {
-		config.DatabaseName = db
-	}
+	return hndl
+}
 
-	// other config change..
-
-	return &Wiser{
-		DB:     mongodb,
-		Config: wiserConfig,
+func (h *Handler) Run() {
+	if h.wiser != nil {
+		h.wiser.Run()
 	}
 }

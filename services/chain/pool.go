@@ -112,6 +112,46 @@ func getUniV3Position(postionManagerAddr string, tokenId *big.Int) (common.Addre
 	return token0, token1, fee, nil
 }
 
+// uni v2
+func GetUniV2SwapAmountOut(pair string, tokenIn, tokenOut string, amountIn *big.Int) (*big.Int, error) {
+	var amountOut *big.Int
+
+	return amountOut, nil
+}
+
+func GetUniV3SwapAmountOut(contract string, tokenIn, tokenOut string, fee, amountIn *big.Int) (*big.Int, error) {
+	var amountOut *big.Int
+
+	abi := getAbi()
+	contractAddr := common.HexToAddress(contract)
+
+	data, err := abi.Pack("quoteExactInputSingle", tokenIn, tokenOut, fee, amountIn, 0)
+	if err != nil {
+		utils.Warnf("[ getUniV3SwapAmountOut ] Pack data error. tokenIn: %v, tokenOut: %v, err: %v\n", tokenIn, tokenOut, err)
+		return amountOut, err
+	}
+	msg := ethereum.CallMsg{
+		From: common.Address{},
+		To:   &contractAddr,
+		Data: data,
+	}
+
+	ret, err := getClient().CallContract(context.Background(), msg, nil)
+	if err != nil {
+		utils.Warnf("[ getUniV3SwapAmountOut ] CallContract error. tokenIn: %v, tokenOut: %v, err: %v\n", tokenIn, tokenOut, err)
+		return amountOut, err
+	}
+
+	intr, err := abi.Methods["quoteExactInputSingle"].Outputs.UnpackValues(ret)
+	if err != nil {
+		utils.Warnf("[ getUniV3SwapAmountOut ] UnpackValues error. tokenIn: %v, tokenOut: %v, err: %v\n", tokenIn, tokenOut, err)
+		return amountOut, err
+	}
+	amountOut = intr[0].(*big.Int)
+
+	return amountOut, nil
+}
+
 func GetUniPoolType(poolAddr string) (int, error) {
 	// uni v2 check
 	_, err := getSingleProp(poolAddr, "price0CumulativeLast", getClient(), nil)

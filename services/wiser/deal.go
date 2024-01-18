@@ -8,6 +8,7 @@ import (
 	"sfilter/utils"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -41,14 +42,44 @@ func GetBiDeals(findOpt *options.FindOptions, filter *primitive.M, mongodb *mong
 	return result, totalCount, err
 }
 
+func GetAccountAllDeals(account string, mongodb *mongo.Client) ([]schema.BiDeal, error) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.BiDealTableName)
+
+	var result []schema.BiDeal
+	ctx, cancel := context.WithTimeout(context.Background(), config.MONGO_FIND_TIMEOUT*time.Second*10)
+	defer cancel()
+
+	filter := bson.M{"account": account}
+
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return result, err
+	}
+	defer cursor.Close(ctx)
+
+	err = cursor.All(ctx, &result)
+	return result, err
+}
+
 func SaveDeal(deal *schema.BiDeal, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.BiDealTableName)
 
 	deal.CreatedAt = time.Now()
 	_, err := collection.InsertOne(context.Background(), deal)
 	if err != nil {
-		// 这里失败是正常现象, 因为可能重复计算导致
-		utils.Warnf("[ SaveDeals ] InsertOne error: %v, deal: %v\n", err, deal)
+		// 这里失败是正常现象, 重新写入
+		if err != nil {
+			filter := bson.D{{Key: "sellTxHashWithToken", Value: deal.SellTxHashWithToken}}
+			opts := options.Update().SetUpsert(true)
+
+			update := bson.D{
+				{Key: "$set", Value: deal},
+			}
+			_, err := collection.UpdateOne(context.Background(), filter, update, opts)
+			if err != nil {
+				utils.Errorf("[ SaveDeal ] failed. sell_hash: %v, err: %v\n", deal.SellTxHashWithToken, err)
+			}
+		}
 	}
 }
 
