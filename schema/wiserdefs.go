@@ -8,6 +8,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// db中的实时数据存储
+// config key: wiser_config
+type WiserDBConfig struct {
+	Epoch string `json:"epoch" bson:"epoch"` //最新的epoch
+
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
+}
+
 // deal 持有类型
 const (
 	BI_DEAL_TYPE_UNKNOWN int = iota

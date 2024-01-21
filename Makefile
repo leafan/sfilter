@@ -47,7 +47,7 @@ dwiser:
 
 	cp swiser /backup/deepeye/swiser_deepeye
 
-	cd /backup/deepeye/ && nohup ./swiser_deepeye > /backup/deepeye/logs/swiser_deepeye.log 2>&1 &
+	cd /backup/deepeye/ && nohup ./swiser_deepeye -wiser -deal > /backup/deepeye/logs/swiser_deepeye.log 2>&1 &
 
 
 

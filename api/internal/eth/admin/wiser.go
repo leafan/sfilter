@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -21,7 +22,7 @@ func AdminGetWisers(c *gin.Context) {
 		return
 	}
 
-	filter := parseWiserFilter(c)
+	filter := parseWiserFilter(c, db)
 
 	info, count, err := wiser.GetWisers(options, filter, db)
 	if err != nil {
@@ -74,7 +75,7 @@ func parseWiserOptions(c *gin.Context) (*options.FindOptions, error) {
 	return options, nil
 }
 
-func parseWiserFilter(c *gin.Context) *primitive.M {
+func parseWiserFilter(c *gin.Context, db *mongo.Database) *primitive.M {
 	filter := bson.M{}
 
 	address := c.DefaultQuery("address", "")
@@ -102,8 +103,9 @@ func parseWiserFilter(c *gin.Context) *primitive.M {
 		}
 	}
 
-	epoch := c.DefaultQuery("epoch", "")
-	if epoch != "" {
+	// 默认直接传入最新的epoch, 但如果有过滤地址, 则不过滤epoch
+	epoch, err := wiser.GetCurrentEpoch(db)
+	if err == nil && address == "" {
 		filter["epoch"] = epoch
 	}
 

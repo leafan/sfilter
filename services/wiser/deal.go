@@ -83,11 +83,19 @@ func SaveDeal(deal *schema.BiDeal, mongodb *mongo.Client) {
 	}
 }
 
-// 统计前删除collection
-func DropDealCollection(mongodb *mongo.Client) error {
+// 统计前重置collection
+func ResetDealCollection(mongodb *mongo.Client) error {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.BiDealTableName)
 
-	return collection.Drop(context.Background())
+	err := collection.Drop(context.Background())
+	if err != nil {
+		utils.Errorf("[ ResetDealCollection ] drop failed: %v", err)
+		return err
+	}
+
+	utils.DoInitTable(config.DatabaseName, config.BiDealTableName, schema.BiDealIndexModel, mongodb)
+
+	return nil
 }
 
 func PrintDeals(deals []*schema.BiDeal) {

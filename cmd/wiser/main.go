@@ -7,14 +7,16 @@ import (
 
 func main() {
 	db := flag.String("db", "", "the db want to use")
-	debug := flag.Bool("debug", false, "debug mode")
 	account := flag.String("account", "", "the account want to test, empty for all accounts")
 
-	wiser := flag.Bool("wiser", true, "whether enable wiser searcher")
+	debug := flag.Bool("debug", false, "debug mode")
+
+	deal := flag.Bool("deal", false, "whether enable deal inspect")
+	wiser := flag.Bool("wiser", false, "whether enable wiser inspect")
 
 	flag.Parse()
 
-	hndl := handler.NewHandler(*account, *db, *debug, *wiser)
+	hndl := handler.NewHandler(*account, *db, *debug, *deal, *wiser)
 
 	hndl.Run()
 }

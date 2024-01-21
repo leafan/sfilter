@@ -52,12 +52,12 @@ var DefaultWiserConfig = &WiserConfig{
 	DealBuyTypeFresh:  60 * 5,
 	DealBuyTypeSubNew: 60 * 60 * 24 * 7,
 
-	DealProfitTarget:    1.0, // 盈利超过40%才算有效盈利
-	WinRatioTarget:      0.6, // 胜率超过60%
+	DealProfitTarget:    1.0, // 盈利超过x%才算有效盈利
+	WinRatioTarget:      0.6, // 胜率超过60%才算胜利一笔
 	DealThresholdPerMon: 5,   // 每月至少x笔交易才算
 
 	WiserMinimumEthBalance: 0.1,
 
-	DealDefiniteWin:  9,   // 盈利超过9倍, 直接结算
-	DealDefiniteLoss: 0.1, // 亏损超过90%, 当归零
+	DealDefiniteWin:  5,   // 盈利超过x倍, 直接结算
+	DealDefiniteLoss: 0.2, // 亏损超过x%, 直接结算
 }
