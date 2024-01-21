@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"sfilter/schema"
+	"sfilter/services/chain"
 	"sfilter/services/wiser"
 	"sfilter/utils"
 	"sort"
@@ -106,7 +109,36 @@ func (w *Wiser) InspectAccount(account string) {
 		wiser.PrintWiserl(&_wiser)
 	}
 
-	wiser.SaveWiser(&_wiser, w.set.DB)
+	// 获取余额
+	ethBalance, err := chain.GetAccountEthBalance(account)
+	if err != nil {
+		utils.Errorf("[ InspectAccount ] GetAccountEthBalance failed: %v", err)
+		return
+	}
+	_wiser.EthBalance = ethBalance
+
+	isValid := w.isWiserNeedBePicked(&_wiser)
+	if isValid {
+		wiser.SaveWiser(&_wiser, w.set.DB)
+	}
+}
+
+func (w *Wiser) isWiserNeedBePicked(wiser *schema.Wiser) bool {
+	// 如果余额过小, 或者其他条件不符合, 则不保存
+	if wiser.EthBalance < w.set.Config.WiserMinimumEthBalance {
+		utils.Warnf("[ isWiserNeedBePicked ] wiser:%v balance is too less: %v", wiser.Address, wiser.EthBalance)
+		return false
+	}
+
+	w.updateWiserWeight(wiser)
+
+	// 如果没有权重, 也不保存
+	if wiser.Weight <= 0 {
+		utils.Warnf("[ isWiserNeedBePicked ] wiser:%v weight is too less: %v", wiser.Address, wiser.Weight)
+		return false
+	}
+
+	return true
 }
 
 func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) schema.Wiser {
@@ -121,60 +153,90 @@ func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) sch
 	totalCost := float64(0)
 
 	frontrunTimes := 0
-	rushTimes := 0
+	rushTimes := 0 // 包含gamble
 	trendTimes := 0
-	totalTradeTimes := 0
+
+	buyMev := 0
+	buyFresh := 0
+	buySubnew := 0
 
 	for _, deal := range deals {
-		totalTradeTimes++
+		wiser.TotalTradeCount++
 
-		if deal.BiDealType == schema.BI_DEAL_TYPE_ARBI ||
-			deal.BiDealType == schema.BI_DEAL_TYPE_FRONTRUN {
-			// 如果deal为arbi或frontrun, 不计算
-			frontrunTimes++
-			continue
+		// 买入行为分析
+		if deal.BuyType == schema.BI_DEAL_BUY_TYPE_MEV {
+			buyMev++
+		} else if deal.BuyType == schema.BI_DEAL_BUY_TYPE_FRESH {
+			buyFresh++
+		} else if deal.BuyType == schema.BI_DEAL_BUY_TYPE_SUBNEW {
+			buySubnew++
 		}
 
-		if deal.BiDealType == schema.BI_DEAL_TYPE_TREND {
+		// 持有行为分析
+		if deal.BiDealType == schema.BI_DEAL_TYPE_ARBI ||
+			deal.BiDealType == schema.BI_DEAL_TYPE_FRONTRUN {
+			frontrunTimes++
+		} else if deal.BiDealType == schema.BI_DEAL_TYPE_TREND {
 			trendTimes++
-		} else { // frontrun已continue掉, 因此全是rush交易了
+		} else { // gamble 也算rush
 			rushTimes++
 		}
 
+		if deal.BuyType == schema.BI_DEAL_BUY_TYPE_MEV || deal.BiDealType == schema.BI_DEAL_TYPE_ARBI || deal.BiDealType == schema.BI_DEAL_TYPE_FRONTRUN || deal.BiDealType == schema.BI_DEAL_TYPE_GAMBLE_TRADE {
+			// 同区块内买入或极快卖出不统计胜率
+			continue
+		}
+
 		// 分析每一笔deal, 做数据统计
-		wiser.TradeCount++
+		wiser.ValidTradeCount++
 		wiser.TotalWinValue = deal.Earn
 
 		totalCost += math.Abs(deal.Earn / deal.EarnChange)
 
-		if deal.EarnChange >= w.set.Config.ProfitTarget {
+		if deal.EarnChange >= w.set.Config.DealProfitTarget {
 			winTimes++
 		}
 
 	}
 
-	if wiser.TradeCount > 0 {
-		wiser.WinRatio = float64(winTimes) / float64(wiser.TradeCount)
-		wiser.EarnValuePerDeal = wiser.TotalWinValue / float64(wiser.TradeCount)
-
-		// tradeCount>0才统计占比
-		wiser.FrontrunTradeRatio = float64(frontrunTimes) / float64(totalTradeTimes)
-		wiser.RushTradeRatio = float64(rushTimes) / float64(totalTradeTimes)
-		wiser.TrendTradeRatio = float64(trendTimes) / float64(totalTradeTimes)
+	if wiser.ValidTradeCount > 0 {
+		wiser.WinRatio = float64(winTimes) / float64(wiser.ValidTradeCount)
+		wiser.EarnValuePerDeal = wiser.TotalWinValue / float64(wiser.ValidTradeCount)
 	}
 	if totalCost > 0 {
 		wiser.AverageEarnRatio = wiser.TotalWinValue / totalCost
 	}
 
-	wiser.TradeCntPerMonth = float64(wiser.TradeCount) * (float64(w.set.Config.LatestSwapSeconds) / 60 / 60 / 24 / 30)
+	wiser.TradeCntPerMonth = float64(wiser.ValidTradeCount) * (float64(w.set.Config.LatestSwapSeconds) / 60 / 60 / 24 / 30)
 
-	w.updateWiserWeight(&wiser)
+	w.updateWiserTradeInfo(&wiser, frontrunTimes, rushTimes, trendTimes)
+	w.updateWiserBuyTypeInfo(&wiser, buyMev, buyFresh, buySubnew)
 	w.updateOtherProfile(&wiser)
 
 	wiser.Epoch = "0"
 	wiser.AddressWithEpoch = fmt.Sprintf("%v_%v", wiser.Address, wiser.Epoch)
 
 	return wiser
+}
+
+func (w *Wiser) updateWiserBuyTypeInfo(wiser *schema.Wiser, buyMev, buyFresh, buySubnew int) {
+	if wiser.TotalTradeCount <= 0 {
+		return
+	}
+
+	wiser.BuyMevRatio = float64(buyMev) / float64(wiser.TotalTradeCount)
+	wiser.BuyFreshRatio = float64(buyFresh) / float64(wiser.TotalTradeCount)
+	wiser.BuySubnewRatio = float64(buySubnew) / float64(wiser.TotalTradeCount)
+}
+
+func (w *Wiser) updateWiserTradeInfo(wiser *schema.Wiser, frontrunTimes, rushTimes, trendTimes int) {
+	if wiser.TotalTradeCount <= 0 {
+		return
+	}
+
+	wiser.FrontrunTradeRatio = float64(frontrunTimes) / float64(wiser.TotalTradeCount)
+	wiser.RushTradeRatio = float64(rushTimes) / float64(wiser.TotalTradeCount)
+	wiser.TrendTradeRatio = float64(trendTimes) / float64(wiser.TotalTradeCount)
 }
 
 func (w *Wiser) updateWiserWeight(wiser *schema.Wiser) {
@@ -213,11 +275,11 @@ func (w *Wiser) updateOtherProfile(wiser *schema.Wiser) {
 	}
 
 	if maxValue == wiser.FrontrunTradeRatio {
-		wiser.Type = schema.WISER_TYPE_FRONTRUN
+		wiser.Type = schema.WISER_TRADER_TYPE_FRONTRUN
 	} else if maxValue == wiser.RushTradeRatio {
-		wiser.Type = schema.WISER_TYPE_RUSH
+		wiser.Type = schema.WISER_TRADER_TYPE_RUSH
 	} else {
-		wiser.Type = schema.WISER_TYPE_STEADY
+		wiser.Type = schema.WISER_TRADER_TYPE_STEADY
 	}
 }
 
@@ -264,16 +326,17 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 					Token:     tokenObj.Address,
 					TokenName: tokenObj.Name,
 
-					BuyTxHash:  att.TxHash,
-					BuyBlockNo: att.BlockNo,
-					BuyPair:    att.Pair,
+					BuyTxHash:   att.TxHash,
+					BuyBlockNo:  att.BlockNo,
+					BuyPair:     att.Pair,
+					BuyPairType: att.PairType,
 
 					BuyValue:  att.USDValue,
 					BuyAmount: att.Amount,
 					BuyPrice:  att.PriceInUSD,
 				}
 
-				deal.BuyPairAge = 60 * 60 * 24 * 366 // 初始化为1年
+				deal.BuyPairAge = 60 * 60 * 24 * 181 // 初始化为1年
 				_pair, ok := w.set.Pairs[deal.BuyPair]
 				if ok {
 					bornAt := _pair.FirstAddPoolTime
@@ -300,6 +363,7 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 				continue
 			}
 			if startOver { // 说明此时统计周期内第2+笔卖的交易, 累加卖的数据
+				// todo
 				continue
 			}
 
@@ -345,6 +409,7 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 			// 定义bideal类型
 			deal.HoldBlocks = deal.SellBlockNo - deal.BuyBlockNo
 			deal.BiDealType = w.getDealType(deal.HoldBlocks)
+			deal.BuyType = w.getBuyType(deal.BuyPairAge)
 
 			if w.set.Config.DebugMode {
 				wiser.PrintDeal(deal)
@@ -360,22 +425,151 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 	// 如果是, 则计算当前亏钱状态; 否则不记录, 作为无效deal
 	if !startOver {
 		// 说明此时还持有token, 计算当前盈利状态以确认是否作为有效deal记录
-		w.updateDealWithLatestData(deal)
+		validDeal := w.updateDealWithLatestData(deal, &tokenObj)
+		if validDeal {
+			// 需要亏损达90%或者盈利达5倍以上, 才记录
+			// todo
+
+			deals = append(deals, deal)
+		}
 	}
 
 	return deals
 }
 
 // 确认当前deal持有从未卖出的token, 根据当前价格计算盈利
-func (w *Wiser) updateDealWithLatestData(deal *schema.BiDeal) bool {
+func (w *Wiser) updateDealWithLatestData(deal *schema.BiDeal, tokenObj *schema.Token) bool {
+	// deal无有效买入
 	if deal == nil || deal.BuyValue <= 0 || deal.BuyAmount <= 0 || deal.Account == "" {
 		return false
 	}
 
+	if deal.SellTxHashWithToken != "" {
+		// deal 已经收尾, 已经有了卖的交易
+		return false
+	}
+
+	utils.Debugf("[ updateDealWithLatestData ] found one deal to be updated. deal: %v", deal)
+
+	// 继续往后走, 说明该用户对该token有买入动作但无有效的卖出动作(transfer无效)
+	deal.SellType = schema.TRADE_TYPE_LIQUIDATION
+	// 新建一个唯一键值, 用BuyTx+Token+Account代替
+	deal.SellTxHashWithToken = fmt.Sprintf("%v_%v_%v", deal.BuyTxHash, deal.Token, deal.Account)
+
 	// 将当前的amount卖到当前的pair里面, 作为earn数据并统计更新
 	// 可能出现实际情况错误, 比如transfer出去或者其他没被统计到的情况, 但先忽略
+	// 这里也不获取余额, 直接模拟将所有buy的卖出去
+	pairObj, ok := w.set.Pairs[deal.BuyPair]
+	if !ok {
+		utils.Warnf("[ updateDealWithLatestData ] find pair failed. pair: %v", deal.BuyPair)
+		return false
+	}
+
+	sellUsdValue, err := w.getDealAmountValueWithAmountIn(deal, &pairObj)
+	if err != nil || sellUsdValue < 0 {
+		utils.Warnf("[ updateDealWithLatestData ] get deal amout value failed. err: %v, sellUsdValue: %v", err, sellUsdValue)
+		return false
+	}
+
+	// 此时需要判断其sell value是否已亏损过多或盈利很高, 如果不是, 也不结算
+	if sellUsdValue > deal.BuyValue*w.set.Config.DealDefiniteLoss &&
+		sellUsdValue < deal.BuyValue*w.set.Config.DealDefiniteWin {
+		utils.Warnf("[ updateDealWithLatestData ] sellUsdValue not win or loss too much. current value: %v, BuyValue: %v", sellUsdValue, deal.BuyValue)
+		return false
+	}
+
+	deal.SellAmount = deal.BuyAmount
+	deal.SellValue = sellUsdValue
+	deal.SellPrice = sellUsdValue / deal.SellAmount
+
+	deal.Earn = deal.SellValue - deal.BuyValue
+	deal.EarnChange = deal.Earn / deal.BuyValue
+
+	// 定义bideal类型
+	deal.SellBlockNo, _ = chain.GetCurrentBlockNumber()
+
+	deal.HoldBlocks = deal.SellBlockNo - deal.BuyBlockNo
+	deal.BiDealType = w.getDealType(deal.HoldBlocks)
+
+	deal.BuyType = w.getBuyType(deal.BuyPairAge)
 
 	return true
+}
+
+func (w *Wiser) getDealAmountValueWithAmountIn(deal *schema.BiDeal, pairObj *schema.Pair) (float64, error) {
+	// 买入金额已经转换成为了float, 需要先转成 big.Float，再转成 int.string
+	var tokenOut string
+	var decimalIn uint8
+	var decimalOut uint8
+	var tokenExponent *big.Int
+
+	if deal.Token == pairObj.Token0 {
+		decimalIn = pairObj.Decimal0
+		decimalOut = pairObj.Decimal1
+		tokenOut = pairObj.Token1
+	} else {
+		decimalIn = pairObj.Decimal1
+		decimalOut = pairObj.Decimal0
+		tokenOut = pairObj.Token0
+	}
+	tokenExponent = new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimalIn)), nil)
+
+	buyAmountF := big.NewFloat(deal.BuyAmount)
+	buyAmountF = buyAmountF.Mul(buyAmountF, new(big.Float).SetInt(tokenExponent))
+	buyAmountBInt, _ := buyAmountF.Int(nil)
+
+	var amountOut *big.Int
+	var errRet error
+
+	if deal.BuyPairType == schema.SWAP_EVENT_UNISWAPV2_LIKE {
+		amountOut, errRet = chain.GetUniV2SwapAmountOut(deal.BuyPair, pairObj.Token0, deal.Token, buyAmountBInt)
+		if errRet != nil {
+			utils.Errorf("[ getDealAmountValueWithAmountIn ] GetUniV2SwapAmountOut failed: %v, pair: %v", errRet, deal.BuyPair)
+		}
+	} else if deal.BuyPairType == schema.SWAP_EVENT_UNISWAPV3_LIKE {
+		var feeBig *big.Int
+
+		fee := pairObj.PairFee
+		if fee == 0 {
+			feeBig, errRet = chain.GetUniV3PairFee(pairObj.Address)
+			if errRet != nil {
+				utils.Warnf("[ getDealAmountValueWithAmountIn ] GetUniV3PairFee failed. pair: %v, err: %v", pairObj.Address, errRet)
+				goto finish
+			}
+
+			fee = feeBig.Int64()
+		}
+
+		amountOut, errRet = chain.GetUniV3SwapAmountOut(deal.Token, tokenOut, big.NewInt(fee), buyAmountBInt)
+		if errRet != nil {
+			utils.Warnf("[ getDealAmountValueWithAmountIn ] GetUniV3SwapAmountOut failed: %v. pair: %v, in: %v, out: %v, fee: %v, amountIn: %v", errRet, deal.BuyPair, deal.Token, tokenOut, fee, buyAmountBInt)
+		}
+	} else {
+		errRet = errors.New("wrong pair type")
+		utils.Errorf("[ getDealAmountValueWithAmountIn ] unknown pair type: %v", deal.BuyPairType)
+	}
+
+finish:
+	var sellUsdValue = -1.0 // 默认值为负值
+
+	if errRet != nil { // 说明计算正确
+		// 存在错误, 判断下余额, 如果余额比买入时的value还小一定比例, 则作为其买入失败
+		liquidityVolume := pairObj.LiquidityInUsd
+		if liquidityVolume <= deal.BuyValue*w.set.Config.DealDefiniteLoss {
+			utils.Infof("[ getDealAmountValueWithAmountIn ] liquidityVolume too less: %v, buyValue: %v", liquidityVolume, deal.BuyValue)
+			sellUsdValue = liquidityVolume
+			errRet = nil
+		}
+	} else {
+		// 还需要将 tokenOut 的amountOut转成法币
+		var ethPrice float64
+		ethPrice, errRet = chain.GetEthPrice(nil, nil)
+		if errRet == nil {
+			sellUsdValue = utils.CalculateVolumeInUsd(tokenOut, new(big.Float).SetInt(amountOut), decimalOut, ethPrice)
+		}
+	}
+
+	return sellUsdValue, errRet
 }
 
 // 获取该用户最近一段时间的swap记录与transfer记录并按要求组装构造格式
@@ -454,4 +648,18 @@ func (w *Wiser) getDealType(blockInterval uint64) int {
 	}
 
 	return dealType
+}
+
+func (w *Wiser) getBuyType(seconds int) int {
+	buyType := schema.BI_DEAL_BUY_TYPE_TREND
+
+	if seconds <= w.set.Config.DealBuyTypeMev {
+		buyType = schema.BI_DEAL_BUY_TYPE_MEV
+	} else if seconds < w.set.Config.DealBuyTypeFresh {
+		buyType = schema.BI_DEAL_BUY_TYPE_FRESH
+	} else if seconds < w.set.Config.DealBuyTypeSubNew {
+		buyType = schema.BI_DEAL_BUY_TYPE_SUBNEW
+	}
+
+	return buyType
 }

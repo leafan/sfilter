@@ -179,7 +179,9 @@ func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 		TxHash:   swap.TxHash,
 		Position: swap.Position,
 
-		Pair:      swap.PairAddr,
+		Pair:     swap.PairAddr,
+		PairType: swap.SwapType,
+
 		TradeTime: swap.SwapTime,
 
 		Type:      schema.TRADE_TYPE_SWAP,
@@ -198,7 +200,8 @@ func PrintWiserl(wiser *schema.Wiser) {
 
 	fmt.Println("Weight: ", wiser.Weight)
 	fmt.Println("WinRatio: ", wiser.WinRatio)
-	fmt.Println("TradeCount: ", wiser.TradeCount)
+	fmt.Println("TotalTradeCount: ", wiser.TotalTradeCount)
+	fmt.Println("ValidTradeCount: ", wiser.ValidTradeCount)
 	fmt.Println("TradeCntPerMonth: ", wiser.TradeCntPerMonth)
 
 	fmt.Println("EarnValuePerDeal: ", wiser.EarnValuePerDeal)
@@ -215,8 +218,9 @@ func getAttFromTransfer(transfer schema.Transfer, account string) schema.Account
 
 		TradeTime: transfer.Timestamp,
 
-		Pair: "", // transfer没有pair概念
-		Type: schema.TRADE_TYPE_TRANSFER,
+		Pair:     "", // transfer没有pair概念
+		PairType: schema.SWAP_EVENT_UNKNOWN,
+		Type:     schema.TRADE_TYPE_TRANSFER,
 
 		Amount:   transfer.Amount,
 		USDValue: transfer.TransferValueInUsd,

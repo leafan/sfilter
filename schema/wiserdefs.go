@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// deal 持有类型
 const (
 	BI_DEAL_TYPE_UNKNOWN int = iota
 
@@ -28,31 +29,33 @@ const (
 	BI_DEAL_TYPE_TREND //  正常趋势交易
 )
 
-// 尚未使用
+// deal 买入风格类型
 const (
-	BI_DEAL_STATUS_UNINIT int = iota
+	BI_DEAL_BUY_TYPE_UNKNOWN int = iota
 
-	BI_DEAL_STATUS_BUY  // 买入阶段
-	BI_DEAL_STATUS_SELL // 卖出阶段
-
-	BI_DEAL_STATUS_FINISHED // 结束
+	BI_DEAL_BUY_TYPE_MEV    // 创建pair的同区块就买入
+	BI_DEAL_BUY_TYPE_FRESH  // 创建pair后5min内买入
+	BI_DEAL_BUY_TYPE_SUBNEW // 次新币, 创建pair后7天内买入
+	BI_DEAL_BUY_TYPE_TREND  // 正常买卖
 )
 
-// wiser定义的类型
+// wiser 交易风格类型
 const (
-	WISER_TYPE_UNKNOWN int = iota
+	WISER_TRADER_TYPE_UNKNOWN int = iota
 
-	WISER_TYPE_FRONTRUN
-	WISER_TYPE_RUSH
-	WISER_TYPE_STEADY
+	WISER_TRADER_TYPE_FRONTRUN
+	WISER_TRADER_TYPE_RUSH
+	WISER_TRADER_TYPE_STEADY
 )
 
 // wiser 交易类型
 const (
 	TRADE_TYPE_UNKNOWN int = iota
 
-	TRADE_TYPE_SWAP
-	TRADE_TYPE_TRANSFER
+	TRADE_TYPE_SWAP     // swap
+	TRADE_TYPE_TRANSFER // transfer
+
+	TRADE_TYPE_LIQUIDATION // 强制结算, 如用户没卖但是清零了
 )
 
 // 优秀地址定义
@@ -74,19 +77,29 @@ type WiserInfo struct {
 	Address string `json:"address" bson:"address"` // 地址
 
 	Weight int `json:"weight" bson:"weight"` // 计算出的权重
-	Type   int `json:"type" bson:"type"`     // 统计出的类型
+
+	EthBalance float64 `json:"ethBalance" bson:"ethBalance"`
+
+	// 交易风格, 如快进快出等
+	Type int `json:"type" bson:"type"`
 }
 
 // 统计数据详情
 type DealDetail struct {
 	WinRatio float64 `json:"winRatio" bson:"winRatio"` // 盈利比例
 
-	TradeCount int `json:"tradeCount" bson:"tradeCount"` // 交易总笔数
+	TotalTradeCount int `json:"totalTradeCount" bson:"totalTradeCount"` // 有效交易总笔数
+	ValidTradeCount int `json:"validTradeCount" bson:"validTradeCount"` // 有效交易总笔数
 
 	// 统计下arbi、frontrun、trend 等交易比例
 	FrontrunTradeRatio float64 `json:"frontrunTradeRatio" bson:"frontrunTradeRatio"`
 	RushTradeRatio     float64 `json:"rushTradeRatio" bson:"rushTradeRatio"`
 	TrendTradeRatio    float64 `json:"trendTradeRatio" bson:"trendTradeRatio"`
+
+	// 统计下Buyer的一些比例数据
+	BuyMevRatio    float64 `json:"buyMevRatio" bson:"buyMevRatio"`
+	BuyFreshRatio  float64 `json:"buyFreshRatio" bson:"buyFreshRatio"`
+	BuySubnewRatio float64 `json:"buySubnewRatio" bson:"buySubnewRatio"`
 
 	// 每月平均交易次数, 算法从第一笔买到最后一笔卖算周期时长
 	TradeCntPerMonth float64 `json:"tradeCntPerMonth" bson:"tradeCntPerMonth"`
@@ -104,11 +117,13 @@ type BiDeal struct {
 	TokenName string `json:"tokenName" bson:"tokenName"` // 方便人阅读
 
 	// buy
-	BuyTxHash  string `json:"buyTxHash" bson:"buyTxHash"` // 第一笔买入tx
-	BuyBlockNo uint64 `json:"buyBlockNo" bson:"buyBlockNo"`
-	BuyPair    string `json:"buyPair" bson:"buyPair"` // 买入的pair
+	BuyTxHash   string `json:"buyTxHash" bson:"buyTxHash"` // 第一笔买入tx
+	BuyBlockNo  uint64 `json:"buyBlockNo" bson:"buyBlockNo"`
+	BuyPair     string `json:"buyPair" bson:"buyPair"` // 买入的pair
+	BuyPairType int    `json:"-" bson:"-"`             // 临时变量, 用于判断是v2还是v3
 
 	BuyPairAge int `json:"buyPairAge" bson:"buyPairAge"` // 买入时该pair的创建时长
+	BuyType    int `json:"buyType" bson:"buyType"`       // 买入风格, 如迅速买入等
 
 	BuyValue  float64 `json:"buyValue" bson:"buyValue"`
 	BuyAmount float64 `json:"buyAmount" bson:"buyAmount"`
@@ -131,6 +146,7 @@ type BiDeal struct {
 	EarnChange float64 `json:"earnChange" bson:"earnChange"` //盈利比例
 	HoldBlocks uint64  `json:"holdBlocks" bson:"holdBlocks"` // 持有的区块数
 
+	// 持有风格类型
 	BiDealType int `json:"biDealType" bson:"biDealType"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
@@ -148,7 +164,8 @@ type AccountTokenTrade struct {
 
 	TradeTime time.Time
 
-	Pair string // pair address
+	Pair     string // pair address
+	PairType int
 
 	Type      int
 	Direction int
@@ -182,6 +199,29 @@ var WiserIndexModel = []mongo.IndexModel{
 		Keys:    bson.D{{Key: "winRatio", Value: 1}},
 		Options: options.Index().SetName("winRatio_index"),
 	},
+
+	{
+		Keys:    bson.D{{Key: "validTradeCount", Value: 1}},
+		Options: options.Index().SetName("validTradeCount_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "totalTradeCount", Value: 1}},
+		Options: options.Index().SetName("totalTradeCount_index"),
+	},
+
+	{
+		Keys:    bson.D{{Key: "buyMevRatio", Value: 1}},
+		Options: options.Index().SetName("buyMevRatio_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "buyFreshRatio", Value: 1}},
+		Options: options.Index().SetName("buyFreshRatio_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "buySubnewRatio", Value: 1}},
+		Options: options.Index().SetName("buySubnewRatio_index"),
+	},
+
 	{
 		Keys:    bson.D{{Key: "tradeCntPerMonth", Value: 1}},
 		Options: options.Index().SetName("tradeCntPerMonth_index"),
@@ -244,7 +284,15 @@ var BiDealIndexModel = []mongo.IndexModel{
 		Keys:    bson.D{{Key: "sellPrice", Value: 1}},
 		Options: options.Index().SetName("sellPrice_index"),
 	},
+	{
+		Keys:    bson.D{{Key: "sellType", Value: 1}},
+		Options: options.Index().SetName("sellType_index"),
+	},
 
+	{
+		Keys:    bson.D{{Key: "buyType", Value: 1}},
+		Options: options.Index().SetName("buyType_index"),
+	},
 	{
 		Keys:    bson.D{{Key: "earn", Value: 1}},
 		Options: options.Index().SetName("earn_index"),

@@ -61,7 +61,7 @@ func parseWiserOptions(c *gin.Context) (*options.FindOptions, error) {
 	var key string
 	var order = -1
 	sortBy := c.DefaultQuery("sortBy", "")
-	if sortBy == "weight" || sortBy == "winRatio" || sortBy == "tradeCount" || sortBy == "tradeCntPerMonth" || sortBy == "totalWinValue" || sortBy == "averageEarnRatio" {
+	if sortBy != "" {
 		key = sortBy
 		orderStr := c.DefaultQuery("descending", "true")
 		if orderStr == "false" {
@@ -86,6 +86,20 @@ func parseWiserFilter(c *gin.Context) *primitive.M {
 	_type, err := strconv.Atoi(wiserType)
 	if err == nil && (_type > 0 && _type < 10) {
 		filter["type"] = _type
+	}
+
+	buyMevRatio := c.DefaultQuery("mevBuyRatio", "")
+	if buyMevRatio == "1" {
+		filter["buyMevRatio"] = bson.M{
+			"$eq": 0,
+		}
+	}
+
+	buyFreshRatio := c.DefaultQuery("freshBuyRatio", "")
+	if buyFreshRatio == "1" {
+		filter["buyFreshRatio"] = bson.M{
+			"$eq": 0,
+		}
 	}
 
 	epoch := c.DefaultQuery("epoch", "")

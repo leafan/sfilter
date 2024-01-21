@@ -1,4 +1,4 @@
-.PHONY:  run ps build stop restart creat filter api wiser deepeye
+.PHONY:  run ps build stop restart creat filter api wiser deepeye dwiser
 
 default: build
 
@@ -26,12 +26,10 @@ deepeye:
 	@echo "\n\033[0;34mKill process...\033[0m"
 	pkill -f '^.*sfilter_deepeye$$' 2>&1 || true
 	pkill -f '^.*sapi_deepeye$$' 2>&1 || true
-	pkill -f '^.*swiser_deepeye$$' 2>&1 || true
 
 	@echo "\n\033[0;34mCopy file...\033[0m"
 	cp sfilter_eth /backup/deepeye/sfilter_deepeye
 	cp sapi /backup/deepeye/sapi_deepeye
-	cp swiser /backup/deepeye/swiser_deepeye
 
 	@echo "\n\033[0;34mStart process...\033[0m"
 
@@ -39,6 +37,18 @@ deepeye:
 	cd /backup/deepeye/ && nohup ./sfilter_deepeye > /backup/deepeye/logs/sfilter_deepeye_$(shell date +%s).log 2>&1 &
 
 	@echo "\n\033[0;34mFinished...\033[0m"
+
+dwiser:
+	@make build
+
+	@echo "\n\033[0;34mKill process...\033[0m"
+	pkill -f '^.*swiser_deepeye$$' 2>&1 || true
+	sleep 1
+
+	cp swiser /backup/deepeye/swiser_deepeye
+
+	cd /backup/deepeye/ && nohup ./swiser_deepeye > /backup/deepeye/logs/swiser_deepeye.log 2>&1 &
+
 
 
 run:

@@ -8,8 +8,9 @@ import (
 func test() {
 	utils.Infof("****** Debug start ******\n\n")
 
-	chain.TEST_TOKEN()
-	// services.TEST_EMAIL_AWS()
+	chain.TEST_POOL()
+
+	// chain.TEST_CHAIN()
 	// tutils.TEST_ENCRYPT()
 
 	utils.Infof("****** Debug end  ******\n\n\n")

@@ -15,13 +15,20 @@ type WiserConfig struct {
 	GambleBlockInterval    int // Game投机交易买卖间隔区块数
 	RushBlockInterval      int // 高频交易间隔区块数
 
+	// Deal BuyType 设置
+	DealBuyTypeMev    int
+	DealBuyTypeFresh  int
+	DealBuyTypeSubNew int
+
 	// Wiser统计设置
-	ProfitTarget        float64 // 盈利超过该值才算该笔交易盈利
+	DealProfitTarget    float64 // 盈利超过该值才算该笔交易盈利
 	WinRatioTarget      float64 // 胜率要求
 	DealThresholdPerMon float64 // 每个月交易频率底线, 超过该值才算活跃用户
 
-	BotTradeRatio   float64 // frontrun占比超过多少就认为是bot
-	HumanTradeRatio float64 // trend交易占比超过多少就认为是human
+	WiserMinimumEthBalance float64 // eth最少余额才算有效地址
+
+	DealDefiniteWin  float64 // 盈利多少倍, 无论其是否有交易, 都结算
+	DealDefiniteLoss float64 // 亏损多少倍, 无论其是否有交易, 都结算
 
 	// for debug..
 	DebugAccount string // 调试账号
@@ -41,10 +48,16 @@ var DefaultWiserConfig = &WiserConfig{
 	GambleBlockInterval:    24,  // 5min
 	RushBlockInterval:      128, // 30min
 
-	ProfitTarget:        0.4,  // 盈利超过40%才算有效盈利
-	WinRatioTarget:      0.6,  // 胜率超过60%
-	DealThresholdPerMon: 10.0, // 每月至少10笔交易才算
+	DealBuyTypeMev:    0,
+	DealBuyTypeFresh:  60 * 5,
+	DealBuyTypeSubNew: 60 * 60 * 24 * 7,
 
-	BotTradeRatio:   0.5,
-	HumanTradeRatio: 0.5,
+	DealProfitTarget:    1.0, // 盈利超过40%才算有效盈利
+	WinRatioTarget:      0.6, // 胜率超过60%
+	DealThresholdPerMon: 5,   // 每月至少x笔交易才算
+
+	WiserMinimumEthBalance: 0.1,
+
+	DealDefiniteWin:  9,   // 盈利超过9倍, 直接结算
+	DealDefiniteLoss: 0.1, // 亏损超过90%, 当归零
 }

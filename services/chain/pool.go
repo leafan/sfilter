@@ -2,14 +2,23 @@ package chain
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"math/big"
+
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/utils"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/daoleno/uniswapv3-sdk/examples/quoter/uniswapv3"
 )
+
+var chain_quoter *uniswapv3.Quoter
 
 /*
 refer: https://etherscan.io/tx/0x414eb36cfea5fb34e068a79196480e20caf021fb0921cf148f5aa0967faffe1d#eventlog
@@ -112,42 +121,83 @@ func getUniV3Position(postionManagerAddr string, tokenId *big.Int) (common.Addre
 	return token0, token1, fee, nil
 }
 
+// UniV2 getReserves
+func GetUniV2PairReserves(pair string) (*big.Int, *big.Int, error) {
+	reserves, err := GetNoParamProp(pair, "getReserves")
+	if err != nil {
+		log.Printf("[ GetUniV2PairReserves ] getReserves error. pair: %v, err: %v\n", pair, err)
+		return nil, nil, err
+	}
+
+	reserveArr, ok := reserves.([]interface{})
+	if !ok {
+		return nil, nil, errors.New("failed to convert reserves to []interface{}")
+	}
+
+	if len(reserveArr) < 2 {
+		return nil, nil, errors.New("insufficient reserve values")
+	}
+
+	reserve0, ok := reserveArr[0].(*big.Int)
+	if !ok {
+		return nil, nil, errors.New("failed to convert reserve0 to *big.Int")
+	}
+
+	reserve1, ok := reserveArr[1].(*big.Int)
+	if !ok {
+		return nil, nil, errors.New("failed to convert reserve1 to *big.Int")
+	}
+
+	return reserve0, reserve1, nil
+}
+
 // uni v2
-func GetUniV2SwapAmountOut(pair string, tokenIn, tokenOut string, amountIn *big.Int) (*big.Int, error) {
+func GetUniV2SwapAmountOut(pair string, token0 string, tokenIn string, amountIn *big.Int) (*big.Int, error) {
+	r0, r1, err := GetUniV2PairReserves(pair)
+	if err != nil {
+		return nil, err
+	}
+
 	var amountOut *big.Int
+
+	if token0 == tokenIn {
+		amountOut = getAmountOut(amountIn, r0, r1)
+	} else {
+		amountOut = getAmountOut(amountIn, r1, r0)
+	}
 
 	return amountOut, nil
 }
 
-func GetUniV3SwapAmountOut(contract string, tokenIn, tokenOut string, fee, amountIn *big.Int) (*big.Int, error) {
-	var amountOut *big.Int
+func getAmountOut(amountIn *big.Int, reserveIn *big.Int, reserveOut *big.Int) *big.Int {
+	amountInWithFee := new(big.Int).Mul(amountIn, big.NewInt(997))
+	numerator := new(big.Int).Mul(amountInWithFee, reserveOut)
+	denominator := new(big.Int).Mul(reserveIn, big.NewInt(1000))
+	denominator.Add(denominator, amountInWithFee)
+	if denominator.Sign() == 0 {
+		return new(big.Int)
+	}
+	return numerator.Div(numerator, denominator)
+}
 
-	abi := getAbi()
-	contractAddr := common.HexToAddress(contract)
+func GetUniV3SwapAmountOut(tokenIn, tokenOut string, fee, amountIn *big.Int) (*big.Int, error) {
+	var err error
+	if chain_quoter == nil {
+		chain_quoter, err = uniswapv3.NewQuoter(common.HexToAddress(config.Quoter_Contract_Address), getClient())
+		if err != nil {
+			utils.Errorf("[ GetUniV3SwapAmountOut ] NewQuoter error: %v", err)
+			return nil, err
+		}
+	}
 
-	data, err := abi.Pack("quoteExactInputSingle", tokenIn, tokenOut, fee, amountIn, 0)
+	tokenInAddr := common.HexToAddress(tokenIn)
+	tokenOutAddr := common.HexToAddress(tokenOut)
+
+	amountOut, err := chain_quoter.QuoterCaller.QuoteExactInputSingle(&bind.CallOpts{}, tokenInAddr, tokenOutAddr, fee, amountIn, big.NewInt(0))
 	if err != nil {
-		utils.Warnf("[ getUniV3SwapAmountOut ] Pack data error. tokenIn: %v, tokenOut: %v, err: %v\n", tokenIn, tokenOut, err)
-		return amountOut, err
+		utils.Warnf("[ GetUniV3SwapAmountOut ] call QuoteExactInputSingle error: %v", err)
+		return nil, err
 	}
-	msg := ethereum.CallMsg{
-		From: common.Address{},
-		To:   &contractAddr,
-		Data: data,
-	}
-
-	ret, err := getClient().CallContract(context.Background(), msg, nil)
-	if err != nil {
-		utils.Warnf("[ getUniV3SwapAmountOut ] CallContract error. tokenIn: %v, tokenOut: %v, err: %v\n", tokenIn, tokenOut, err)
-		return amountOut, err
-	}
-
-	intr, err := abi.Methods["quoteExactInputSingle"].Outputs.UnpackValues(ret)
-	if err != nil {
-		utils.Warnf("[ getUniV3SwapAmountOut ] UnpackValues error. tokenIn: %v, tokenOut: %v, err: %v\n", tokenIn, tokenOut, err)
-		return amountOut, err
-	}
-	amountOut = intr[0].(*big.Int)
 
 	return amountOut, nil
 }
@@ -168,10 +218,27 @@ func GetUniPoolType(poolAddr string) (int, error) {
 	return 0, err
 }
 
+func GetUniV3PairFee(poolAddr string) (*big.Int, error) {
+	fee, err := getSingleProp(poolAddr, "fee", getClient(), nil)
+	if err != nil {
+		utils.Warnf("[ GetUniV3PairFee ] get prop of pool(%v) error: %v", poolAddr, err)
+		return nil, err
+	}
+
+	return fee.(*big.Int), nil
+}
+
 func TEST_POOL() {
-	v2, err2 := GetUniPoolType("0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc")
+	// tokenIn := "0x6a8C648C7635B50836285fD02ba5482d9526DEc0"
+	// tokenOut := "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
-	v3, err3 := GetUniPoolType("0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640")
+	// fee := big.NewInt(3000)
+	// amountIn, _ := big.NewInt(0).SetString("2375067830253394", 10)
 
-	fmt.Printf("[ TEST_POOL ] v2: %v, v3: %v, err2: %v, err3: %v\n", v2, v3, err2, err3)
+	// v3, err := GetUniV3SwapAmountOut(tokenIn, tokenOut, fee, amountIn)
+
+	// fmt.Printf("[ TEST_POOL ] v3: %v, err: %v\n\n", v3, err)
+
+	balance, err := GetAccountEthBalance("0xf97fab3851f05a3ded46baf325f58d57405332c3")
+	fmt.Printf("[ TEST_POOL ] balance: %v, err: %v\n\n", balance, err)
 }

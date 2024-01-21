@@ -83,6 +83,13 @@ func SaveDeal(deal *schema.BiDeal, mongodb *mongo.Client) {
 	}
 }
 
+// 统计前删除collection
+func DropDealCollection(mongodb *mongo.Client) error {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.BiDealTableName)
+
+	return collection.Drop(context.Background())
+}
+
 func PrintDeals(deals []*schema.BiDeal) {
 	for _, deal := range deals {
 		PrintDeal(deal)
