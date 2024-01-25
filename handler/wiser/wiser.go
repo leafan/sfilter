@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/services/token"
 	"sfilter/services/wiser"
 	"sfilter/utils"
 	"sort"
@@ -86,7 +88,9 @@ func (w *Wiser) WiserSearcher() {
 	utils.Infof("[ WiserSearcher ] accounts len: %v", len(accounts))
 
 	if w.dealInspect {
-		wiser.ResetDealCollection(w.set.DB)
+		if !w.set.Config.DebugMode && w.set.Config.DebugAccount == "" {
+			wiser.ResetDealCollection(w.set.DB)
+		}
 		for _, account := range accounts {
 			w.InspectAccountBiDeals(account)
 		}
@@ -98,7 +102,11 @@ func (w *Wiser) WiserSearcher() {
 			w.InspectAccount(account)
 		}
 
-		config := &schema.WiserDBConfig{Epoch: w.epoch}
+		jsonString, _ := json.Marshal(w.set.Config)
+		config := &schema.WiserDBConfig{
+			Epoch:  w.epoch,
+			Config: string(jsonString),
+		}
 		wiser.UpdateWiserConfig(config, w.set.DB) // 更新本次epoch
 	}
 
@@ -136,7 +144,7 @@ func (w *Wiser) InspectAccount(account string) {
 func (w *Wiser) isWiserNeedBePicked(wiser *schema.Wiser) bool {
 	// 如果余额过小, 或者其他条件不符合, 则不保存
 	if wiser.EthBalance < w.set.Config.WiserMinimumEthBalance {
-		utils.Warnf("[ isWiserNeedBePicked ] wiser:%v balance is too less: %v", wiser.Address, wiser.EthBalance)
+		utils.Warnf("[ isWiserNeedBePicked ] wiser: %v balance is too less: %v", wiser.Address, wiser.EthBalance)
 		return false
 	}
 
@@ -144,7 +152,7 @@ func (w *Wiser) isWiserNeedBePicked(wiser *schema.Wiser) bool {
 
 	// 如果没有权重, 也不保存
 	if wiser.Weight <= 0 {
-		utils.Warnf("[ isWiserNeedBePicked ] wiser:%v weight is too less: %v", wiser.Address, wiser.Weight)
+		utils.Warnf("[ isWiserNeedBePicked ] wiser: %v weight is too less: %v", wiser.Address, wiser.Weight)
 		return false
 	}
 
@@ -170,6 +178,8 @@ func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) sch
 	buyFresh := 0
 	buySubnew := 0
 
+	deflatPairTimes := 0
+
 	for _, deal := range deals {
 		wiser.TotalTradeCount++
 
@@ -190,6 +200,11 @@ func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) sch
 			trendTimes++
 		} else { // gamble 也算rush
 			rushTimes++
+		}
+
+		if deal.BuyPairHackType == schema.PAIR_MAINTOKEN_HACK_TYPE_DEFLAT || deal.BuyPairHackType == schema.PAIR_MAINTOKEN_HACK_TYPE_SCAM {
+			deflatPairTimes++
+			continue // 不进行valid统计
 		}
 
 		if deal.BuyType == schema.BI_DEAL_BUY_TYPE_MEV || deal.BiDealType == schema.BI_DEAL_TYPE_ARBI || deal.BiDealType == schema.BI_DEAL_TYPE_FRONTRUN || deal.BiDealType == schema.BI_DEAL_TYPE_GAMBLE_TRADE {
@@ -221,7 +236,7 @@ func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) sch
 
 	w.updateWiserTradeInfo(&wiser, frontrunTimes, rushTimes, trendTimes)
 	w.updateWiserBuyTypeInfo(&wiser, buyMev, buyFresh, buySubnew)
-	w.updateOtherProfile(&wiser)
+	w.updateOtherProfile(&wiser, deflatPairTimes)
 
 	wiser.Epoch = w.epoch
 	wiser.AddressWithEpoch = fmt.Sprintf("%v_%v", wiser.Address, wiser.Epoch)
@@ -274,7 +289,7 @@ func (w *Wiser) updateWiserWeight(wiser *schema.Wiser) {
 	wiser.Weight = int(weightWinRatio*70 + weightEarnRatio*30)
 }
 
-func (w *Wiser) updateOtherProfile(wiser *schema.Wiser) {
+func (w *Wiser) updateOtherProfile(wiser *schema.Wiser, deflatPairTimes int) {
 	// 某个账户的交易类型最多，则就是某类型?
 	maxValue := wiser.FrontrunTradeRatio
 	if wiser.TrendTradeRatio > maxValue {
@@ -291,6 +306,8 @@ func (w *Wiser) updateOtherProfile(wiser *schema.Wiser) {
 	} else {
 		wiser.Type = schema.WISER_TRADER_TYPE_STEADY
 	}
+
+	wiser.BuyDeflatTokenRatio = float64(deflatPairTimes) / float64(wiser.TotalTradeCount)
 }
 
 func (w *Wiser) InspectAccountBiDeals(account string) int {
@@ -354,6 +371,7 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 						deal.BuyPairAge = int(att.TradeTime.Sub(bornAt).Seconds())
 					}
 
+					deal.BuyPairHackType = _pair.MainTokenHackType
 				}
 
 				startOver = false // 说明已经有买入动作了, 是一笔新的deal
@@ -391,6 +409,7 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 			// 保存sell信息
 			deal.SellTxHashWithToken = fmt.Sprintf("%v_%v", att.TxHash, tokenObj.Address)
 			deal.SellBlockNo = att.BlockNo
+			deal.SellTime = att.TradeTime
 			deal.SellPair = att.Pair
 
 			deal.SellPrice = att.PriceInUSD
@@ -437,9 +456,6 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 		// 说明此时还持有token, 计算当前盈利状态以确认是否作为有效deal记录
 		validDeal := w.updateDealWithLatestData(deal, &tokenObj)
 		if validDeal {
-			// 需要亏损达90%或者盈利达5倍以上, 才记录
-			// todo
-
 			deals = append(deals, deal)
 		}
 	}
@@ -497,6 +513,7 @@ func (w *Wiser) updateDealWithLatestData(deal *schema.BiDeal, tokenObj *schema.T
 
 	// 定义bideal类型
 	deal.SellBlockNo, _ = chain.GetCurrentBlockNumber()
+	deal.SellTime = time.Now()
 
 	deal.HoldBlocks = deal.SellBlockNo - deal.BuyBlockNo
 	deal.BiDealType = w.getDealType(deal.HoldBlocks)
@@ -562,7 +579,7 @@ func (w *Wiser) getDealAmountValueWithAmountIn(deal *schema.BiDeal, pairObj *sch
 finish:
 	var sellUsdValue = -1.0 // 默认值为负值
 
-	if errRet != nil { // 说明计算正确
+	if errRet != nil {
 		// 存在错误, 判断下余额, 如果余额比买入时的value还小一定比例, 则作为其买入失败
 		liquidityVolume := pairObj.LiquidityInUsd
 		if liquidityVolume <= deal.BuyValue*w.set.Config.DealDefiniteLoss {
@@ -576,6 +593,20 @@ finish:
 		ethPrice, errRet = chain.GetEthPrice(nil, nil)
 		if errRet == nil {
 			sellUsdValue = utils.CalculateVolumeInUsd(tokenOut, new(big.Float).SetInt(amountOut), decimalOut, ethPrice)
+		}
+	}
+
+	// 如果还为0, 则有可能pair双方都是非价值币, 直接从pair中取当前usd 价格计算
+	if sellUsdValue <= 0 && amountOut != nil {
+		_token, err := token.GetTokenInfo(tokenOut, w.set.DB)
+		if err == nil {
+			amountOutF := new(big.Float).SetInt(amountOut)
+			tokenExponent := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimalOut)), nil)
+			amountOutF = amountOutF.Quo(amountOutF, new(big.Float).SetInt(tokenExponent))
+
+			amount, _ := amountOutF.Float64()
+
+			sellUsdValue = amount * _token.PriceInUsd
 		}
 	}
 

@@ -123,15 +123,11 @@ func getPairTypeFromChain(address string) int {
 }
 
 func TEST_PAIR() {
-	GetPairInfo("0x1dd3Ba955388e76e9D35E00dF82B1DaD3D1E065A", chain.GetMongo())
+	// pair, _ := GetPairInfo("0xEfC97fa9e615D6aE8D4Ed43c14611191f9390ab3", chain.GetMongo())  // 通缩币
+	pair, _ := GetPairInfo("0xCa4cdC4202E38f1BE81b6cD721C44bE976A92877", chain.GetMongo()) // normal token
+	pair.Type = schema.SWAP_EVENT_UNISWAPV2_LIKE
 
-	// pairx := &schema.Pair{
-	// 	InfoOnChain: schema.InfoOnChain{
-	// 		Address:  "0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009",
-	// 		PairName: "leafan6",
-	// 	},
-	// }
+	_type := chain.GetUniV2PoolTokenHackType(pair)
 
-	// UpSertOnChainInfo("0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009", &pairx.InfoOnChain, chain.GetMongo())
-
+	utils.Warnf("[ TEST_PAIR ] type: %v", _type)
 }

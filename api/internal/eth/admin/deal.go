@@ -55,13 +55,13 @@ func parseDealOptions(c *gin.Context) (*options.FindOptions, error) {
 
 	skip := int64(page*limit - limit)
 	options := &options.FindOptions{Limit: &limit, Skip: &skip}
-	options = options.SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	options = options.SetSort(bson.D{{Key: "createdAt", Value: 1}})
 
 	// 获取排序
 	var key string
 	var order = -1
 	sortBy := c.DefaultQuery("sortBy", "")
-	if sortBy == "buyAmount" || sortBy == "sellAmount" || sortBy == "holdBlocks" || sortBy == "earnChange" || sortBy == "earn" {
+	if sortBy != "" {
 		key = sortBy
 		orderStr := c.DefaultQuery("descending", "true")
 		if orderStr == "false" {
@@ -87,9 +87,15 @@ func parseDealFilter(c *gin.Context) *primitive.M {
 		filter["token"] = token
 	}
 
+	buyPairHackType := c.DefaultQuery("buyPairHackType", "0")
+	_type, err := strconv.Atoi(buyPairHackType)
+	if err == nil && _type > 0 {
+		filter["buyPairHackType"] = _type
+	}
+
 	biDealType := c.DefaultQuery("biDealType", "0")
-	_type, err := strconv.Atoi(biDealType)
-	if err == nil && (_type > 0 && _type < 10) {
+	_type, err = strconv.Atoi(biDealType)
+	if err == nil && _type > 0 {
 		filter["biDealType"] = _type
 	}
 

@@ -30,8 +30,9 @@ type WiserConfig struct {
 	DealDefiniteWin  float64 // 盈利多少倍, 无论其是否有交易, 都结算
 	DealDefiniteLoss float64 // 亏损多少倍, 无论其是否有交易, 都结算
 
-	// for debug..
-	DebugAccount string // 调试账号
+	// for debug or sth..
+	DebugAccount              string // 调试账号
+	ForceUpdatePairHackStatus bool   // 是否强制更新pair的是否通缩币状态等
 }
 
 var DefaultWiserConfig = &WiserConfig{
@@ -52,7 +53,7 @@ var DefaultWiserConfig = &WiserConfig{
 	DealBuyTypeFresh:  60 * 5,
 	DealBuyTypeSubNew: 60 * 60 * 24 * 7,
 
-	DealProfitTarget:    1.0, // 盈利超过x%才算有效盈利
+	DealProfitTarget:    0.5, // 盈利超过x%才算有效盈利
 	WinRatioTarget:      0.6, // 胜率超过60%才算胜利一笔
 	DealThresholdPerMon: 5,   // 每月至少x笔交易才算
 
@@ -60,4 +61,6 @@ var DefaultWiserConfig = &WiserConfig{
 
 	DealDefiniteWin:  5,   // 盈利超过x倍, 直接结算
 	DealDefiniteLoss: 0.2, // 亏损超过x%, 直接结算
+
+	ForceUpdatePairHackStatus: false,
 }

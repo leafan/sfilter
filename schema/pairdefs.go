@@ -51,7 +51,7 @@ type InfoOnChain struct {
 
 	// 池子流动性, 包含屌丝币价值
 	LiquidityInUsd float64 `json:"liquidityInUsd" bson:"liquidityInUsd"`
-	// 价值币流动性, 即使是 eth/usdt，也只算一半
+	// 价值币流动性, 即使是 eth/usdt, 也只算一半
 	// 这么处理原因是 v3池子可能不是 对等的, 可能屌丝币很多导致失真
 	ValueCoinLiquidity float64 `json:"valueCoinLiquidity" bson:"valueCoinLiquidity"`
 
@@ -59,7 +59,23 @@ type InfoOnChain struct {
 	Token1UsdValue float64 `json:"token1UsdValue" bson:"token1UsdValue"`
 
 	PairName string `json:"pairName" bson:"pairName"` // 如 pepe/weths
+
+	// 是否是通缩币、坑人币等
+	MainTokenHackType int `json:"mainTokenHackType" bson:"mainTokenHackType"`
 }
+
+const (
+	PAIR_MAINTOKEN_HACK_TYPE_UNINIT int = iota
+
+	PAIR_MAINTOKEN_HACK_TYPE_UNKNOWN
+
+	PAIR_MAINTOKEN_HACK_TYPE_NORMAL
+
+	PAIR_MAINTOKEN_HACK_TYPE_DEFLAT // 通缩币
+	PAIR_MAINTOKEN_HACK_TYPE_SCAM   // 坑人币
+
+	PAIR_MAINTOKEN_HACK_TYPE_EMPTY_BALANCE // pair没钱了
+)
 
 // 额外信息, 尤其与交易相关, 可以用于排序搜索
 // 注意搜索排序的时候要带上 UpdateAt 信息

@@ -27,9 +27,10 @@ func GetCurrentEpoch(mongodb *mongo.Database) (string, error) {
 func GetWiserConfig(mongodb *mongo.Database) (*schema.WiserDBConfig, error) {
 	collection := mongodb.Collection(config.ConfigTableName)
 	filter := bson.D{{Key: "configKey", Value: WiserConfigKey}}
+	options := options.FindOne().SetSort(bson.D{{Key: "updatedAt", Value: -1}})
 
 	var result schema.WiserDBConfig
-	err := collection.FindOne(context.Background(), filter).Decode(&result)
+	err := collection.FindOne(context.Background(), filter, options).Decode(&result)
 
 	return &result, err
 }

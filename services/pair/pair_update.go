@@ -129,3 +129,21 @@ func UpdateTradeInfo(pair *schema.Pair, mongodb *mongo.Client) {
 		utils.Warnf("[ UpdateTradeInfo ] failed. pair: %v, err: %v\n", pair.Address, err)
 	}
 }
+
+// 更新整个pair
+func UpsertPair(pair *schema.Pair, mongodb *mongo.Client) {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
+	filter := bson.D{{Key: "address", Value: pair.Address}}
+
+	update := bson.D{
+		{Key: "$set", Value: pair},
+	}
+
+	pairLock.Lock()
+	defer pairLock.Unlock()
+
+	_, err := collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		utils.Warnf("[ UpsertPair ] failed. pair: %v, err: %v\n", pair.Address, err)
+	}
+}

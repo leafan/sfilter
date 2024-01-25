@@ -37,7 +37,7 @@ func HandleTradeInfo(block *schema.Block, mongodb *mongo.Client, swaps []*schema
 
 	// 更新token价格等
 	for _token, _price := range tokens {
-		if _price > 0 {
+		if _price > 0 { // 防止某些pair双向token均为屌丝币而把价格覆盖掉
 			updateTokenInfo(_token, _price, mongodb)
 		}
 	}

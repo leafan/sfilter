@@ -3,7 +3,6 @@ package chain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"math/big"
 
@@ -202,9 +201,90 @@ func GetUniV3SwapAmountOut(tokenIn, tokenOut string, fee, amountIn *big.Int) (*b
 	return amountOut, nil
 }
 
+func GetUniV2PoolTokenHackType(_pair *schema.Pair) int {
+	// 如下假设我们合约有钱, 没钱也会误判..!
+
+	// 先检测是否是正常币
+	ret := getHackStatusFromContract(_pair, 1)
+	if ret == 1 { // 如果执行失败, 说明是通缩币或者坑人币
+		retDeflat := getHackStatusFromContract(_pair, 2)
+		if retDeflat == 0 {
+			// 此时一定为通缩币
+			return schema.PAIR_MAINTOKEN_HACK_TYPE_DEFLAT
+		} else if retDeflat == 1 {
+			// 说明是坑人币
+			return schema.PAIR_MAINTOKEN_HACK_TYPE_SCAM
+		}
+	} else if ret == 0 {
+		// 正常币
+		return schema.PAIR_MAINTOKEN_HACK_TYPE_NORMAL
+	} else if ret == 3 {
+		return schema.PAIR_MAINTOKEN_HACK_TYPE_EMPTY_BALANCE
+	}
+
+	// 无法检测, unknown
+	return schema.PAIR_MAINTOKEN_HACK_TYPE_UNKNOWN
+}
+
+// 获取pair中的maintoken是否为通缩币、坑人币等
+//
+//	0表示检测合约通过; 1表示检测合约不通过; 2表示无法检测; 3 表示pair没钱
+func getHackStatusFromContract(_pair *schema.Pair, divFactorInt int) int {
+	hackCheckAddr := config.Hacker_Check_Contract_Address
+
+	abi := getAbi()
+	contractAddr := common.HexToAddress(hackCheckAddr)
+
+	// 必须有一个是eth token, 否则认为是不识别类型
+	if !utils.Contains(utils.QuoteEthCoinList, _pair.Token0) && !utils.Contains(utils.QuoteEthCoinList, _pair.Token1) {
+		return 2
+	}
+
+	// 找出weth
+	var tokenFrom, tokenTo string
+	if utils.Contains(utils.QuoteEthCoinList, _pair.Token0) {
+		tokenFrom = _pair.Token0
+		tokenTo = _pair.Token1
+	} else {
+		tokenFrom = _pair.Token1
+		tokenTo = _pair.Token0
+	}
+
+	//先判断里面余额是否 >0, 否则合约肯定失败
+	balanceOfMainToken, err := BalanceOf(_pair.Address, tokenTo)
+	if err != nil || balanceOfMainToken.String() == "0" {
+		return 3 // 余额不足
+	}
+
+	amount := big.NewInt(1e15)
+	divFactor := big.NewInt(int64(divFactorInt))
+	data, err := abi.Pack("hackTestForUniV2", common.HexToAddress(_pair.Address), common.HexToAddress(tokenFrom), common.HexToAddress(tokenTo), common.HexToAddress(_pair.Token0), amount, divFactor)
+	if err != nil {
+		utils.Warnf("[ getHackStatusFromContract ] Pack data error. address: %v, err: %v\n", _pair.Address, err)
+		return 2
+	}
+	msg := ethereum.CallMsg{
+		From: common.HexToAddress("0x821B711A51e1AfCaa68F02dD38B72E6e71d91A33"), // executor
+		To:   &contractAddr,
+		Data: data,
+	}
+
+	_, err = getClient().CallContract(context.Background(), msg, nil)
+	if err != nil {
+		utils.Warnf("[ getHackStatusFromContract ] CallContract error. addr: %v, err: %v\n", _pair.Address, err)
+
+		// 跑到这里说明是通缩币或者坑人币
+
+		return 1
+	}
+
+	// 如果正常结束, 说明合约测试通过
+	return 0
+}
+
 func GetUniPoolType(poolAddr string) (int, error) {
 	// uni v2 check
-	_, err := getSingleProp(poolAddr, "price0CumulativeLast", getClient(), nil)
+	_, err := getSingleProp(poolAddr, "kLast", getClient(), nil)
 	if err == nil {
 		return schema.SWAP_EVENT_UNISWAPV2_LIKE, nil
 	}
@@ -239,6 +319,11 @@ func TEST_POOL() {
 
 	// fmt.Printf("[ TEST_POOL ] v3: %v, err: %v\n\n", v3, err)
 
-	balance, err := GetAccountEthBalance("0xf97fab3851f05a3ded46baf325f58d57405332c3")
-	fmt.Printf("[ TEST_POOL ] balance: %v, err: %v\n\n", balance, err)
+	// balance, err := GetAccountEthBalance("0xf97fab3851f05a3ded46baf325f58d57405332c3")
+	// fmt.Printf("[ TEST_POOL ] balance: %v, err: %v\n\n", balance, err)
+
+	token := "0xa7b64388f0f125354A3C5d5f799EBcDf1F832419"
+	_type, err := GetUniPoolType(token)
+	utils.Warnf("[ test ] type: %v, err :%v", _type, err)
+
 }

@@ -11,7 +11,8 @@ import (
 // db中的实时数据存储
 // config key: wiser_config
 type WiserDBConfig struct {
-	Epoch string `json:"epoch" bson:"epoch"` //最新的epoch
+	Epoch  string `json:"epoch" bson:"epoch"`   //最新的epoch
+	Config string `json:"config" bson:"config"` //最新的epoch
 
 	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
 }
@@ -109,6 +110,9 @@ type DealDetail struct {
 	BuyFreshRatio  float64 `json:"buyFreshRatio" bson:"buyFreshRatio"`
 	BuySubnewRatio float64 `json:"buySubnewRatio" bson:"buySubnewRatio"`
 
+	// 购买通缩币或坑人币比例
+	BuyDeflatTokenRatio float64 `json:"buyDeflatTokenRatio" bson:"buyDeflatTokenRatio"`
+
 	// 每月平均交易次数, 算法从第一笔买到最后一笔卖算周期时长
 	TradeCntPerMonth float64 `json:"tradeCntPerMonth" bson:"tradeCntPerMonth"`
 
@@ -133,6 +137,9 @@ type BiDeal struct {
 	BuyPairAge int `json:"buyPairAge" bson:"buyPairAge"` // 买入时该pair的创建时长
 	BuyType    int `json:"buyType" bson:"buyType"`       // 买入风格, 如迅速买入等
 
+	// Token是否是通缩币、坑人币等
+	BuyPairHackType int `json:"buyPairHackType" bson:"buyPairHackType"`
+
 	BuyValue  float64 `json:"buyValue" bson:"buyValue"`
 	BuyAmount float64 `json:"buyAmount" bson:"buyAmount"`
 	BuyPrice  float64 `json:"buyPrice" bson:"buyPrice"`
@@ -143,6 +150,8 @@ type BiDeal struct {
 	SellTxHashWithToken string `json:"sellTxHashWithToken" bson:"sellTxHashWithToken"`
 	SellBlockNo         uint64 `json:"sellBlockNo" bson:"sellBlockNo"`
 	SellPair            string `json:"sellPair" bson:"sellPair"`
+
+	SellTime time.Time `json:"sellTime" bson:"sellTime"`
 
 	SellValue  float64 `json:"sellValue" bson:"sellValue"`
 	SellAmount float64 `json:"sellAmount" bson:"sellAmount"`
@@ -257,7 +266,11 @@ var WiserIndexModel = []mongo.IndexModel{
 	},
 	{
 		Keys:    bson.D{{Key: "trendTradeRatio", Value: 1}},
-		Options: options.Index().SetName("rtrendTradeRatio_index"),
+		Options: options.Index().SetName("trendTradeRatio_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "buyPairHackType", Value: 1}},
+		Options: options.Index().SetName("buyPairHackType_index"),
 	},
 
 	{
@@ -296,6 +309,10 @@ var BiDealIndexModel = []mongo.IndexModel{
 		Keys:    bson.D{{Key: "sellType", Value: 1}},
 		Options: options.Index().SetName("sellType_index"),
 	},
+	{
+		Keys:    bson.D{{Key: "sellTime", Value: 1}},
+		Options: options.Index().SetName("sellTime_index"),
+	},
 
 	{
 		Keys:    bson.D{{Key: "buyType", Value: 1}},
@@ -312,6 +329,10 @@ var BiDealIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "biDealType", Value: 1}},
 		Options: options.Index().SetName("biDealType_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "buyDeflatTokenRatio", Value: 1}},
+		Options: options.Index().SetName("buyDeflatTokenRatio_index"),
 	},
 	{
 		Keys:    bson.D{{Key: "holdBlocks", Value: 1}},

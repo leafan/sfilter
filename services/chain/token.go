@@ -125,7 +125,7 @@ func BalanceOf(owner, token string) (*big.Int, error) {
 
 	intr, err := abi.Methods["balanceOf"].Outputs.UnpackValues(ret)
 	if err != nil {
-		utils.Debugf("[ BalanceOf ] UnpackValues error: %v", err)
+		utils.Debugf("[ BalanceOf ] UnpackValues error. token: %v, account: %v: %v", token, owner, err)
 		return nil, err
 	}
 

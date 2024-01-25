@@ -56,7 +56,14 @@ func parseWiserOptions(c *gin.Context) (*options.FindOptions, error) {
 
 	skip := int64(page*limit - limit)
 	options := &options.FindOptions{Limit: &limit, Skip: &skip}
-	options = options.SetSort(bson.D{{Key: "weight", Value: -1}})
+
+	// 如果要查询地址, 以epoch排序, 否则以weight排序
+	address := c.DefaultQuery("address", "")
+	if address != "" {
+		options = options.SetSort(bson.D{{Key: "epoch", Value: -1}})
+	} else {
+		options = options.SetSort(bson.D{{Key: "weight", Value: -1}})
+	}
 
 	// 获取排序
 	var key string
@@ -104,8 +111,14 @@ func parseWiserFilter(c *gin.Context, db *mongo.Database) *primitive.M {
 	}
 
 	// 默认直接传入最新的epoch, 但如果有过滤地址, 则不过滤epoch
-	epoch, err := wiser.GetCurrentEpoch(db)
+	curEpoch, err := wiser.GetCurrentEpoch(db)
 	if err == nil && address == "" {
+		filter["epoch"] = curEpoch
+	}
+
+	// 前端传入的epoch, 则以前端为准
+	epoch := c.DefaultQuery("epoch", "")
+	if epoch != "" {
 		filter["epoch"] = epoch
 	}
 

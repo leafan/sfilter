@@ -4,9 +4,11 @@ import (
 	"context"
 	"sfilter/config"
 	"sfilter/schema"
+	"sfilter/services/chain"
 	"sfilter/services/pair"
 	"sfilter/services/token"
 	"sfilter/utils"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -55,6 +57,8 @@ func (s *Setting) InitSettings() {
 	schema.InitTables(s.DB)
 
 	s.initMaps()
+
+	s.doPreparation()
 }
 
 func (s *Setting) initMaps() {
@@ -70,4 +74,43 @@ func (s *Setting) initMaps() {
 	}
 
 	utils.Infof("[ InitMap ] tokens len: %v, pairs len: %v", len(s.Tokens), len(s.Pairs))
+}
+
+// 前置工作等
+func (s *Setting) doPreparation() {
+	// 检查是否为通缩币、坑人币等
+	s.checkPairValidation()
+}
+
+func (s *Setting) checkPairValidation() {
+	for _, _pair := range s.Pairs {
+		if _pair.MainTokenHackType == schema.PAIR_MAINTOKEN_HACK_TYPE_UNINIT ||
+			s.Config.ForceUpdatePairHackStatus {
+			// 先判断是否有 pairType
+			if _pair.Type == 0 {
+				_type, err := chain.GetUniPoolType(_pair.Address)
+				if err != nil || _type == 0 {
+					// utils.Warnf("[ checkPairValidation ] GetUniPoolType failed. pair: %v, _type: %v, err: %v", _pair.Address, _type, err)
+
+					// 说明pair不对, 标记为unknown
+					_pair.MainTokenHackType = schema.PAIR_MAINTOKEN_HACK_TYPE_UNKNOWN
+					continue
+				}
+				_pair.Type = _type
+			}
+
+			if _pair.Type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
+				_pair.MainTokenHackType = chain.GetUniV2PoolTokenHackType(&_pair)
+			} else {
+				_pair.MainTokenHackType = schema.PAIR_MAINTOKEN_HACK_TYPE_UNKNOWN
+			}
+
+			// utils.Infof("[ checkPairValidation ] GetAndUpdatePairHackType. pair: %v, pairType: %v, hackType: %v", _pair.Address, _pair.Type, _pair.MainTokenHackType)
+
+			// 保存进db
+			_pair.UpdatedAt = time.Now()
+			pair.UpsertPair(&_pair, s.DB)
+		}
+	}
+
 }
