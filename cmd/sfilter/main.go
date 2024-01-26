@@ -4,10 +4,8 @@ import (
 	"context"
 	"flag"
 	"log"
-	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/cloudfresco/ethblocks"
@@ -17,8 +15,6 @@ import (
 	"sfilter/schema"
 	userModels "sfilter/user/models"
 	"sfilter/utils"
-
-	sblock "sfilter/services/block"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,23 +27,15 @@ func main() {
 
 	client, mongodb := _init(*db)
 
-	if *block != 0 {
-		utils.Infof("\n\n\nStart block test now...\n\n\n")
-
-		config.DevelopmentMode = true
-
-		// 先把block id set 未处理
-		sblock.SetUnProceeded(*block, mongodb)
-		handler.HandleBlock(big.NewInt(*block), client, mongodb)
-
-		utils.Infof("\n\nFinished block test...\n\n")
-		return
+	h, err := handler.NewHandler(client, mongodb)
+	if err != nil {
+		utils.Fatalf("[ loop ] NewHandler failed: %v", err)
 	}
 
 	go getTrackAddressOnTimer(mongodb)
 
-	// 主循环, 不退出
-	loop(client, mongodb)
+	h.Run(*block)
+
 }
 
 func _init(db string) (*ethclient.Client, *mongo.Client) {
@@ -71,29 +59,6 @@ func _init(db string) (*ethclient.Client, *mongo.Client) {
 	schema.InitTables(mongodb)
 
 	return client, mongodb
-}
-
-func loop(client *ethclient.Client, mongodb *mongo.Client) {
-	go handler.Retrive_old_blocks(client, mongodb) // 先回溯
-
-	headers := make(chan *types.Header)
-	sub, err := client.SubscribeNewHead(context.Background(), headers)
-	if err != nil {
-		utils.Fatalf("SubscribeNewHead error: %v", err)
-	}
-	utils.Infof("[ loop ] start SubscribeNewHead now..\n\n")
-
-	for {
-		select {
-		case err := <-sub.Err():
-			utils.Fatalf("SubscribeBlocks error: %v", err)
-
-		case header := <-headers:
-			utils.Infof("[ loop ] Get new header now. number: %v\n", header.Number)
-			go handler.HandleBlock(header.Number, client, mongodb)
-		}
-
-	}
 }
 
 func getTrackAddressOnTimer(mongodb *mongo.Client) {

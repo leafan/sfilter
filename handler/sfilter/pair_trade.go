@@ -5,7 +5,6 @@ import (
 	"sfilter/schema"
 	"sfilter/services/chain"
 	"sfilter/services/kline"
-	"sfilter/services/pair"
 	services_pair "sfilter/services/pair"
 	"sfilter/services/token"
 	"sfilter/utils"
@@ -28,7 +27,7 @@ func HandleTradeInfo(block *schema.Block, mongodb *mongo.Client, swaps []*schema
 	for key := range pairs {
 		updatePairTradeInfo(key, mongodb) // update trade info
 
-		_pair, err := pair.GetPairInfo(key, mongodb)
+		_pair, err := services_pair.GetPairInfo(key, mongodb)
 		if err == nil {
 			UpdatePoolLiquidity(_pair, mongodb, block)
 		}

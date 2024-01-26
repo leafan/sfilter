@@ -11,7 +11,7 @@ const SecondsForOneMonth = (SecondsForOneDay * 30)
 const SecondsForOneYear = (SecondsForOneMonth * 12)
 
 const BlocksPerDay = 250 * 24
-const SleepIntervalforRetrive = 200 // 单位ms, 每隔多久取一次区块
+const SleepIntervalforRetrive = 100 // 单位ms, 每隔多久取一次区块
 
 // api configure
 
@@ -22,6 +22,8 @@ const SwapTableName = "swap"
 const PairTableName = "pair"
 const TokenTableName = "token"
 const TransferTableName = "transfer"
+const RouterTableName = "router"
+const SpecialAddressTableName = "saddress"
 const ConfigTableName = "config"
 
 const LiquidityEventTableName = "liquidity"
@@ -77,3 +79,5 @@ const BiDealSaveTime = int32(SecondsForOneYear)
 const Quoter_Contract_Address = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
 
 const Hacker_Check_Contract_Address = "0x595cD1294e0bdd7897Ac2ABcA6d64A676c3855E5"
+
+const LogNumTooBigInOneTx = 100

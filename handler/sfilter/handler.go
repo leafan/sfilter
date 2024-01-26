@@ -7,30 +7,83 @@ import (
 	"time"
 
 	"sfilter/config"
-	"sfilter/handler/facet"
 	"sfilter/schema"
 	service_block "sfilter/services/block"
 	"sfilter/services/chain"
 	"sfilter/utils"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Client) {
-	block, err := getBlock(blockNumber, client, mongodb, 0)
+// 最终需要将block、transfer等都定义为类
+
+type Handler struct {
+	DB     *mongo.Client
+	Client *ethclient.Client
+
+	Tokens  schema.TokenMap
+	Pairs   schema.PairMap
+	Routers schema.RouterMap
+
+	SAddresses schema.SpecialAddressMap // 特殊地址如黑洞地址等
+
+	SwapContracts map[string]bool // 把swap相关的地址全部存到一个地址, 方便查询
+}
+
+func NewHandler(client *ethclient.Client, db *mongo.Client) (*Handler, error) {
+	h := &Handler{
+		Client: client,
+		DB:     db,
+	}
+
+	err := h.initMaps()
+	return h, err
+}
+
+func (h *Handler) Run(block int64) {
+	if block > 0 {
+		h.debugBlock(block)
+		return
+	}
+
+	go h.Retrive_old_blocks() // 先回溯
+
+	headers := make(chan *types.Header)
+	sub, err := h.Client.SubscribeNewHead(context.Background(), headers)
+	if err != nil {
+		utils.Fatalf("SubscribeNewHead error: %v", err)
+	}
+	utils.Infof("[ loop ] start SubscribeNewHead now..\n\n")
+
+	for {
+		select {
+		case err := <-sub.Err():
+			utils.Fatalf("SubscribeBlocks error: %v", err)
+
+		case header := <-headers:
+			utils.Infof("[ loop ] Get new header now. number: %v\n", header.Number)
+			go h.HandleBlock(header.Number)
+		}
+
+	}
+}
+
+func (h *Handler) HandleBlock(blockNumber *big.Int) {
+	block, err := getBlock(blockNumber, h.Client, h.DB, 0)
 
 	if err == nil {
-		handleOneBlock(block, mongodb)
+		h.handleOneBlock(block)
 	}
 }
 
 // 每次启动往回回溯n个区块, 防止某一次未处理
 // 回溯的时候, eth价格通过infura获取, 每10个区块更新一次价格
-func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
-	curBlkNo, err := client.HeaderByNumber(context.Background(), nil)
+func (h *Handler) Retrive_old_blocks() {
+	curBlkNo, err := h.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		utils.Fatalf("[ Retrive_old_blocks ] HeaderByNumber err: ", err)
+		utils.Fatalf("[ Retrive_old_blocks ] HeaderByNumber err: %v", err)
 	}
 
 	startBlock := curBlkNo.Number.Int64() - int64(config.RetriveOldBlockNum)
@@ -44,12 +97,12 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	var wg sync.WaitGroup
 
 	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
-		if service_block.IsBlockProceeded(i, mongodb) {
+		if service_block.IsBlockProceeded(i, h.DB) {
 			continue
 		}
 
 		if times%config.GetPriceIntervalForRetrive == 0 {
-			ethPrice, err = chain.GetEthPrice(client, big.NewInt(i))
+			ethPrice, err = chain.GetEthPrice(h.Client, big.NewInt(i))
 			if err != nil {
 				continue // eth价格必须取到, 如果没取到, 回溯
 			}
@@ -61,7 +114,7 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 		go func(i int64, ethPrice float64) {
 			defer wg.Done()
 
-			block, err := getBlock(big.NewInt(i), client, mongodb, ethPrice)
+			block, err := getBlock(big.NewInt(i), h.Client, h.DB, ethPrice)
 			if err != nil {
 				return
 			}
@@ -70,7 +123,7 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 
 			// 先释放协程, 再往后走, 因为这里面有 sleep
 			if block != nil {
-				handleOneBlock(block, mongodb)
+				h.handleOneBlock(block)
 			}
 
 		}(i, ethPrice)
@@ -84,58 +137,10 @@ func Retrive_old_blocks(client *ethclient.Client, mongodb *mongo.Client) {
 	wg.Wait()
 }
 
-// 串行处理即可, 因为跑到这里来的都是协程
-func handleOneBlock(blk *schema.Block, mongodb *mongo.Client) {
-	start := time.Now()
+func (h *Handler) debugBlock(block int64) {
+	config.DevelopmentMode = true
 
-	HandlePairLogic(blk, mongodb)
-	HandleLiquidityLogic(blk, mongodb)
-
-	// 获取transfer信息
-	transferMapForSwap, transfers := HandleTransfer(blk, mongodb)
-
-	// 获取swaps
-	swaps := HandleSwapAndKline(blk, transferMapForSwap, mongodb)
-
-	// 更新transfer的usd value等
-	UpSaveTransferInfoBySwaps(transfers, swaps, mongodb)
-
-	// trade info 是更新最近24h或7天的数据, 因此老数据就别掺和了
-	if time.Since(time.Unix(int64(blk.Block.Time()), 0)).Seconds() < config.SecondsForOneWeek {
-		HandleTradeInfo(blk, mongodb, swaps)
-		HandleGlobalInfo(blk, mongodb)
-	}
-
-	// 更新 用户跟踪地址逻辑
-	HandleUserTrackSwaps(blk, mongodb, swaps)
-
-	// 更新 facet 逻辑
-	facet.HandleFacetLogic(blk, mongodb)
-
-	// etc.. todo
-
-	// record the proceeded block.
-	setBlockToProceeded(blk, mongodb)
-
-	utils.Debugf("Handle block: %d finished, swap num: %v, time elapsed: % v\n", blk.Block.NumberU64(), blk.TxNums, time.Since(start))
-}
-
-func setBlockToProceeded(block *schema.Block, mongodb *mongo.Client) {
-	bps := &schema.BlockProceeded{
-		BlockNo:     block.Block.Number().Int64(),
-		Hash:        block.Block.Hash().String(),
-		BlockTime:   int64(block.Block.Time()),
-		TxNums:      block.TxNums,
-		VolumeByUsd: block.VolumeByUsd,
-
-		EthPrice: block.EthPrice,
-	}
-
-	service_block.SetBlockProceeded(bps, mongodb)
-
-}
-
-func TEST_HANDLER() {
-	blockNo := int64(18615952)
-	HandleBlock(big.NewInt(blockNo), chain.GetEthClient(), chain.GetMongo())
+	// 先把block id set 未处理
+	service_block.SetUnProceeded(block, h.DB)
+	h.HandleBlock(big.NewInt(block))
 }

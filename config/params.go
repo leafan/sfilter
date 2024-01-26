@@ -34,8 +34,9 @@ var (
 	ApiListenAddrPort = ":10086"
 )
 
-// mongodb 查询时的上限值, 超过则吐10000
+// mongodb 查询时的上限值
 var COUNT_UPPER_SIZE = int64(10000)
+var SELECT_UPPER_SIZE = int64(10000)
 
 // 定义facet项目名称, 目前只知道 facetswap..
 func GetFacetProjectName(addr string) string {

@@ -23,6 +23,9 @@ const (
 
 	DIRECTION_BUY_OR_ADD       // 买 或者 加流动性 等
 	DIRECTION_SELL_OR_DECREASE // 卖 或者 减流动性等
+
+	DIRECTION_ARBI            // arbi bot type
+	DIRECTION_TOO_COMPLICATED // 一笔log数过复杂不处理
 )
 
 type Swap struct {
@@ -63,6 +66,8 @@ type Swap struct {
 	VolumeInUsd float64 ` json:"volumeInUsd" bson:"volumeInUsd"` // 本次交易以Usd计价金额
 
 	LogIndexWithTx string `json:"-" bson:"logIndexWithTx"` // tx hash 以及 log 在本区块中的序号，以作为唯一标识
+
+	LogNumInHash int `json:"logNumInHash" bson:"logNumInHash"`
 
 	SwapTime time.Time `json:"swapTime" bson:"swapTime"`
 

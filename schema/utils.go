@@ -32,4 +32,8 @@ func InitTables(mongodb *mongo.Client) {
 	// wiser
 	utils.DoInitTable(config.DatabaseName, config.WiserTableName, WiserIndexModel, mongodb)
 	utils.DoInitTable(config.DatabaseName, config.BiDealTableName, BiDealIndexModel, mongodb)
+
+	// router etc
+	utils.DoInitTable(config.DatabaseName, config.RouterTableName, RouterIndexModel, mongodb)
+	utils.DoInitTable(config.DatabaseName, config.SpecialAddressTableName, SpecialAddressIndexModel, mongodb)
 }

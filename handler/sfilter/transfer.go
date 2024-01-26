@@ -16,8 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleTransfer(block *schema.Block, mongodb *mongo.Client) (schema.TxTokenTransfersMap, []*schema.Transfer) {
-	maps := make(schema.TxTokenTransfersMap)
+func HandleTransfer(block *schema.Block, mongodb *mongo.Client) []*schema.Transfer {
 	var transferSlices []*schema.Transfer
 
 	for _, tx := range block.Transactions {
@@ -26,10 +25,6 @@ func HandleTransfer(block *schema.Block, mongodb *mongo.Client) (schema.TxTokenT
 				if len(_log.Topics) > 0 {
 					transfer := parseTransferEvent(block, _log)
 					if transfer != nil {
-						// 保存进 map, 方便swap的时候查找
-						key := fmt.Sprintf("%v_%v", tx.OriginTx.Hash().String(), transfer.Token)
-						maps[key] = append(maps[key], transfer)
-
 						// 保存到slice, 方便到时候修改在保存
 						transferSlices = append(transferSlices, transfer)
 					}
@@ -39,10 +34,10 @@ func HandleTransfer(block *schema.Block, mongodb *mongo.Client) (schema.TxTokenT
 		}
 	}
 
-	return maps, transferSlices
+	return transferSlices
 }
 
-func UpSaveTransferInfoBySwaps(transfers []*schema.Transfer, swaps []*schema.Swap, mongodb *mongo.Client) {
+func UpsertTransferToDB(transfers []*schema.Transfer, swaps []*schema.Swap, mongodb *mongo.Client) {
 	// 本区块内有过交易的 token 的 price 保存
 	mainTokenPriceMap := make(map[string]float64)
 
