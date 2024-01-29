@@ -51,9 +51,15 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 	}
 
 	oneBlk.Block = block
-	utils.Debugf("Get block: %d now, tx num: %d, hash: %v\n", blockNumber, len(block.Transactions()), block.Hash())
+	utils.Debugf("Get block: %d now, tx num: %d, hash: %v, get txs time consumed: %v\n", blockNumber, len(block.Transactions()), block.Hash(), time.Since(start))
 
 	for _, tx := range block.Transactions() {
+		// 如果是单纯的transfer没有内容, 就pass掉
+		if len(tx.Data()) <= 0 {
+			// 单纯的transfer, continue掉
+			continue
+		}
+
 		receipt, err := ethblocks.GetTransactionReceipt(ctx, client, tx.Hash())
 		if err != nil {
 			utils.Errorf("[ getBlock ] GetTransactionReceipt err: %v", err)
@@ -72,7 +78,7 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 
 	// schema.PrintOneBlock(oneBlk)
 
-	utils.Debugf("[ getBlock ] get block: %d finished, time elapsed: % v\n", blockNumber, time.Since(start))
+	utils.Debugf("[ getBlock ] get block: %d finished, valid tx num: %v, get logs time elapsed: % v\n", blockNumber, len(oneBlk.Transactions), time.Since(start))
 
 	return oneBlk, nil
 }

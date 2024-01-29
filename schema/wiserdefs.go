@@ -89,6 +89,8 @@ type WiserInfo struct {
 
 	EthBalance float64 `json:"ethBalance" bson:"ethBalance"`
 
+	IsContract int `json:"isContract" bson:"isContract"`
+
 	// 交易风格, 如快进快出等
 	Type int `json:"type" bson:"type"`
 }

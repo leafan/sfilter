@@ -66,7 +66,7 @@ func GetPairMap(pageSize int64, mongodb *mongo.Database) (schema.PairMap, error)
 			count++
 
 			//  针对某一笔swap, 处理出对应数据
-			pairMap[pair.Address] = pair
+			pairMap[pair.Address] = &pair
 		}
 
 		if err := cursor.Err(); err != nil {

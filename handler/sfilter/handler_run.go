@@ -25,7 +25,7 @@ func (h *Handler) updateMapBySwaps(swaps []*schema.Swap) {
 		if !ok {
 			_pair, err := pair.GetPairInfoForRead(_swap.PairAddr)
 			if err == nil {
-				h.Pairs[_swap.PairAddr] = *_pair
+				h.Pairs[_swap.PairAddr] = _pair
 				h.SwapContracts[_swap.PairAddr] = true
 			}
 		}
@@ -35,7 +35,8 @@ func (h *Handler) updateMapBySwaps(swaps []*schema.Swap) {
 		if !ok {
 			_token, err := token.GetTokenInfo(_swap.MainToken, h.DB)
 			if err == nil {
-				h.Tokens[_swap.MainToken] = *_token
+				h.Tokens[_swap.MainToken] = _token
+				h.SwapContracts[_swap.MainToken] = true
 			}
 		}
 	}
@@ -82,12 +83,17 @@ func (h *Handler) handleOneBlock(blk *schema.Block) {
 
 func (h *Handler) initMaps() error {
 	var err error
-	h.Tokens, err = token.GetTokenMap(config.SELECT_UPPER_SIZE, h.DB.Database(config.DatabaseName))
+	dbName := config.GlobalDatabaseName
+	if dbName == "" {
+		dbName = config.DatabaseName
+	}
+
+	h.Tokens, err = token.GetTokenMap(config.SELECT_UPPER_SIZE, h.DB.Database(dbName))
 	if err != nil {
 		utils.Fatalf("[ InitMap ] GetTokenMap failed: %v", err)
 	}
 
-	h.Pairs, err = pair.GetPairMap(config.SELECT_UPPER_SIZE, h.DB.Database(config.DatabaseName))
+	h.Pairs, err = pair.GetPairMap(config.SELECT_UPPER_SIZE, h.DB.Database(dbName))
 	if err != nil {
 		utils.Fatalf("[ InitMap ] GetPairMap failed: %v", err)
 	}

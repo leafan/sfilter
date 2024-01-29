@@ -123,7 +123,7 @@ func GetTokenMap(pageSize int64, mongodb *mongo.Database) (schema.TokenMap, erro
 			count++
 
 			//  针对某一笔swap, 处理出对应数据
-			tokenMap[token.Address] = token
+			tokenMap[token.Address] = &token
 		}
 
 		if err := cursor.Err(); err != nil {

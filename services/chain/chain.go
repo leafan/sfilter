@@ -149,6 +149,19 @@ func GetAccountEthBalance(address string) (float64, error) {
 	return balance, nil
 }
 
+func GetAccountWEthBalance(address string) (float64, error) {
+	balanceBig, err := BalanceOf(address, config.WETH_ADDRESS)
+	if err != nil {
+		return 0, err
+	}
+
+	blanceBFloat := new(big.Float).SetInt(balanceBig)
+	blanceBFloat = blanceBFloat.Quo(blanceBFloat, big.NewFloat(1e18))
+	balance, _ := blanceBFloat.Float64()
+
+	return balance, nil
+}
+
 func GetNoParamProp(address, info string) (interface{}, error) {
 	abi := getAbi()
 	client := getClient()
@@ -189,7 +202,7 @@ func getSingleBackupProp(address, info string, client *ethclient.Client, height 
 }
 
 // 判断是否是合约地址
-func IsContract(address string) bool {
+func IsContract(address string) int {
 	const CHECK_CONTRACT = "0x4E013d527f23CD7Cb5b08f6A908de68ce6C57C3e"
 
 	abi := getAbi()
@@ -198,7 +211,7 @@ func IsContract(address string) bool {
 	data, err := abi.Pack("isContract", common.HexToAddress(address))
 	if err != nil {
 		utils.Warnf("[ IsContract ] Pack data error. addr: %v, err: %v", address, err)
-		return false
+		return 0
 	}
 	msg := ethereum.CallMsg{
 		From: common.Address{},
@@ -209,16 +222,21 @@ func IsContract(address string) bool {
 	ret, err := getClient().CallContract(context.Background(), msg, nil)
 	if err != nil {
 		utils.Debugf("[ IsContract ] CallContract error. addr: %v, err: %v", address, err)
-		return false
+		return 0
 	}
 
 	intr, err := abi.Methods["isContract"].Outputs.UnpackValues(ret)
 	if err != nil {
 		utils.Debugf("[ IsContract ] UnpackValues error. addr: %v, err: %v", address, err)
-		return false
+		return 0
 	}
 
-	return intr[0].(bool)
+	retB := intr[0].(bool)
+	if retB {
+		return 1
+	}
+
+	return 0
 }
 
 // 获取eth价格,

@@ -6,13 +6,18 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/services/pair"
 	"sfilter/services/token"
 	"sfilter/services/wiser"
 	"sfilter/utils"
 	"sort"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /**
@@ -73,6 +78,22 @@ func (w *Wiser) Run() {
 	}
 }
 
+func (w *Wiser) Test(accounts []string) {
+	var contract, notContract int
+	for _, account := range accounts {
+		isContract := chain.IsContract(account)
+		utils.Infof("[ Test ] account: %v is contract: %v", account, isContract)
+
+		if isContract > 0 {
+			contract++
+		} else {
+			notContract++
+		}
+	}
+
+	utils.Fatalf("[ Test ] contract: %v, notContract: %v", contract, notContract)
+}
+
 func (w *Wiser) WiserSearcher() {
 	var accounts []string
 	if w.set.Config.DebugAccount != "" {
@@ -85,14 +106,14 @@ func (w *Wiser) WiserSearcher() {
 			return
 		}
 	}
-	utils.Infof("[ WiserSearcher ] accounts len: %v", len(accounts))
+	utils.Infof("[ WiserSearcher ] accounts len: %v, they are: %v", len(accounts), accounts)
 
 	if w.dealInspect {
 		if !w.set.Config.DebugMode && w.set.Config.DebugAccount == "" {
 			wiser.ResetDealCollection(w.set.DB)
 		}
 		for _, account := range accounts {
-			w.InspectAccountBiDeals(account)
+			w.InspectBiDeals(account)
 		}
 	}
 	if w.wiserInspect {
@@ -102,57 +123,75 @@ func (w *Wiser) WiserSearcher() {
 			w.InspectAccount(account)
 		}
 
-		jsonString, _ := json.Marshal(w.set.Config)
-		config := &schema.WiserDBConfig{
-			Epoch:  w.epoch,
-			Config: string(jsonString),
+		if !w.set.Config.DebugMode && w.set.Config.DebugAccount == "" {
+			jsonString, _ := json.Marshal(w.set.Config)
+			config := &schema.WiserDBConfig{
+				Epoch:  w.epoch,
+				Config: string(jsonString),
+			}
+			wiser.UpdateWiserConfig(config, w.set.DB) // 更新本次epoch
 		}
-		wiser.UpdateWiserConfig(config, w.set.DB) // 更新本次epoch
 	}
 
 }
 
 // 分析某个账号是否是优秀地址
 func (w *Wiser) InspectAccount(account string) {
+	utils.Infof("[ InspectAccount ] account: %v", account)
+
 	// 先取出该地址所有deals
 	deals, err := wiser.GetAccountAllDeals(account, w.set.DB)
-	if err != nil || len(deals) <= int(w.set.Config.DealThresholdPerMon) {
-		utils.Debugf("[ InspectAccount ] GetAccountAllDeals failed or too less deals. err: %v, len: %v", err, len(deals))
+	if err != nil {
+		utils.Errorf("[ InspectAccount ] failed to GetAccountAllDeals: %v", err)
+		return
+	}
+
+	if len(deals) < int(w.set.Config.DealThresholdPerMon) {
+		utils.Debugf("[ InspectAccount ] GetAccountAllDeals failed or too less deals.  account: %v, len: %v", account, len(deals))
 		return
 	}
 
 	// 统计wiser数据
 	_wiser := w.inspectAccountByDeals(account, deals)
-	if w.set.Config.DebugMode {
-		wiser.PrintWiserl(&_wiser)
-	}
 
 	// 获取余额
-	ethBalance, err := chain.GetAccountEthBalance(account)
-	if err != nil {
-		utils.Errorf("[ InspectAccount ] GetAccountEthBalance failed: %v", err)
+	ethBalance, err1 := chain.GetAccountEthBalance(account)
+	wethBalance, err2 := chain.GetAccountWEthBalance(account)
+	if err1 != nil || err2 != nil {
+		utils.Errorf("[ InspectAccount ] GetAccountEthBalance failed. err1: %v, err2: %v", err1, err2)
 		return
 	}
-	_wiser.EthBalance = ethBalance
+	_wiser.EthBalance = ethBalance + wethBalance
+
+	// 判断是否为合约
+	_wiser.IsContract = chain.IsContract(_wiser.Address)
 
 	isValid := w.isWiserNeedBePicked(&_wiser)
 	if isValid {
 		wiser.SaveWiser(&_wiser, w.set.DB)
 	}
+
+	// debug
+	wiser.PrintWiser(&_wiser)
 }
 
 func (w *Wiser) isWiserNeedBePicked(wiser *schema.Wiser) bool {
+	w.updateWiserWeight(wiser)
+
 	// 如果余额过小, 或者其他条件不符合, 则不保存
 	if wiser.EthBalance < w.set.Config.WiserMinimumEthBalance {
-		utils.Warnf("[ isWiserNeedBePicked ] wiser: %v balance is too less: %v", wiser.Address, wiser.EthBalance)
+		utils.Warnf("[ isWiserNeedBePicked ] wiser: %v's balance is too less: %v", wiser.Address, wiser.EthBalance)
 		return false
 	}
 
-	w.updateWiserWeight(wiser)
+	if wiser.IsContract > 0 && utils.Contains(config.FamousRouters, wiser.Address) {
+		utils.Warnf("[ isWiserNeedBePicked ] wiser: %v is router!", wiser.Address)
+		return false
+	}
 
 	// 如果没有权重, 也不保存
 	if wiser.Weight <= 0 {
-		utils.Warnf("[ isWiserNeedBePicked ] wiser: %v weight is too less: %v", wiser.Address, wiser.Weight)
+		utils.Warnf("[ isWiserNeedBePicked ] wiser weight is too less. wiser: %v", wiser.Address)
 		return false
 	}
 
@@ -267,16 +306,24 @@ func (w *Wiser) updateWiserTradeInfo(wiser *schema.Wiser, frontrunTimes, rushTim
 func (w *Wiser) updateWiserWeight(wiser *schema.Wiser) {
 	// 判断交易频率
 	if wiser.TradeCntPerMonth < w.set.Config.DealThresholdPerMon {
+		utils.Debugf("[ updateWiserWeight ] TradeCntPerMonth too less: %v", wiser.TradeCntPerMonth)
 		return
 	}
 
 	// 判断胜率
 	if wiser.WinRatio < w.set.Config.WinRatioTarget {
+		utils.Debugf("[ updateWiserWeight ] WinRatio too less: %v", wiser.WinRatio)
 		return
 	}
 
 	// 开始算权重. 胜率占70%, 盈利比例占30%
 	weightWinRatio := (wiser.WinRatio - 0.6) / 0.4
+	frequency := float64(wiser.ValidTradeCount) / 30.0
+	if frequency > 1.0 {
+		frequency = 1.0
+	}
+	weightWinRatio = weightWinRatio * frequency
+
 	weightEarnRatio := wiser.AverageEarnRatio
 	if weightEarnRatio > 1 {
 		weightEarnRatio = 1
@@ -285,8 +332,8 @@ func (w *Wiser) updateWiserWeight(wiser *schema.Wiser) {
 		weightEarnRatio = -1
 	}
 
-	// 7 3 权重分配
-	wiser.Weight = int(weightWinRatio*70 + weightEarnRatio*30)
+	// 权重分配
+	wiser.Weight = int(weightWinRatio*80 + weightEarnRatio*20)
 }
 
 func (w *Wiser) updateOtherProfile(wiser *schema.Wiser, deflatPairTimes int) {
@@ -310,25 +357,30 @@ func (w *Wiser) updateOtherProfile(wiser *schema.Wiser, deflatPairTimes int) {
 	wiser.BuyDeflatTokenRatio = float64(deflatPairTimes) / float64(wiser.TotalTradeCount)
 }
 
-func (w *Wiser) InspectAccountBiDeals(account string) int {
+func (w *Wiser) InspectBiDeals(account string) int {
+	utils.Infof("[ InspectBiDeals ] account: %v", account)
+
 	dealCount := 0
 
 	trades, err := w.GetAccountTrades(account)
 	if err != nil {
-		utils.Warnf("[ InspectAccountBiDeals ] GetAccountTrades err: %v", err)
+		utils.Errorf("[ InspectBiDeals ] GetAccountTrades err: %v", err)
 		return dealCount
 	}
 
 	for token, atts := range trades {
 		tokenObj, ok := w.set.Tokens[token]
 		if !ok {
-			utils.Warnf("[ InspectAccountBiDeals ] failed to get token: %v, err: %v", token, err)
-			continue
+			tokenObj, err = chain.GetTokenInfo(token, w.set.DB)
+			if err != nil {
+				utils.Errorf("[ InspectBiDeals ] failed to get token: %v, err: %v", token, err)
+				continue
+			}
 		}
 
 		deals := w.getDealsFromAtts(atts, account, tokenObj)
 
-		utils.Infof("[ InspectAccountBiDeals ] token %v has %v deals.", token, len(deals))
+		utils.Debugf("[ InspectBiDeals ] token %v has %v deals.", token, len(deals))
 		dealCount += len(deals)
 
 		for _, deal := range deals {
@@ -340,7 +392,7 @@ func (w *Wiser) InspectAccountBiDeals(account string) int {
 	return dealCount
 }
 
-func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string, tokenObj schema.Token) []*schema.BiDeal {
+func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string, tokenObj *schema.Token) []*schema.BiDeal {
 	var deals []*schema.BiDeal
 	var deal *schema.BiDeal
 	var startOver = true // 是否重新计算一笔买卖, 初始化为true
@@ -365,6 +417,15 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 
 				deal.BuyPairAge = 60 * 60 * 24 * 181 // 初始化为1年
 				_pair, ok := w.set.Pairs[deal.BuyPair]
+				if !ok {
+					var err error
+					_pair, err = pair.GetPairInfoForRead(deal.BuyPair)
+					if err == nil {
+						ok = true
+					} else {
+						utils.Errorf("[ getDealsFromAtts ] GetPair %v failed: %v", deal.BuyPair, err)
+					}
+				}
 				if ok {
 					bornAt := _pair.FirstAddPoolTime
 					if !bornAt.IsZero() { // 存在
@@ -399,7 +460,7 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 				continue // 先不计算, 当前的transfer的金额不准确, 很多数据是回溯的
 			}
 			if att.PriceInUSD <= 0 {
-				utils.Warnf("[ InspectAccountBiDeals ] att.PriceInUSD is 0! token: %v", tokenObj.Address)
+				utils.Warnf("[ InspectBiDeals ] att.PriceInUSD is 0! token: %v", tokenObj.Address)
 				// 此时本应该算是一笔完整交易, 但是由于没有价格, 因此不统计与保存
 				// 重置状态并开始下一笔deal统计
 				startOver = true
@@ -431,7 +492,7 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 			deal.Earn = deal.SellAmount * deal.BuyPrice * deal.EarnChange
 
 			if deal.SellBlockNo < deal.BuyBlockNo {
-				utils.Errorf("[ InspectAccountBiDeals ] wrong block! buyBlock: %v, sellBlock: %v", deal.BuyBlockNo, deal.SellBlockNo)
+				utils.Errorf("[ InspectBiDeals ] wrong block! buyBlock: %v, sellBlock: %v", deal.BuyBlockNo, deal.SellBlockNo)
 				continue
 			}
 
@@ -454,7 +515,7 @@ func (w *Wiser) getDealsFromAtts(atts []schema.AccountTokenTrade, account string
 	// 如果是, 则计算当前亏钱状态; 否则不记录, 作为无效deal
 	if !startOver {
 		// 说明此时还持有token, 计算当前盈利状态以确认是否作为有效deal记录
-		validDeal := w.updateDealWithLatestData(deal, &tokenObj)
+		validDeal := w.updateDealWithLatestData(deal, tokenObj)
 		if validDeal {
 			deals = append(deals, deal)
 		}
@@ -475,7 +536,7 @@ func (w *Wiser) updateDealWithLatestData(deal *schema.BiDeal, tokenObj *schema.T
 		return false
 	}
 
-	utils.Debugf("[ updateDealWithLatestData ] found one deal to be updated. deal: %v", deal)
+	// utils.Debugf("[ updateDealWithLatestData ] found one deal to be updated. deal: %v", deal)
 
 	// 继续往后走, 说明该用户对该token有买入动作但无有效的卖出动作(transfer无效)
 	deal.SellType = schema.TRADE_TYPE_LIQUIDATION
@@ -487,11 +548,15 @@ func (w *Wiser) updateDealWithLatestData(deal *schema.BiDeal, tokenObj *schema.T
 	// 这里也不获取余额, 直接模拟将所有buy的卖出去
 	pairObj, ok := w.set.Pairs[deal.BuyPair]
 	if !ok {
-		utils.Warnf("[ updateDealWithLatestData ] find pair failed. pair: %v", deal.BuyPair)
-		return false
+		var err error
+		pairObj, err = pair.GetPairInfoForRead(deal.BuyPair)
+		if err != nil {
+			utils.Errorf("[ updateDealWithLatestData ] find pair failed. pair: %v, err: %v", deal.BuyPair, err)
+			return false
+		}
 	}
 
-	sellUsdValue, err := w.getDealAmountValueWithAmountIn(deal, &pairObj)
+	sellUsdValue, err := w.getDealAmountValueWithAmountIn(deal, pairObj)
 	if err != nil || sellUsdValue < 0 {
 		utils.Warnf("[ updateDealWithLatestData ] get deal amout value failed. err: %v, sellUsdValue: %v", err, sellUsdValue)
 		return false
@@ -500,7 +565,7 @@ func (w *Wiser) updateDealWithLatestData(deal *schema.BiDeal, tokenObj *schema.T
 	// 此时需要判断其sell value是否已亏损过多或盈利很高, 如果不是, 也不结算
 	if sellUsdValue > deal.BuyValue*w.set.Config.DealDefiniteLoss &&
 		sellUsdValue < deal.BuyValue*w.set.Config.DealDefiniteWin {
-		utils.Warnf("[ updateDealWithLatestData ] sellUsdValue not win or loss too much. current value: %v, BuyValue: %v", sellUsdValue, deal.BuyValue)
+		utils.Debugf("[ updateDealWithLatestData ] sellUsdValue not win or loss too much. current value: %v, BuyValue: %v", sellUsdValue, deal.BuyValue)
 		return false
 	}
 
@@ -664,12 +729,12 @@ func (w *Wiser) GetAccountTrades(account string) (schema.AccountTrades, error) {
 		}
 	}
 
-	if w.set.Config.DebugMode {
-		// 调试模式, 打印
-		for token, trades := range atts {
-			utils.Infof("[ GetAccountTrades ] account: %v, token: %v, atts: %v", account, token, trades)
-		}
-	}
+	// if w.set.Config.DebugMode {
+	// 	// 调试模式, 打印
+	// 	for token, trades := range atts {
+	// 		utils.Infof("[ GetAccountTrades ] account: %v, token: %v, atts: %v", account, token, trades)
+	// 	}
+	// }
 
 	return atts, nil
 }
@@ -703,4 +768,54 @@ func (w *Wiser) getBuyType(seconds int) int {
 	}
 
 	return buyType
+}
+
+func TEST_WISER() {
+	options := &options.FindOptions{}
+	options = options.SetSort(bson.D{{Key: "weight", Value: -1}})
+	filter := bson.M{}
+	filter["epoch"] = "20240127"
+	address_oldS, _, _ := wiser.GetWisers(options, &filter, chain.GetMongo().Database("sfilter"))
+	address_newS, _, _ := wiser.GetWisers(options, &filter, chain.GetMongo().Database("creat"))
+
+	var old, new []string
+	for _, addr := range address_oldS {
+		old = append(old, addr.Address)
+	}
+
+	for _, addr := range address_newS {
+		new = append(new, addr.Address)
+	}
+
+	var same, old_have, new_have []string
+	for _, addr := range old {
+		if utils.Contains(new, addr) {
+			// 如果old在new中有, same append
+			same = append(same, addr)
+		} else {
+			old_have = append(old_have, addr)
+		}
+	}
+
+	for _, addr := range new {
+		if !utils.Contains(old, addr) {
+			new_have = append(new_have, addr)
+		}
+	}
+
+	fmt.Println("same len: ", len(same))
+	for _, addr := range same {
+		fmt.Println(addr)
+	}
+
+	fmt.Println("\nold have len: ", len(old_have))
+	for _, addr := range old_have {
+		fmt.Println(addr)
+	}
+
+	fmt.Println("new have len: ", len(new_have))
+	for _, addr := range new_have {
+		fmt.Println(addr)
+	}
+
 }

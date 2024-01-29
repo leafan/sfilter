@@ -10,7 +10,7 @@ import (
 )
 
 // 定义Token map, 避免反复查db
-type TokenMap map[string]Token
+type TokenMap map[string]*Token
 
 type TokenInfoOnChain struct {
 	Address string `json:"address" bson:"address"` // 地址

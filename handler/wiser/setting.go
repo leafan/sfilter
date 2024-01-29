@@ -100,7 +100,7 @@ func (s *Setting) checkPairValidation() {
 			}
 
 			if _pair.Type == schema.SWAP_EVENT_UNISWAPV2_LIKE {
-				_pair.MainTokenHackType = chain.GetUniV2PoolTokenHackType(&_pair)
+				_pair.MainTokenHackType = chain.GetUniV2PoolTokenHackType(_pair)
 			} else {
 				_pair.MainTokenHackType = schema.PAIR_MAINTOKEN_HACK_TYPE_UNKNOWN
 			}
@@ -109,7 +109,7 @@ func (s *Setting) checkPairValidation() {
 
 			// 保存进db
 			_pair.UpdatedAt = time.Now()
-			pair.UpsertPair(&_pair, s.DB)
+			pair.UpsertPair(_pair, s.DB)
 		}
 	}
 

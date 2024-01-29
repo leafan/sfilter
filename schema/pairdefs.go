@@ -9,7 +9,7 @@ import (
 )
 
 // 定义 Pair map
-type PairMap map[string]Pair
+type PairMap map[string]*Pair
 
 type Pair struct {
 	InfoOnChain       `bson:",inline"`

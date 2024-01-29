@@ -195,12 +195,12 @@ func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 	return att
 }
 
-func PrintWiserl(wiser *schema.Wiser) {
+func PrintWiser(wiser *schema.Wiser) {
 	utils.Infof("**** PrintWiser **** Address: %v", wiser.Address)
 
 	fmt.Println("Weight: ", wiser.Weight)
 	fmt.Println("WinRatio: ", wiser.WinRatio)
-	fmt.Println("TotalTradeCount: ", wiser.TotalTradeCount)
+	// fmt.Println("TotalTradeCount: ", wiser.TotalTradeCount)
 	fmt.Println("ValidTradeCount: ", wiser.ValidTradeCount)
 	fmt.Println("TradeCntPerMonth: ", wiser.TradeCntPerMonth)
 

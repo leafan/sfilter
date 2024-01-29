@@ -57,7 +57,7 @@ var DefaultWiserConfig = &WiserConfig{
 	WinRatioTarget:      0.6, // 胜率超过60%才算胜利一笔
 	DealThresholdPerMon: 5,   // 每月至少x笔交易才算
 
-	WiserMinimumEthBalance: 0.1,
+	WiserMinimumEthBalance: 1e-16,
 
 	DealDefiniteWin:  5,   // 盈利超过x倍, 直接结算
 	DealDefiniteLoss: 0.2, // 亏损超过x%, 直接结算

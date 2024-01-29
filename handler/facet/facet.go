@@ -43,23 +43,25 @@ func doHandleFacet(blk *schema.Block, tx *schema.Transaction, jsn *schema.FacetJ
 	userLogic.ArgsTo = val.(string)
 
 	if userLogic.Function == "swapExactTokensForTokens" {
-		amountIn := jsn.Data.Args["amountIn"].(string)
-		amountInBig, ok := big.NewFloat(0).SetString(amountIn)
-		if !ok {
-			utils.Errorf("[ doHandleFacet ] set amountIn to float err, amountIn: %v", amountIn)
-			return
-		}
+		if amountIn, ok := jsn.Data.Args["amountIn"].(string); ok {
+			amountInBig, ok := big.NewFloat(0).SetString(amountIn)
+			if !ok {
+				utils.Errorf("[ doHandleFacet ] set amountIn to float err, amountIn: %v", amountIn)
+				return
+			}
 
-		userLogic.ArgsAmount, _ = amountInBig.Float64()
+			userLogic.ArgsAmount, _ = amountInBig.Float64()
+		}
 	} else if userLogic.Function == "transfer" {
-		amountIn := jsn.Data.Args["amount"].(string)
-		amountInBig, ok := big.NewFloat(0).SetString(amountIn)
-		if !ok {
-			utils.Errorf("[ doHandleFacet ] set amount to float err, amount: %v", amountIn)
-			return
-		}
+		if amountIn, ok := jsn.Data.Args["amountIn"].(string); ok {
+			amountInBig, ok := big.NewFloat(0).SetString(amountIn)
+			if !ok {
+				utils.Errorf("[ doHandleFacet ] set amount to float err, amount: %v", amountIn)
+				return
+			}
 
-		userLogic.ArgsAmount, _ = amountInBig.Float64()
+			userLogic.ArgsAmount, _ = amountInBig.Float64()
+		}
 	}
 
 	fct := schema.FacetModel{

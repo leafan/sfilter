@@ -11,9 +11,11 @@ import (
 var (
 	DevelopmentMode = false
 
-	MONGO_ADDR       = "mongodb://127.0.0.1:27017"
-	DatabaseName     = "deepeye"
-	API_AES_DATA_KEY = "deepeye@leafan16"
+	MONGO_ADDR   = "mongodb://127.0.0.1:27017"
+	DatabaseName = "deepeye"
+
+	GlobalDatabaseName = "" //  全局配置信息获取表, 如获取 pair 和 token等
+	API_AES_DATA_KEY   = "deepeye@leafan16"
 
 	// 用于获取历史高度上的eth价格.. 如果是回溯的时候，10个区块才调用一次即可(特殊处理)
 	INFURA_API_KEY = "https://mainnet.infura.io/v3/06a6594cfd1a404591470c2f81a7ac93"
@@ -81,6 +83,11 @@ func initEnvConfig() {
 	if dbName != "" {
 		utils.Infof("[ init ] Using db: %v", dbName)
 		DatabaseName = dbName
+	}
+	globalDbName := os.Getenv("GLOBAL_DB_NAME")
+	if globalDbName != "" {
+		utils.Infof("[ init ] Using global db: %v", globalDbName)
+		GlobalDatabaseName = globalDbName
 	}
 
 	retriveNum := os.Getenv("RETRIVE_OLD_BLOCK_NUM")
