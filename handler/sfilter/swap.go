@@ -160,18 +160,18 @@ func contains(slice []transferBasic, item transferBasic) bool {
 }
 
 // debug
-func printTTM(ttm tokensTransferMap) {
-	for txhash, tt := range ttm {
-		fmt.Printf("\n\n\n**TxHash: %v** \n\n", txhash)
+// func printTTM(ttm tokensTransferMap) {
+// 	for txhash, tt := range ttm {
+// 		fmt.Printf("\n\n\n**TxHash: %v** \n\n", txhash)
 
-		for token, ti := range tt {
-			fmt.Printf("\nToken: %v\n", token)
+// 		for token, ti := range tt {
+// 			fmt.Printf("\nToken: %v\n", token)
 
-			fmt.Println("Froms: ", ti[0])
-			fmt.Println("Tos: ", ti[1])
-		}
-	}
-}
+// 			fmt.Println("Froms: ", ti[0])
+// 			fmt.Println("Tos: ", ti[1])
+// 		}
+// 	}
+// }
 
 // 生成 transfer 的 from/to map
 func creatTokenTransferMap(transfers []*schema.Transfer, swapContracts map[string]bool) tokensTransferMap {

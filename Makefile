@@ -1,4 +1,4 @@
-.PHONY:  run ps build stop restart creat filter api wiser deepeye dwiser
+.PHONY:  run ps build stop restart creat filter api wiser deepeye dwiser cwiser
 
 default: build
 
@@ -49,6 +49,16 @@ dwiser:
 
 	cd /backup/deepeye/ && nohup ./swiser_deepeye -wiser -deal > /backup/deepeye/logs/swiser_deepeye.log 2>&1 &
 
+cwiser:
+	@make build
+
+	@echo "\n\033[0;34mKill process...\033[0m"
+	pkill -f '^.*swiser_creat$$' 2>&1 || true
+	sleep 1
+
+	cp swiser /data_v1/creat/swiser_creat
+
+	cd /data_v1/creat/ && nohup ./swiser_creat -wiser -deal > /data_v1/creat/logs/swiser_creat.log 2>&1 &
 
 
 run:

@@ -271,7 +271,7 @@ func getHackStatusFromContract(_pair *schema.Pair, divFactorInt int) int {
 
 	_, err = getClient().CallContract(context.Background(), msg, nil)
 	if err != nil {
-		utils.Warnf("[ getHackStatusFromContract ] CallContract error. addr: %v, err: %v\n", _pair.Address, err)
+		// utils.Warnf("[ getHackStatusFromContract ] CallContract error. addr: %v, err: %v\n", _pair.Address, err)
 
 		// 跑到这里说明是通缩币或者坑人币
 

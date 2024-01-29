@@ -200,7 +200,7 @@ func PrintWiser(wiser *schema.Wiser) {
 
 	fmt.Println("Weight: ", wiser.Weight)
 	fmt.Println("WinRatio: ", wiser.WinRatio)
-	// fmt.Println("TotalTradeCount: ", wiser.TotalTradeCount)
+	fmt.Println("BuyZeroTokenRatio: ", wiser.BuyZeroTokenRatio)
 	fmt.Println("ValidTradeCount: ", wiser.ValidTradeCount)
 	fmt.Println("TradeCntPerMonth: ", wiser.TradeCntPerMonth)
 

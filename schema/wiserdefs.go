@@ -115,6 +115,9 @@ type DealDetail struct {
 	// 购买通缩币或坑人币比例
 	BuyDeflatTokenRatio float64 `json:"buyDeflatTokenRatio" bson:"buyDeflatTokenRatio"`
 
+	// 购买截止至今的归零币比例
+	BuyZeroTokenRatio float64 `json:"buyZeroTokenRatio" bson:"buyZeroTokenRatio"`
+
 	// 每月平均交易次数, 算法从第一笔买到最后一笔卖算周期时长
 	TradeCntPerMonth float64 `json:"tradeCntPerMonth" bson:"tradeCntPerMonth"`
 
@@ -164,6 +167,9 @@ type BiDeal struct {
 	Earn       float64 `json:"earn" bson:"earn"`             // 盈利金额
 	EarnChange float64 `json:"earnChange" bson:"earnChange"` //盈利比例
 	HoldBlocks uint64  `json:"holdBlocks" bson:"holdBlocks"` // 持有的区块数
+
+	// 如果持有至今的盈利率, 防止坑人币最终都归零
+	UptoTodayYield float64 `json:"uptoTodayYield" bson:"uptoTodayYield"`
 
 	// 持有风格类型
 	BiDealType int `json:"biDealType" bson:"biDealType"`
@@ -228,6 +234,10 @@ var WiserIndexModel = []mongo.IndexModel{
 		Options: options.Index().SetName("totalTradeCount_index"),
 	},
 
+	{
+		Keys:    bson.D{{Key: "buyZeroTokenRatio", Value: 1}},
+		Options: options.Index().SetName("buyZeroTokenRatio_index"),
+	},
 	{
 		Keys:    bson.D{{Key: "buyMevRatio", Value: 1}},
 		Options: options.Index().SetName("buyMevRatio_index"),

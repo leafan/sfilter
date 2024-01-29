@@ -35,6 +35,18 @@ func SaveWiser(wiser *schema.Wiser, mongodb *mongo.Client) {
 	}
 }
 
+func ResetWiserEpochData(mongodb *mongo.Client, epoch string) error {
+	collection := mongodb.Database(config.DatabaseName).Collection(config.WiserTableName)
+	deleteFilter := bson.D{{Key: "epoch", Value: epoch}}
+	_, err := collection.DeleteMany(context.Background(), deleteFilter)
+	if err != nil {
+		utils.Errorf("[ DeleteOldEntries ] DeleteMany error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func GetWisers(findOpt *options.FindOptions, filter *primitive.M, mongodb *mongo.Database) ([]schema.Wiser, int64, error) {
 	collection := mongodb.Collection(config.WiserTableName)
 
