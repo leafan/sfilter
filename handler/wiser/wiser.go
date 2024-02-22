@@ -128,9 +128,8 @@ func (w *Wiser) InspectAccount(account string) {
 	// 判断是否为合约
 	_wiser.IsContract = chain.IsContract(_wiser.Address)
 
-	// isValid := w.isWiserNeedBePicked(&_wiser)
-	// if isValid {
-	if true {
+	isValid := w.isWiserNeedBePicked(&_wiser)
+	if isValid {
 		wiser.SaveWiser(&_wiser, w.set.DB)
 	}
 
@@ -158,6 +157,12 @@ func (w *Wiser) isWiserNeedBePicked(wiser *schema.Wiser) bool {
 		return false
 	}
 
+	// 新增要求, 需要有效交易中的trend交易占比大
+	if wiser.ValidTrendTradeRatio < w.set.Config.ValidTrendTradeRatio {
+		utils.Warnf("[ isWiserNeedBePicked ] wiser ValidTrendTradeRatio is too less. wiser: %v", wiser.Address)
+		return false
+	}
+
 	return true
 }
 
@@ -175,6 +180,7 @@ func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) sch
 	frontrunTimes := 0
 	rushTimes := 0 // 包含gamble
 	trendTimes := 0
+	validTrendTimes := 0
 
 	buyMev := 0
 	buyFresh := 0
@@ -222,6 +228,11 @@ func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) sch
 			continue
 		}
 
+		// continue后即均为有效交易
+		if deal.BiDealType == schema.BI_DEAL_TYPE_TREND {
+			validTrendTimes++
+		}
+
 		// 分析每一笔valid的deal, 做数据统计
 		wiser.ValidTradeCount++
 		wiser.TotalWinValue += deal.Earn
@@ -244,7 +255,7 @@ func (w *Wiser) inspectAccountByDeals(account string, deals []schema.BiDeal) sch
 
 	wiser.TradeCntPerMonth = float64(wiser.ValidTradeCount) * (float64(w.set.Config.LatestSwapSeconds) / 60 / 60 / 24 / 30)
 
-	w.updateWiserTradeInfo(&wiser, frontrunTimes, rushTimes, trendTimes)
+	w.updateWiserTradeInfo(&wiser, frontrunTimes, rushTimes, trendTimes, validTrendTimes)
 	w.updateWiserBuyTypeInfo(&wiser, buyMev, buyFresh, buySubnew)
 	w.updateOtherProfile(&wiser, deflatPairTimes, buyZeroToken)
 
@@ -264,7 +275,7 @@ func (w *Wiser) updateWiserBuyTypeInfo(wiser *schema.Wiser, buyMev, buyFresh, bu
 	wiser.BuySubnewRatio = float64(buySubnew) / float64(wiser.TotalTradeCount)
 }
 
-func (w *Wiser) updateWiserTradeInfo(wiser *schema.Wiser, frontrunTimes, rushTimes, trendTimes int) {
+func (w *Wiser) updateWiserTradeInfo(wiser *schema.Wiser, frontrunTimes, rushTimes, trendTimes, validTrendTimes int) {
 	if wiser.TotalTradeCount <= 0 {
 		return
 	}
@@ -272,6 +283,10 @@ func (w *Wiser) updateWiserTradeInfo(wiser *schema.Wiser, frontrunTimes, rushTim
 	wiser.FrontrunTradeRatio = float64(frontrunTimes) / float64(wiser.TotalTradeCount)
 	wiser.RushTradeRatio = float64(rushTimes) / float64(wiser.TotalTradeCount)
 	wiser.TrendTradeRatio = float64(trendTimes) / float64(wiser.TotalTradeCount)
+
+	if wiser.ValidTradeCount > 0 {
+		wiser.ValidTrendTradeRatio = float64(validTrendTimes) / float64(wiser.ValidTradeCount)
+	}
 }
 
 func (w *Wiser) updateWiserWeight(wiser *schema.Wiser) {

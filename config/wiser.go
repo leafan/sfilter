@@ -25,6 +25,8 @@ type WiserConfig struct {
 	WinRatioTarget      float64 // 胜率要求
 	DealThresholdPerMon float64 // 每个月交易频率底线, 超过该值才算活跃用户
 
+	ValidTrendTradeRatio float64 // 趋势交易比例
+
 	WiserMinimumEthBalance float64 // eth最少余额才算有效地址
 
 	DealDefiniteWin  float64 // 盈利多少倍, 无论其是否有交易, 都结算
@@ -33,6 +35,13 @@ type WiserConfig struct {
 	// for debug or sth..
 	DebugAccount              string // 调试账号
 	ForceUpdatePairHackStatus bool   // 是否强制更新pair的是否通缩币状态等
+
+	// hot pair config
+	HotPairCheckInterval int     // 每隔多久执行一遍更新
+	MinPairLiquidity     float64 // 池子最小金额
+	MinPairCreatAge      int     // 池子创建时长
+	VolumeIncrement      float64 // 交易量增长幅度
+	PriceIncreament      float64 // 价格增长幅度
 }
 
 var DefaultWiserConfig = &WiserConfig{
@@ -57,10 +66,18 @@ var DefaultWiserConfig = &WiserConfig{
 	WinRatioTarget:      0.6, // 胜率超过60%才算胜利一笔
 	DealThresholdPerMon: 5,   // 每月至少x笔交易才算
 
+	ValidTrendTradeRatio: 0.6,
+
 	WiserMinimumEthBalance: 1e-16,
 
 	DealDefiniteWin:  5,   // 盈利超过x倍, 直接结算
 	DealDefiniteLoss: 0.2, // 亏损超过x%, 直接结算
 
 	ForceUpdatePairHackStatus: false,
+
+	HotPairCheckInterval: 60,     // 1min
+	MinPairLiquidity:     100000, // 10w u
+	MinPairCreatAge:      60 * 60 * 24 * 30,
+	VolumeIncrement:      0.3, // 交易量要增长30%+
+	PriceIncreament:      0.05,
 }

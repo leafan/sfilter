@@ -105,7 +105,11 @@ type DealDetail struct {
 	// 统计下arbi、frontrun、trend 等交易比例
 	FrontrunTradeRatio float64 `json:"frontrunTradeRatio" bson:"frontrunTradeRatio"`
 	RushTradeRatio     float64 `json:"rushTradeRatio" bson:"rushTradeRatio"`
-	TrendTradeRatio    float64 `json:"trendTradeRatio" bson:"trendTradeRatio"`
+
+	// trend交易占整体交易比例
+	TrendTradeRatio float64 `json:"trendTradeRatio" bson:"trendTradeRatio"`
+	// 有效trend交易占有效交易比例
+	ValidTrendTradeRatio float64 `json:"validTrendTradeRatio" bson:"validTrendTradeRatio"`
 
 	// 统计下Buyer的一些比例数据
 	BuyMevRatio    float64 `json:"buyMevRatio" bson:"buyMevRatio"`

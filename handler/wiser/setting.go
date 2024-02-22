@@ -57,27 +57,25 @@ func (s *Setting) InitSettings() {
 	schema.InitTables(s.DB)
 
 	s.initMaps()
-
-	s.doPreparation()
 }
 
 func (s *Setting) initMaps() {
 	var err error
 	s.Tokens, err = token.GetTokenMap(s.Config.DbBlockReadSize, s.DB.Database(config.DatabaseName))
 	if err != nil {
-		utils.Fatalf("[ InitMap ] GetTokenMap failed: %v", err)
+		utils.Fatalf("[ initMaps ] GetTokenMap failed: %v", err)
 	}
 
 	s.Pairs, err = pair.GetPairMap(s.Config.DbBlockReadSize, s.DB.Database(config.DatabaseName))
 	if err != nil {
-		utils.Fatalf("[ InitMap ] GetPairMap failed: %v", err)
+		utils.Fatalf("[ initMaps ] GetPairMap failed: %v", err)
 	}
 
-	utils.Infof("[ InitMap ] tokens len: %v, pairs len: %v", len(s.Tokens), len(s.Pairs))
+	utils.Infof("[ initMaps ] finished initMaps. tokens len: %v, pairs len: %v", len(s.Tokens), len(s.Pairs))
 }
 
 // 前置工作等
-func (s *Setting) doPreparation() {
+func (s *Setting) doWiserPreparation() {
 	// 检查是否为通缩币、坑人币等
 	s.checkPairValidation()
 }
@@ -113,4 +111,5 @@ func (s *Setting) checkPairValidation() {
 		}
 	}
 
+	utils.Infof("[ checkPairValidation ] finished checkPairValidation.")
 }

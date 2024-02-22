@@ -64,7 +64,10 @@ finish:
 					ClosePrice: first.OpenPrice,
 					HighPrice:  first.OpenPrice,
 					LowPrice:   first.OpenPrice,
+
+					// 其他均为0
 				}
+				new.PriceInUsd = first.PriceInUsd // 价格必须赋值
 
 				emptyKlines = append(emptyKlines, new)
 			}
