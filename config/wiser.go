@@ -41,7 +41,8 @@ type WiserConfig struct {
 	MinPairLiquidity     float64 // 池子最小金额
 	MinPairCreatAge      int     // 池子创建时长
 	VolumeIncrement      float64 // 交易量增长幅度
-	PriceIncreament      float64 // 价格增长幅度
+	MinPriceIncreament   float64 // 价格增长最小幅度
+	MaxPriceIncreament   float64 // 价格增长最大幅度
 }
 
 var DefaultWiserConfig = &WiserConfig{
@@ -78,6 +79,7 @@ var DefaultWiserConfig = &WiserConfig{
 	HotPairCheckInterval: 60,     // 1min
 	MinPairLiquidity:     100000, // 10w u
 	MinPairCreatAge:      60 * 60 * 24 * 30,
-	VolumeIncrement:      0.3, // 交易量要增长30%+
-	PriceIncreament:      0.05,
+	VolumeIncrement:      0.5, // 交易量要增长 x%
+	MinPriceIncreament:   0.05,
+	MaxPriceIncreament:   0.5,
 }

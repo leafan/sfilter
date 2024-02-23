@@ -1,12 +1,13 @@
 package handler
 
 type Handler struct {
-	wiser *Wiser
-	hpair *HPair
+	wiser  *Wiser
+	hbpair *HBPair
+	hspair *HSPair
 }
 
 // deal or wiser 表示分析deal和wiser, 任意一个开启均表示打开 wiser 服务
-func NewHandler(account, db string, debug bool, deal, wiser bool) *Handler {
+func NewHandler(account, db string, debug bool, deal, wiser, hb, hs bool) *Handler {
 	set := NewSetting(account, db, debug)
 
 	hndl := &Handler{}
@@ -19,8 +20,16 @@ func NewHandler(account, db string, debug bool, deal, wiser bool) *Handler {
 		}
 	}
 
-	hndl.hpair = &HPair{
-		set: set,
+	if hb {
+		hndl.hbpair = &HBPair{
+			set: set,
+		}
+	}
+
+	if hs {
+		hndl.hspair = &HSPair{
+			set: set,
+		}
 	}
 
 	return hndl
@@ -32,5 +41,11 @@ func (h *Handler) Run() {
 		h.wiser.Run()
 	}
 
-	h.hpair.Run()
+	if h.hbpair != nil {
+		h.hbpair.Run()
+	}
+
+	if h.hspair != nil {
+		h.hspair.Run()
+	}
 }

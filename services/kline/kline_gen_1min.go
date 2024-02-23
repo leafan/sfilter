@@ -71,6 +71,7 @@ finish:
 					HighPrice:  first.OpenPrice,
 					LowPrice:   first.OpenPrice,
 				}
+				new.PriceInUsd = first.PriceInUsd
 
 				emptyKlines = append(emptyKlines, new)
 			}
