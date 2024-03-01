@@ -6,11 +6,11 @@ import (
 )
 
 type HSPair struct {
-	set *Setting
+	Set *Setting
 }
 
 func (p *HSPair) Run() {
-	interval := time.Duration(p.set.Config.HotPairCheckInterval) * time.Second
+	interval := time.Duration(p.Set.Config.HotPairCheckInterval) * time.Second
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 

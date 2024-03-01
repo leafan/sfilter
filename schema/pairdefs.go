@@ -18,8 +18,17 @@ type Pair struct {
 
 	TradeInfoForPair `bson:",inline"`
 
+	CacheFields `bson:",inline"`
+
 	UpdatedAt time.Time `json:"-" bson:"updatedAt"`
 	CreatedAt time.Time `json:"-" bson:"createdAt"`
+}
+
+// 临时字段, 不写db与json
+type CacheFields struct {
+	ReservedString string  `json:"-" bson:"-"`
+	ReservedFloat  float64 `json:"-" bson:"-"`
+	ReservedInt    int     `json:"-" bson:"-"`
 }
 
 type InfoOnPairCreated struct {

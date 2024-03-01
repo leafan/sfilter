@@ -2,6 +2,7 @@ package chain
 
 import (
 	"sfilter/api/internal/eth"
+	"sfilter/api/internal/eth/admin"
 	"sfilter/api/internal/eth/encrypt"
 	"sfilter/api/internal/eth/user"
 	"sfilter/api/utils"
@@ -70,6 +71,9 @@ func setupEthRoutes(parentGroup *gin.RouterGroup) {
 	{
 		apiKeyGroup.GET("/trackswaps", user.GetTrackSwaps)
 		apiKeyGroup.GET("/pairs", eth.GetHotPairs)
+
+		// for partners
+		apiKeyGroup.GET("/hbpair", admin.GetHotBigPairs)
 	}
 
 	// auth user etc..

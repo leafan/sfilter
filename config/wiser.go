@@ -76,10 +76,10 @@ var DefaultWiserConfig = &WiserConfig{
 
 	ForceUpdatePairHackStatus: false,
 
-	HotPairCheckInterval: 60,     // 1min
+	HotPairCheckInterval: 60 * 60,
 	MinPairLiquidity:     100000, // 10w u
 	MinPairCreatAge:      60 * 60 * 24 * 30,
 	VolumeIncrement:      0.5, // 交易量要增长 x%
 	MinPriceIncreament:   0.05,
-	MaxPriceIncreament:   0.5,
+	MaxPriceIncreament:   1.0,
 }

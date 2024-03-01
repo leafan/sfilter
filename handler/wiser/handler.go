@@ -1,9 +1,9 @@
 package handler
 
 type Handler struct {
-	wiser  *Wiser
-	hbpair *HBPair
-	hspair *HSPair
+	Wiser  *Wiser
+	Hbpair *HBPair
+	Hspair *HSPair
 }
 
 // deal or wiser 表示分析deal和wiser, 任意一个开启均表示打开 wiser 服务
@@ -13,7 +13,7 @@ func NewHandler(account, db string, debug bool, deal, wiser, hb, hs bool) *Handl
 	hndl := &Handler{}
 
 	if deal || wiser { // 是否开启 wiser searcher
-		hndl.wiser = &Wiser{
+		hndl.Wiser = &Wiser{
 			set:          set,
 			dealInspect:  deal,
 			wiserInspect: wiser,
@@ -21,14 +21,14 @@ func NewHandler(account, db string, debug bool, deal, wiser, hb, hs bool) *Handl
 	}
 
 	if hb {
-		hndl.hbpair = &HBPair{
-			set: set,
+		hndl.Hbpair = &HBPair{
+			Set: set,
 		}
 	}
 
 	if hs {
-		hndl.hspair = &HSPair{
-			set: set,
+		hndl.Hspair = &HSPair{
+			Set: set,
 		}
 	}
 
@@ -36,16 +36,16 @@ func NewHandler(account, db string, debug bool, deal, wiser, hb, hs bool) *Handl
 }
 
 func (h *Handler) Run() {
-	if h.wiser != nil {
-		h.wiser.set.doWiserPreparation()
-		h.wiser.Run()
+	if h.Wiser != nil {
+		h.Wiser.set.doWiserPreparation()
+		h.Wiser.Run()
 	}
 
-	if h.hbpair != nil {
-		h.hbpair.Run()
+	if h.Hbpair != nil {
+		h.Hbpair.Run()
 	}
 
-	if h.hspair != nil {
-		h.hspair.Run()
+	if h.Hspair != nil {
+		h.Hspair.Run()
 	}
 }

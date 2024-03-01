@@ -56,6 +56,17 @@ func CalcChange(now, last float64) float32 {
 	return float32(delta / now)
 }
 
+// 获取maintoken
+func GetMainToken(token0, token1 string) string {
+	quoteToken := GetQuoteToken(token0, token1)
+
+	if quoteToken == token0 {
+		return token1
+	}
+
+	return token0
+}
+
 // 优先 usd; 优先 token1
 func GetQuoteToken(token0, token1 string) string {
 	var quoteToken string

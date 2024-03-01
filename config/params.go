@@ -28,7 +28,7 @@ var (
 	SwapSaveTime          = int32(SecondsForOneMonth * 3)
 	TransferTableSavetime = int32(SecondsForOneMonth * 3)
 
-	Kline1MinTableSaveTime  = int32(SecondsForOneWeek)
+	Kline1MinTableSaveTime  = int32(SecondsForOneWeek * 3)
 	Kline1HourTableSaveTime = int32(SecondsForOneMonth * 6)
 
 	TokenTableSavetime = int32(SecondsForOneYear * 3)

@@ -16,6 +16,7 @@ require (
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/mailersend/mailersend-go v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/rk/go-cron v0.0.0-20200210175235-e0dd106ca134 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/ysicing/workwxbot v1.1.0 // indirect
@@ -102,6 +103,7 @@ require (
 	github.com/qor/responder v0.0.0-20171031032654-b6def473574f // indirect
 	github.com/qor/session v0.0.0-20170907035918-8206b0adab70 // indirect
 	github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be // indirect
+	github.com/robfig/cron v1.2.0
 	github.com/sagikazarmark/locafero v0.3.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
