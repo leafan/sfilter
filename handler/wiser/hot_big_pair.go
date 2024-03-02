@@ -64,7 +64,7 @@ func (p *HBPair) init() {
 	time.Local = loc
 
 	// 将时间设置为 2024.02.23 0:0:00
-	p.traceTime = time.Date(2024, 2, 26, 0, 0, 0, 0, loc)
+	p.traceTime = time.Date(2024, 2, 22, 0, 0, 0, 1, loc)
 	// p.traceTime = time.Now()
 }
 
@@ -524,6 +524,12 @@ func (p *HBPair) GetBasicPairs() []*schema.Pair {
 	// 非通缩币
 	filter["mainTokenHackType"] = bson.M{
 		"$lte": 2,
+	}
+
+	// 最近1小时内必须更新过, 也就是必须有交易
+	date = time.Now().Add(-1 * time.Hour)
+	filter["updatedAt"] = bson.M{
+		"$gte": date,
 	}
 
 	// 基础排序策略

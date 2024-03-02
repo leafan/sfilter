@@ -43,6 +43,8 @@ type WiserConfig struct {
 	VolumeIncrement      float64 // 交易量增长幅度
 	MinPriceIncreament   float64 // 价格增长最小幅度
 	MaxPriceIncreament   float64 // 价格增长最大幅度
+
+	HotPairHookUrl string
 }
 
 var DefaultWiserConfig = &WiserConfig{
@@ -76,10 +78,13 @@ var DefaultWiserConfig = &WiserConfig{
 
 	ForceUpdatePairHackStatus: false,
 
-	HotPairCheckInterval: 60 * 60,
+	HotPairCheckInterval: 60 * 60 * 24,
 	MinPairLiquidity:     100000, // 10w u
 	MinPairCreatAge:      60 * 60 * 24 * 30,
 	VolumeIncrement:      0.5, // 交易量要增长 x%
 	MinPriceIncreament:   0.05,
 	MaxPriceIncreament:   1.0,
+
+	HotPairHookUrl: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=08871391-4500-4d47-8a0a-480652b2161a", // 热点币策略  robot
+	// HotPairHookUrl: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=ef2ee7d0-e90a-4559-b915-3fb9f73233ff",
 }

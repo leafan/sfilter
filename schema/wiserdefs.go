@@ -181,6 +181,31 @@ type BiDeal struct {
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
 
+// 买卖策略记录
+type BiTrade struct {
+	MainToken   string `json:"mainToken" bson:"mainToken"`
+	PairAddress string `json:"pairAddress" bson:"pairAddress"`
+	PairName    string `json:"pairName" bson:"pairName"`
+
+	// buy info
+	BuyPrice float64   `json:"buyPrice" bson:"buyPrice"`
+	BuyTime  time.Time `json:"buyTime" bson:"buyTime"`
+
+	// sell info
+	SellPrice float64   `json:"sellPrice" bson:"sellPrice"`
+	SellTime  time.Time `json:"sellTime" bson:"sellTime"`
+
+	// summarize
+	HighestPrice float64 `json:"highestPrice" bson:"highestPrice"` // 周期中最高价格
+	EarnRatio    float64 `json:"earnRatio" bson:"earnRatio"`
+
+	// 0表示已买入尚未卖出, 1表示已卖出, 可以重新买入
+	Status int `json:"status" bson:"status"`
+
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+}
+
 // key是token, 数组为token内的所有trade
 type AccountTrades map[string][]AccountTokenTrade
 
@@ -202,6 +227,30 @@ type AccountTokenTrade struct {
 	Amount     float64
 	USDValue   float64 // 法币价值
 	PriceInUSD float64 // 法币价格
+}
+
+var BiTradeIndexModel = []mongo.IndexModel{
+	{
+		Keys:    bson.D{{Key: "createdAt", Value: -1}},
+		Options: options.Index().SetName("createdAt_index"),
+	},
+
+	{
+		Keys:    bson.D{{Key: "mainToken", Value: -1}},
+		Options: options.Index().SetName("mainToken_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "pairAddress", Value: -1}},
+		Options: options.Index().SetName("pairAddress_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "earnRatio", Value: -1}},
+		Options: options.Index().SetName("earnRatio_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "status", Value: -1}},
+		Options: options.Index().SetName("status_index"),
+	},
 }
 
 var WiserIndexModel = []mongo.IndexModel{

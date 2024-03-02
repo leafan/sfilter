@@ -26,6 +26,9 @@ func GetHotPairs(findOpt *options.FindOptions, filter *primitive.M, mongodb *mon
 	}
 	defer cursor.Close(ctx)
 
+	// 修正result
+	updateWrongData(result)
+
 	countOpts := &options.CountOptions{
 		Limit: &config.COUNT_UPPER_SIZE,
 	}
@@ -39,6 +42,34 @@ func GetHotPairs(findOpt *options.FindOptions, filter *primitive.M, mongodb *mon
 
 	err = cursor.All(ctx, &result)
 	return result, totalCount, err
+}
+
+// 处理info的一些错误字段等, 如 txNumIn1h 可能由于1小时内都没有交易
+// 他也没有更新, 从而显示的还是老数据
+func updateWrongData(info []*schema.Pair) {
+	for _, _pair := range info {
+		if time.Since(_pair.UpdatedAt) > 1*time.Hour {
+			_pair.TxNumIn1h = 0
+			_pair.VolumeByUsdIn1h = 0
+		}
+
+		if time.Since(_pair.UpdatedAt) > 2*time.Hour {
+			_pair.TxNumChangeIn1h = 0
+			_pair.PriceChangeIn1h = 0
+			_pair.VolumeByUsdIn1h = 0
+		}
+
+		if time.Since(_pair.UpdatedAt) > 24*time.Hour {
+			_pair.TxNumIn24h = 0
+			_pair.VolumeByUsdIn24h = 0
+		}
+
+		if time.Since(_pair.UpdatedAt) > 48*time.Hour {
+			_pair.TxNumChangeIn24h = 0
+			_pair.PriceChangeIn24h = 0
+			_pair.VolumeByUsdIn24h = 0
+		}
+	}
 }
 
 func GetPairMap(pageSize int64, mongodb *mongo.Database) (schema.PairMap, error) {

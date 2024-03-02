@@ -75,6 +75,8 @@ const WiserTableName = "wiser"
 const BiDealTableName = "deals"
 const BiDealSaveTime = int32(SecondsForOneYear)
 
+const BiTradeTableName = "trades"
+
 // chain 定义
 const Quoter_Contract_Address = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
 

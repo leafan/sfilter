@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"os"
+	"time"
 
 	"github.com/ysicing/workwxbot"
 )
@@ -15,16 +15,18 @@ func SendWecommDebugMsg(content string) {
 func SendWecommBot(robotUrl, content string) {
 	wxbot := workwxbot.NewRobot(robotUrl)
 
-	programName := os.Args[0] // 获取程序名称
+	// programName := os.Args[0] // 获取程序名称
 	msg := workwxbot.WxBotMessage{
 		MsgType: "text",
 		BotText: workwxbot.BotText{
-			Content: programName + ": " + content,
+			// Content: programName + ": " + content,
+			Content: content,
 		},
 	}
 
 	err := wxbot.Send(msg)
 	if err != nil {
 		Warnf("[ SendWecommBot ] wxbot.Send error: ", err)
+		time.Sleep(time.Second)
 	}
 }
