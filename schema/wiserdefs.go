@@ -188,16 +188,20 @@ type BiTrade struct {
 	PairName    string `json:"pairName" bson:"pairName"`
 
 	// buy info
-	BuyPrice float64   `json:"buyPrice" bson:"buyPrice"`
-	BuyTime  time.Time `json:"buyTime" bson:"buyTime"`
+	BuyPrice  float64   `json:"buyPrice" bson:"buyPrice"`
+	BuyTime   time.Time `json:"buyTime" bson:"buyTime"`
+	BuyReason string    `json:"buyReason" bson:"buyReason"`
+	SortRank  int       `json:"sortRank" bson:"sortRank"` // 被选中买点的时候, 其 tx1h 排序多少
 
 	// sell info
-	SellPrice float64   `json:"sellPrice" bson:"sellPrice"`
-	SellTime  time.Time `json:"sellTime" bson:"sellTime"`
+	SellPrice  float64   `json:"sellPrice" bson:"sellPrice"`
+	SellTime   time.Time `json:"sellTime" bson:"sellTime"`
+	SellReason string    `json:"sellReason" bson:"sellReason"` // 卖出原因, 方便查看分析
 
 	// summarize
-	HighestPrice float64 `json:"highestPrice" bson:"highestPrice"` // 周期中最高价格
-	EarnRatio    float64 `json:"earnRatio" bson:"earnRatio"`
+	HighestPrice float64       `json:"highestPrice" bson:"highestPrice"` // 周期中最高价格
+	EarnRatio    float64       `json:"earnRatio" bson:"earnRatio"`
+	HoldTime     time.Duration `json:"holdTime" bson:"holdTime"`
 
 	// 0表示已买入尚未卖出, 1表示已卖出, 可以重新买入
 	Status int `json:"status" bson:"status"`

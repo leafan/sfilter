@@ -58,9 +58,10 @@ func (p *HSPair) HotSubnewBuySignal() {
 
 	var buyPairs []*schema.Pair
 
-	for _, _pair := range pairs {
+	for ind, _pair := range pairs {
 		if p.checkPairValidity(_pair) {
 			if !checkExistPair(_pair, buyPairs) {
+				_pair.ReservedInt = ind + 1 // 把其排序参数写进去
 				buyPairs = append(buyPairs, _pair)
 			}
 		}
@@ -78,8 +79,10 @@ func (p *HSPair) HotSubnewBuySignal() {
 				PairAddress: _pair.Address,
 				PairName:    _pair.PairName,
 
-				BuyPrice: _pair.PriceInUsd,
-				BuyTime:  time.Now(),
+				BuyPrice:  _pair.PriceInUsd,
+				BuyTime:   time.Now(),
+				BuyReason: _pair.ReservedString,
+				SortRank:  _pair.ReservedInt,
 
 				HighestPrice: _pair.PriceInUsd,
 			}
@@ -92,6 +95,8 @@ func (p *HSPair) HotSubnewBuySignal() {
 }
 
 func (p *HSPair) checkPairValidity(_pair *schema.Pair) bool {
+	// return true // test
+
 	// 取2根小时柱子
 	klines1Min := kline.Get1MinKlineWithFullGenerated(_pair.Address, time.Now(), 2, p.Set.DB.Database(config.DatabaseName))
 
@@ -129,6 +134,7 @@ func (p *HSPair) checkPairValidity(_pair *schema.Pair) bool {
 	}
 
 	utils.Infof("[ checkPairValidity ] pass, pair: %v, tx1: %v, tx2: %v, tx3: %v", _pair.PairName, tx1, tx2, tx3)
+	_pair.ReservedString = fmt.Sprintf("tx: %v->%v->%v", tx1, tx2, tx3)
 	return true
 }
 
@@ -137,9 +143,9 @@ func (p *HSPair) HotSubnewSellSignal() {
 	trades := p.getUnSoldTrades()
 
 	for _, trade := range trades {
-		isSell, price := p.checkSellSignal(trade)
+		isSell := p.checkSellSignal(&trade)
 		if isSell {
-			p.sellTrade(&trade, price)
+			p.sellTrade(&trade)
 		}
 	}
 }
@@ -149,14 +155,14 @@ func (p *HSPair) HotSubnewSellSignal() {
 2. 每5分钟取交易量, 连续15分钟下降
 3. 跌破成本50%或者高点回调幅度超过30%
 */
-func (p *HSPair) checkSellSignal(trade schema.BiTrade) (bool, float64) {
+func (p *HSPair) checkSellSignal(trade *schema.BiTrade) bool {
 	// 取2根小时柱子
 	klines1Min := kline.Get1MinKlineWithFullGenerated(trade.PairAddress, time.Now(), 2, p.Set.DB.Database(config.DatabaseName))
 
 	// 倒推15min, 每5min组一根柱子
 	if len(klines1Min) < 2*60 {
 		// utils.Warnf("[ checkSellSignal ] candisk is too less, len: %v, pairName: %v, pairAddr: %v", len(klines1Min), trade.PairName, trade.PairAddress)
-		return false, 0
+		return false
 	}
 	// 过滤掉最后一根柱子, 因为可能当前分钟还没结束, 柱子非完整
 	klines1Min = klines1Min[:len(klines1Min)-1]
@@ -168,19 +174,23 @@ func (p *HSPair) checkSellSignal(trade schema.BiTrade) (bool, float64) {
 
 	// 每5分钟取tx, 连续15分钟tx下降
 	if tx1 > tx2 && tx2 > tx3 {
-		// utils.Infof("[ checkSellSignal ] PairName: %v, tx pass. tx1: %v, tx2: %v, tx3: %v", trade.PairName, tx1, tx2, tx3)
-		return true, klines1Min[len(klines1Min)-1].PriceInUsd
+		utils.Infof("[ checkSellSignal ] PairName: %v, tx pass. tx1: %v, tx2: %v, tx3: %v", trade.PairName, tx1, tx2, tx3)
+		trade.SellReason = fmt.Sprintf("Tx decrease: %v->%v->%v", tx1, tx2, tx3)
+		trade.SellPrice = klines1Min[len(klines1Min)-1].PriceInUsd
+		return true
 	}
 
-	vl3 := klines1Min[length-1].VolumeInUsd + klines1Min[length-2].VolumeInUsd + klines1Min[length-3].VolumeInUsd + klines1Min[length-4].VolumeInUsd + klines1Min[length-5].VolumeInUsd
-	vl2 := klines1Min[length-6].VolumeInUsd + klines1Min[length-7].VolumeInUsd + klines1Min[length-8].VolumeInUsd + klines1Min[length-9].VolumeInUsd + klines1Min[length-10].VolumeInUsd
-	vl1 := klines1Min[length-11].VolumeInUsd + klines1Min[length-12].VolumeInUsd + klines1Min[length-13].VolumeInUsd + klines1Min[length-14].VolumeInUsd + klines1Min[length-15].VolumeInUsd
+	// vl3 := klines1Min[length-1].VolumeInUsd + klines1Min[length-2].VolumeInUsd + klines1Min[length-3].VolumeInUsd + klines1Min[length-4].VolumeInUsd + klines1Min[length-5].VolumeInUsd
+	// vl2 := klines1Min[length-6].VolumeInUsd + klines1Min[length-7].VolumeInUsd + klines1Min[length-8].VolumeInUsd + klines1Min[length-9].VolumeInUsd + klines1Min[length-10].VolumeInUsd
+	// vl1 := klines1Min[length-11].VolumeInUsd + klines1Min[length-12].VolumeInUsd + klines1Min[length-13].VolumeInUsd + klines1Min[length-14].VolumeInUsd + klines1Min[length-15].VolumeInUsd
 
 	// 或: 每5分钟取交易量, 连续15分钟下降
-	if vl1 > vl2 && vl2 > vl3 {
-		// utils.Infof("[ checkSellSignal ] PairName: %v, volume pass. vl1: %v, vl2: %v, vl3: %v", trade.PairName, vl1, vl2, vl3)
-		return true, klines1Min[len(klines1Min)-1].PriceInUsd
-	}
+	// if vl1 > vl2 && vl2 > vl3 {
+	// 	utils.Infof("[ checkSellSignal ] PairName: %v, volume pass. vl1: %v, vl2: %v, vl3: %v", trade.PairName, vl1, vl2, vl3)
+	// 	trade.SellReason = fmt.Sprintf("Volume decrease: %v, %v, %v", vl1, vl2, vl3)
+	// trade.SellPrice = klines1Min[len(klines1Min)-1].PriceInUsd
+	// return true
+	// }
 
 	// 或: 跌破成本50%或者高点回调幅度超过30%
 
@@ -194,7 +204,7 @@ func (p *HSPair) checkSellSignal(trade schema.BiTrade) (bool, float64) {
 			trade.HighestPrice = k1m.PriceInUsd
 
 			// 更新到db, 下次使用
-			wiser.UpdateBiTrade(&trade, p.Set.DB)
+			wiser.UpdateBiTrade(trade, p.Set.DB)
 		}
 
 		if !isRetrace {
@@ -204,13 +214,27 @@ func (p *HSPair) checkSellSignal(trade schema.BiTrade) (bool, float64) {
 			}
 		}
 
-		// 亏50%或回调30% 定义为卖出
-		if (k1m.PriceInUsd <= trade.BuyPrice*0.5) || (isRetrace && k1m.PriceInUsd <= trade.HighestPrice*0.7) {
-			return true, klines1Min[len(klines1Min)-1].PriceInUsd
+		// 亏50%卖出
+		if k1m.PriceInUsd <= trade.BuyPrice*0.5 {
+			utils.Infof("[ checkSellSignal ] PairName: %v, lose money. Current Price: %v, trade.BuyPrice: %v", trade.PairName, k1m.PriceInUsd, trade.BuyPrice)
+
+			trade.SellReason = fmt.Sprintf("Lose money. Buy: %v, Current: %v", trade.BuyPrice, k1m.PriceInUsd)
+			trade.SellPrice = k1m.PriceInUsd
+			return true
 		}
+
+		// 回调30%为卖出
+		if isRetrace && k1m.PriceInUsd <= trade.HighestPrice*0.7 {
+			utils.Infof("[ checkSellSignal ] PairName: %v, retrace pass. Current: %v,HighestPrice", trade.PairName, k1m.PriceInUsd, trade.HighestPrice)
+
+			trade.SellReason = fmt.Sprintf("Retrace. Current: %v, Highest: %v", k1m.PriceInUsd, trade.HighestPrice)
+			trade.SellPrice = k1m.PriceInUsd
+			return true
+		}
+
 	}
 
-	return false, 0
+	return false
 }
 
 func (p *HSPair) buyTrade(trade *schema.BiTrade) {
@@ -220,25 +244,24 @@ func (p *HSPair) buyTrade(trade *schema.BiTrade) {
 	wiser.SaveBiTrade(trade, p.Set.DB)
 
 	// 发送消息到wx
-	msg := fmt.Sprintf("[ Buy ]\nPair: %v\nAddress: %v", trade.PairName, trade.PairAddress)
+	msg := fmt.Sprintf("<font color=\"info\">[ **Buy** ]</font>\nPair: [%v](https://etherscan.io/address/%v)\nPrice: %v\nRank: %v\nBuyReason: %v", trade.PairName, trade.PairAddress, trade.BuyPrice, trade.SortRank, trade.BuyReason)
 	utils.SendWecommBot(p.Set.Config.HotPairHookUrl, msg)
-
 }
 
-func (p *HSPair) sellTrade(trade *schema.BiTrade, curPrice float64) {
-	utils.Infof("[ sellTrade ] sell now. PairName: %v", trade.PairName)
-
-	trade.SellPrice = curPrice
+func (p *HSPair) sellTrade(trade *schema.BiTrade) {
+	// utils.Infof("[ sellTrade ] sell now. PairName: %v", trade.PairName)
 	trade.SellTime = time.Now()
 
 	trade.EarnRatio = (trade.SellPrice - trade.BuyPrice) / trade.BuyPrice
+	trade.HoldTime = time.Since(trade.BuyTime)
 	trade.Status = 1 // 表示该币可以重新买入
 
 	// 保存到db
 	wiser.UpdateBiTrade(trade, p.Set.DB)
 
 	// 发送消息到wx
-	msg := fmt.Sprintf("[ Sell ]\nPair: %v\nEarn: %.2f%%\nAddress: %v\nBuyTime: %v\nHoldTime: %.2f Hours", trade.PairName, trade.EarnRatio*100, trade.PairAddress, trade.BuyTime.In(time.FixedZone("UTC+8", 8*60*60)).Format("01-02 15:04"), time.Since(trade.BuyTime).Hours())
+	msg := fmt.Sprintf("<font color=\"warning\">[ **Sell** ]</font>\nPair: [%v](https://etherscan.io/address/%v)\nEarn: <font color=\"comment\">%.2f%%</font>\nReason: <font color=\"comment\">**%v**</font>\nSellPrice: %v\nBuyTime: %v\nBuyRank: %v\nHoldTime: %.2f Hours", trade.PairName, trade.PairAddress, trade.EarnRatio*100, trade.SellReason, trade.SellPrice, trade.BuyTime.In(time.FixedZone("UTC+8", 8*60*60)).Format("01-02 15:04"), trade.SortRank, time.Since(trade.BuyTime).Hours())
+
 	utils.SendWecommBot(p.Set.Config.HotPairHookUrl, msg)
 }
 
@@ -263,11 +286,6 @@ func (p *HSPair) FindHotSubnewPairs() []*schema.Pair {
 	db := p.Set.DB.Database(config.DatabaseName)
 	filter := bson.M{}
 
-	// 最近1个小时需有交易
-	filter["txNumIn1h"] = bson.M{
-		"$gte": 1,
-	}
-
 	// 非通缩币
 	filter["mainTokenHackType"] = bson.M{
 		"$lte": 2,
@@ -279,7 +297,7 @@ func (p *HSPair) FindHotSubnewPairs() []*schema.Pair {
 		"$gte": date,
 	}
 
-	limit := int64(1000)
+	limit := int64(50)
 	options := &options.FindOptions{Limit: &limit}
 
 	sort := bson.D{}
