@@ -89,6 +89,8 @@ func updatePairTradeInfo(_pair string, mongodb *mongo.Client) {
 
 func updatePairTx1h(klines1Min []schema.KLine, pair *schema.Pair) {
 	if len(klines1Min) <= 0 {
+		// 如果一根柱子都没有, 那也需要更新tx为0
+		pair.TxNumIn1h = 0
 		return
 	}
 
@@ -123,6 +125,7 @@ func updatePairTx1h(klines1Min []schema.KLine, pair *schema.Pair) {
 
 func updatePairTx24h(klines1Hour []schema.KLine, pair *schema.Pair) {
 	if len(klines1Hour) <= 0 {
+		pair.TxNumIn24h = 0
 		return
 	}
 
@@ -156,6 +159,7 @@ func updatePairTx24h(klines1Hour []schema.KLine, pair *schema.Pair) {
 
 func updatePairPrice1h(klines1Min []schema.KLine, pair *schema.Pair) {
 	if len(klines1Min) <= 0 {
+		pair.VolumeByUsdIn1h = 0
 		return
 	}
 
@@ -183,6 +187,7 @@ func updatePairPrice1h(klines1Min []schema.KLine, pair *schema.Pair) {
 
 func updatePairPrice24h(klines1Hour []schema.KLine, pair *schema.Pair) {
 	if len(klines1Hour) <= 0 {
+		pair.VolumeByUsdIn24h = 0
 		return
 	}
 

@@ -181,17 +181,42 @@ type BiDeal struct {
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
 
+// 排名列表保存, 每小时保存一次小时前100名
+// 一年有 50*24*365 = 88w 条记录
+type HotPairRank struct {
+	// year_month_day or year_month_day_hour
+	PeriodKey string `json:"periodKey" bson:"periodKey"`
+
+	// 被选中买点的时候, 其 tx1h 排序多少
+	SortRank      int `json:"sortRank" bson:"sortRank"`
+	TxNumInPeriod int `json:"txNumInPeriod" bson:"txNumInPeriod"`
+
+	// unique key, 由 year_month_day_pairAddr or year_month_day_hour_pairAddr 组成
+	PeriodKeyWithPair string `json:"periodKeyWithPair" bson:"periodKeyWithPair"`
+
+	MainToken     string        `json:"mainToken" bson:"mainToken"`
+	PairAddress   string        `json:"pairAddress" bson:"pairAddress"`
+	PairName      string        `json:"pairName" bson:"pairName"`
+	PairLiquidity float64       `json:"pairLiquidity" bson:"pairLiquidity"`
+	PairAge       time.Duration `json:"pairAge" bson:"pairAge"`
+
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+}
+
 // 买卖策略记录
 type BiTrade struct {
-	MainToken   string `json:"mainToken" bson:"mainToken"`
-	PairAddress string `json:"pairAddress" bson:"pairAddress"`
-	PairName    string `json:"pairName" bson:"pairName"`
+	MainToken     string        `json:"mainToken" bson:"mainToken"`
+	PairAddress   string        `json:"pairAddress" bson:"pairAddress"`
+	PairName      string        `json:"pairName" bson:"pairName"`
+	PairLiquidity float64       `json:"pairLiquidity" bson:"pairLiquidity"`
+	PairAge       time.Duration `json:"pairAge" bson:"pairAge"`
 
 	// buy info
 	BuyPrice  float64   `json:"buyPrice" bson:"buyPrice"`
 	BuyTime   time.Time `json:"buyTime" bson:"buyTime"`
 	BuyReason string    `json:"buyReason" bson:"buyReason"`
 	SortRank  int       `json:"sortRank" bson:"sortRank"` // 被选中买点的时候, 其 tx1h 排序多少
+	TxNumIn1h int       `json:"txNumIn1h" bson:"txNumIn1h"`
 
 	// sell info
 	SellPrice  float64   `json:"sellPrice" bson:"sellPrice"`
@@ -231,6 +256,34 @@ type AccountTokenTrade struct {
 	Amount     float64
 	USDValue   float64 // 法币价值
 	PriceInUSD float64 // 法币价格
+}
+
+var HotPairRankIndexModel = []mongo.IndexModel{
+	{
+		Keys:    bson.D{{Key: "createdAt", Value: -1}},
+		Options: options.Index().SetName("createdAt_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "periodKeyWithPair", Value: 1}},
+		Options: options.Index().SetName("periodKeyWithPair_index").SetUnique(true),
+	},
+
+	{
+		Keys:    bson.D{{Key: "mainToken", Value: -1}},
+		Options: options.Index().SetName("mainToken_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "pairAddress", Value: -1}},
+		Options: options.Index().SetName("pairAddress_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "pairAge", Value: -1}},
+		Options: options.Index().SetName("pairAge_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "pairLiquidity", Value: -1}},
+		Options: options.Index().SetName("pairLiquidity_index"),
+	},
 }
 
 var BiTradeIndexModel = []mongo.IndexModel{

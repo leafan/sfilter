@@ -103,7 +103,7 @@ func (s *Setting) checkPairValidation() {
 				_pair.MainTokenHackType = schema.PAIR_MAINTOKEN_HACK_TYPE_UNKNOWN
 			}
 
-			// utils.Infof("[ checkPairValidation ] GetAndUpdatePairHackType. pair: %v, pairType: %v, hackType: %v", _pair.Address, _pair.Type, _pair.MainTokenHackType)
+			utils.Infof("[ checkPairValidation ] GetAndUpdatePairHackType. pair: %v, pairType: %v, hackType: %v", _pair.Address, _pair.Type, _pair.MainTokenHackType)
 
 			// 保存进db
 			_pair.UpdatedAt = time.Now()

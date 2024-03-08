@@ -76,8 +76,8 @@ func UpdateBiTrade(trade *schema.BiTrade, mongodb *mongo.Client) {
 	trade.UpdatedAt = time.Now()
 
 	filter := bson.D{
-		{Key: "mainToken", Value: trade.MainToken},
-		{Key: "status", Value: 0}, // 逻辑上来说, 某一个时刻, 一定只有一个为0的mainToken订单
+		{Key: "pairAddress", Value: trade.PairAddress},
+		{Key: "status", Value: 0},
 	}
 
 	update := bson.D{

@@ -7,10 +7,12 @@ import (
 	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
+	"sfilter/services/pair"
 	"sfilter/services/wiser"
 	"sfilter/utils"
 	"time"
 
+	"github.com/robfig/cron"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -24,17 +26,66 @@ type Wiser struct {
 	epoch string
 }
 
-// 每隔一定时间执行一遍分析逻辑
 func (w *Wiser) Run() {
-	interval := time.Duration(w.set.Config.WiserSearchInterval) * time.Second
-	timer := time.NewTicker(interval)
-	defer timer.Stop()
+	c := cron.New()
+	w.Save1HourTopRank()
 
-	w.WiserSearcher() // 先执行一次
+	// 每小时执行一次
+	spec_hour := "20 0 * * * *"
+	c.AddFunc(spec_hour, func() {
+		w.Save1HourTopRank()
+	})
 
-	for range timer.C {
+	// 每天执行一次
+	spec_day := "30 0 0 * * *"
+	c.AddFunc(spec_day, func() {
+		w.Save1DayTopRank()
 		w.WiserSearcher()
+	})
+
+	c.Start()
+
+	select {}
+}
+
+func (w *Wiser) fillRankWithPair(rank *schema.HotPairRank, _pair *schema.Pair) {
+	rank.MainToken = utils.GetMainToken(_pair.Token0, _pair.Token1)
+	rank.PairAddress = _pair.Address
+	rank.PairName = _pair.PairName
+	rank.PairLiquidity = _pair.LiquidityInUsd
+	rank.PairAge = time.Since(_pair.FirstAddPoolTime)
+
+	rank.CreatedAt = time.Now()
+}
+
+func (w *Wiser) Save1HourTopRank() {
+	pairs := w.FindTopXPairs(100, "txNumIn1h")
+	now := time.Now()
+
+	var rankList []interface{}
+	for ind, _pair := range pairs {
+		pKey := fmt.Sprintf("%v_%v_%v_%v", now.Year(), now.Month(), now.Day(), now.Hour())
+
+		rank := schema.HotPairRank{
+			PeriodKey:         pKey,
+			PeriodKeyWithPair: fmt.Sprintf("%v_%v", pKey, _pair.Address),
+			SortRank:          ind + 1,
+			TxNumInPeriod:     _pair.TxNumIn1h,
+		}
+		utils.Tracef("test, pairname: %v, txnum: %v", _pair.PairName, _pair.TxNumIn1h)
+		w.fillRankWithPair(&rank, _pair)
+
+		rankList = append(rankList, rank)
 	}
+
+	// 批量存储
+	err := wiser.SaveTopRanks(rankList, w.set.DB)
+	if err != nil {
+		utils.Errorf("[ Save1HourTopRank ] SaveTopRanks error: %v", err)
+	}
+}
+
+func (w *Wiser) Save1DayTopRank() {
 }
 
 func (w *Wiser) Test(accounts []string) {
@@ -95,6 +146,40 @@ func (w *Wiser) WiserSearcher() {
 		}
 	}
 
+}
+
+func (w *Wiser) FindTopXPairs(topN int64, sortKey string) []*schema.Pair {
+	db := w.set.DB.Database(config.DatabaseName)
+	filter := bson.M{}
+
+	// 最近1小时内必须更新过, 也就是必须有交易
+	date := time.Now().Add(-1 * time.Hour)
+	filter["tradeInfoUpdatedAt"] = bson.M{
+		"$gte": date,
+	}
+
+	// 池子 tvl 要求, 因为是取排名, 所以要求1000u至少
+	filter["liquidityInUsd"] = bson.M{
+		"$gte": 1000,
+	}
+
+	// 取前x名
+	options := &options.FindOptions{Limit: &topN}
+
+	sort := bson.D{}
+
+	// 倒排
+	sort = append(sort, bson.E{Key: sortKey, Value: -1}, bson.E{Key: "UpdateAt", Value: -1})
+	options = options.SetSort(sort)
+
+	info, _, err := pair.GetHotPairs(options, &filter, db)
+
+	utils.Debugf("[ FindTopXPairs ] top x print. len: %v, err: %v", len(info), err)
+	// for ind, _pair := range info {
+	// 	fmt.Printf("%v: pair: %v, address: %v\n", ind+1, _pair.PairName, _pair.Address)
+	// }
+
+	return info
 }
 
 // 分析某个账号是否是优秀地址

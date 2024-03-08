@@ -173,6 +173,28 @@ func GetAccountTransfers(seconds int, pageSize int64, account string, mongodb *m
 	return trades, nil
 }
 
+func SaveTopRanks(ranks []interface{}, mongodb *mongo.Client) error {
+	if len(ranks) <= 0 {
+		return nil
+	}
+
+	collection := mongodb.Database(config.DatabaseName).Collection(config.HotPairRankTableName)
+
+	session, err := mongodb.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(context.Background())
+
+	// 执行事务操作
+	err = mongo.WithSession(context.Background(), session, func(sessionContext mongo.SessionContext) error {
+		_, err := collection.InsertMany(sessionContext, ranks)
+		return err
+	})
+
+	return err
+}
+
 func getAttFromSwap(swap schema.Swap) schema.AccountTokenTrade {
 	att := schema.AccountTokenTrade{
 		BlockNo:  swap.BlockNo,

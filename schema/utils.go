@@ -33,6 +33,7 @@ func InitTables(mongodb *mongo.Client) {
 	utils.DoInitTable(config.DatabaseName, config.WiserTableName, WiserIndexModel, mongodb)
 	utils.DoInitTable(config.DatabaseName, config.BiDealTableName, BiDealIndexModel, mongodb)
 	utils.DoInitTable(config.DatabaseName, config.BiTradeTableName, BiTradeIndexModel, mongodb)
+	utils.DoInitTable(config.DatabaseName, config.HotPairRankTableName, HotPairRankIndexModel, mongodb)
 
 	// router etc
 	utils.DoInitTable(config.DatabaseName, config.RouterTableName, RouterIndexModel, mongodb)

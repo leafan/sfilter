@@ -17,14 +17,19 @@ import (
 
 /**
 买入条件（取与）：
-1. 过滤掉通缩币
+1. 过滤掉通缩币, 根据1小时tx数倒序排名, 取出前20名pair
 2. 每5分钟取tx, 连续15分钟tx上涨, 且每5分钟都有至少1笔tx
-3. 每5分钟取价格, 连续15分钟价格上涨, 且最新价格比15分钟前价格大于1%且小于50%
+3. 每5分钟取价格, 连续15分钟价格上涨, 且最新价格比15分钟前价格大于5%且小于50%
 
 卖出条件（取或）：
+1. 跌破成本50%或者高点回调幅度超过30%
+2. 缩量涨(交易量连续3根5min柱子跌但价格比15min前高)
+3. 放量跌(交易量连续3根5min柱子涨但价格比15min前低)
+
+
+----- 废弃卖出条件:
 1. 每5分钟取tx, 连续15分钟tx下降
 2. 每5分钟取交易量, 连续15分钟下降
-3. 跌破成本50%或者高点回调幅度超过30%
 */
 
 type HSPair struct {
@@ -75,9 +80,11 @@ func (p *HSPair) HotSubnewBuySignal() {
 		if err != nil {
 			// 没找到, 或者说没买, 执行买入动作
 			trade := schema.BiTrade{
-				MainToken:   mainToken,
-				PairAddress: _pair.Address,
-				PairName:    _pair.PairName,
+				MainToken:     mainToken,
+				PairAddress:   _pair.Address,
+				PairName:      _pair.PairName,
+				PairLiquidity: _pair.LiquidityInUsd,
+				PairAge:       time.Since(_pair.FirstAddPoolTime),
 
 				BuyPrice:  _pair.PriceInUsd,
 				BuyTime:   time.Now(),
@@ -127,8 +134,8 @@ func (p *HSPair) checkPairValidity(_pair *schema.Pair) bool {
 		return false
 	}
 
-	// 价格15min内涨幅为 1%-50%
-	if klines1Min[length-1].PriceInUsd < klines1Min[length-15].PriceInUsd*1.01 || klines1Min[length-1].PriceInUsd > klines1Min[length-15].PriceInUsd*1.5 {
+	// 价格15min内涨幅
+	if klines1Min[length-1].PriceInUsd < klines1Min[length-16].PriceInUsd*1.05 || klines1Min[length-1].PriceInUsd > klines1Min[length-16].PriceInUsd*1.5 {
 		// utils.Debugf("[ checkPairValidity ] price not pass, pair: %v", _pair.PairName)
 		return false
 	}
@@ -150,11 +157,6 @@ func (p *HSPair) HotSubnewSellSignal() {
 	}
 }
 
-/*
-1. 每5分钟取tx, 连续15分钟tx下降
-2. 每5分钟取交易量, 连续15分钟下降
-3. 跌破成本50%或者高点回调幅度超过30%
-*/
 func (p *HSPair) checkSellSignal(trade *schema.BiTrade) bool {
 	// 取2根小时柱子
 	klines1Min := kline.Get1MinKlineWithFullGenerated(trade.PairAddress, time.Now(), 2, p.Set.DB.Database(config.DatabaseName))
@@ -168,32 +170,39 @@ func (p *HSPair) checkSellSignal(trade *schema.BiTrade) bool {
 	klines1Min = klines1Min[:len(klines1Min)-1]
 
 	length := len(klines1Min)
-	tx3 := klines1Min[length-1].TxNum + klines1Min[length-2].TxNum + klines1Min[length-3].TxNum + klines1Min[length-4].TxNum + klines1Min[length-5].TxNum
-	tx2 := klines1Min[length-6].TxNum + klines1Min[length-7].TxNum + klines1Min[length-8].TxNum + klines1Min[length-9].TxNum + klines1Min[length-10].TxNum
-	tx1 := klines1Min[length-11].TxNum + klines1Min[length-12].TxNum + klines1Min[length-13].TxNum + klines1Min[length-14].TxNum + klines1Min[length-15].TxNum
+	// tx3 := klines1Min[length-1].TxNum + klines1Min[length-2].TxNum + klines1Min[length-3].TxNum + klines1Min[length-4].TxNum + klines1Min[length-5].TxNum
+	// tx2 := klines1Min[length-6].TxNum + klines1Min[length-7].TxNum + klines1Min[length-8].TxNum + klines1Min[length-9].TxNum + klines1Min[length-10].TxNum
+	// tx1 := klines1Min[length-11].TxNum + klines1Min[length-12].TxNum + klines1Min[length-13].TxNum + klines1Min[length-14].TxNum + klines1Min[length-15].TxNum
 
-	// 每5分钟取tx, 连续15分钟tx下降
-	if tx1 > tx2 && tx2 > tx3 {
-		utils.Infof("[ checkSellSignal ] PairName: %v, tx pass. tx1: %v, tx2: %v, tx3: %v", trade.PairName, tx1, tx2, tx3)
-		trade.SellReason = fmt.Sprintf("Tx decrease: %v->%v->%v", tx1, tx2, tx3)
+	// // 每5分钟取tx, 连续15分钟tx下降
+	// if tx1 > tx2 && tx2 > tx3 {
+	// 	utils.Infof("[ checkSellSignal ] PairName: %v, tx pass. tx1: %v, tx2: %v, tx3: %v", trade.PairName, tx1, tx2, tx3)
+	// 	trade.SellReason = fmt.Sprintf("Tx decrease: %v->%v->%v", tx1, tx2, tx3)
+	// 	trade.SellPrice = klines1Min[len(klines1Min)-1].PriceInUsd
+	// 	return true
+	// }
+
+	vl3 := klines1Min[length-1].VolumeInUsd + klines1Min[length-2].VolumeInUsd + klines1Min[length-3].VolumeInUsd + klines1Min[length-4].VolumeInUsd + klines1Min[length-5].VolumeInUsd
+	vl2 := klines1Min[length-6].VolumeInUsd + klines1Min[length-7].VolumeInUsd + klines1Min[length-8].VolumeInUsd + klines1Min[length-9].VolumeInUsd + klines1Min[length-10].VolumeInUsd
+	vl1 := klines1Min[length-11].VolumeInUsd + klines1Min[length-12].VolumeInUsd + klines1Min[length-13].VolumeInUsd + klines1Min[length-14].VolumeInUsd + klines1Min[length-15].VolumeInUsd
+
+	// 1. 缩量涨(交易量连续3根5min柱子跌但价格比15min前高)
+	if vl1 > vl2 && vl2 > vl3 && klines1Min[len(klines1Min)-16].PriceInUsd < klines1Min[len(klines1Min)-1].PriceInUsd {
+		utils.Infof("[ checkSellSignal ] PairName: %v, volume pass. vl1: %v, vl2: %v, vl3: %v", trade.PairName, vl1, vl2, vl3)
+		trade.SellReason = fmt.Sprintf("缩量涨: %.1f->%.1f->%.1f", vl1, vl2, vl3)
 		trade.SellPrice = klines1Min[len(klines1Min)-1].PriceInUsd
 		return true
 	}
 
-	// vl3 := klines1Min[length-1].VolumeInUsd + klines1Min[length-2].VolumeInUsd + klines1Min[length-3].VolumeInUsd + klines1Min[length-4].VolumeInUsd + klines1Min[length-5].VolumeInUsd
-	// vl2 := klines1Min[length-6].VolumeInUsd + klines1Min[length-7].VolumeInUsd + klines1Min[length-8].VolumeInUsd + klines1Min[length-9].VolumeInUsd + klines1Min[length-10].VolumeInUsd
-	// vl1 := klines1Min[length-11].VolumeInUsd + klines1Min[length-12].VolumeInUsd + klines1Min[length-13].VolumeInUsd + klines1Min[length-14].VolumeInUsd + klines1Min[length-15].VolumeInUsd
+	// 2. 放量跌(交易量连续3根5min柱子涨但价格比15min前低)
+	if vl1 < vl2 && vl2 < vl3 && klines1Min[len(klines1Min)-1].PriceInUsd < klines1Min[len(klines1Min)-16].PriceInUsd {
+		utils.Infof("[ checkSellSignal ] PairName: %v, volume pass. vl1: %v, vl2: %v, vl3: %v", trade.PairName, vl1, vl2, vl3)
+		trade.SellReason = fmt.Sprintf("放量跌: %.1f->%.1f->%.1f", vl1, vl2, vl3)
+		trade.SellPrice = klines1Min[len(klines1Min)-1].PriceInUsd
+		return true
+	}
 
-	// 或: 每5分钟取交易量, 连续15分钟下降
-	// if vl1 > vl2 && vl2 > vl3 {
-	// 	utils.Infof("[ checkSellSignal ] PairName: %v, volume pass. vl1: %v, vl2: %v, vl3: %v", trade.PairName, vl1, vl2, vl3)
-	// 	trade.SellReason = fmt.Sprintf("Volume decrease: %v, %v, %v", vl1, vl2, vl3)
-	// trade.SellPrice = klines1Min[len(klines1Min)-1].PriceInUsd
-	// return true
-	// }
-
-	// 或: 跌破成本50%或者高点回调幅度超过30%
-
+	// 3: 跌破成本50%或者高点回调幅度超过30%
 	var isRetrace bool // 是否属于回调阶段
 	j := 0             // 最近5-6min是否符合卖出条件
 	for i := len(klines1Min) - 1; i > 0 && j < 6; i-- {
@@ -218,7 +227,7 @@ func (p *HSPair) checkSellSignal(trade *schema.BiTrade) bool {
 		if k1m.PriceInUsd <= trade.BuyPrice*0.5 {
 			utils.Infof("[ checkSellSignal ] PairName: %v, lose money. Current Price: %v, trade.BuyPrice: %v", trade.PairName, k1m.PriceInUsd, trade.BuyPrice)
 
-			trade.SellReason = fmt.Sprintf("Lose money. Buy: %v, Current: %v", trade.BuyPrice, k1m.PriceInUsd)
+			trade.SellReason = fmt.Sprintf("跌破50%%. Buy: %v, Current: %v", trade.BuyPrice, k1m.PriceInUsd)
 			trade.SellPrice = k1m.PriceInUsd
 			return true
 		}
@@ -227,7 +236,7 @@ func (p *HSPair) checkSellSignal(trade *schema.BiTrade) bool {
 		if isRetrace && k1m.PriceInUsd <= trade.HighestPrice*0.7 {
 			utils.Infof("[ checkSellSignal ] PairName: %v, retrace pass. Current: %v,HighestPrice", trade.PairName, k1m.PriceInUsd, trade.HighestPrice)
 
-			trade.SellReason = fmt.Sprintf("Retrace. Current: %v, Highest: %v", k1m.PriceInUsd, trade.HighestPrice)
+			trade.SellReason = fmt.Sprintf("回调卖出. Current: %v, Highest: %v", k1m.PriceInUsd, trade.HighestPrice)
 			trade.SellPrice = k1m.PriceInUsd
 			return true
 		}
@@ -244,7 +253,7 @@ func (p *HSPair) buyTrade(trade *schema.BiTrade) {
 	wiser.SaveBiTrade(trade, p.Set.DB)
 
 	// 发送消息到wx
-	msg := fmt.Sprintf("<font color=\"info\">[ **Buy** ]</font>\nPair: [%v](https://etherscan.io/address/%v)\nPrice: %v\nRank: %v\nBuyReason: %v", trade.PairName, trade.PairAddress, trade.BuyPrice, trade.SortRank, trade.BuyReason)
+	msg := fmt.Sprintf("<font color=\"info\">[ **Buy** ]</font>\nPair: [%v](https://www.dextools.io/app/cn/ether/pair-explorer/%v)\nLiquidity: $%.1f K\nAge: %v\nPrice: %v\nRank: %v\nBuyReason: %v", trade.PairName, trade.PairAddress, trade.PairLiquidity/1000, utils.ReadibleDuration(trade.PairAge), trade.BuyPrice, trade.SortRank, trade.BuyReason)
 	utils.SendWecommBot(p.Set.Config.HotPairHookUrl, msg)
 }
 
@@ -259,10 +268,23 @@ func (p *HSPair) sellTrade(trade *schema.BiTrade) {
 	// 保存到db
 	wiser.UpdateBiTrade(trade, p.Set.DB)
 
+	mainTokenCount := p.getSoldTradesByMainToken(trade.MainToken)
+
 	// 发送消息到wx
-	msg := fmt.Sprintf("<font color=\"warning\">[ **Sell** ]</font>\nPair: [%v](https://etherscan.io/address/%v)\nEarn: <font color=\"comment\">%.2f%%</font>\nReason: <font color=\"comment\">**%v**</font>\nSellPrice: %v\nBuyTime: %v\nBuyRank: %v\nHoldTime: %.2f Hours", trade.PairName, trade.PairAddress, trade.EarnRatio*100, trade.SellReason, trade.SellPrice, trade.BuyTime.In(time.FixedZone("UTC+8", 8*60*60)).Format("01-02 15:04"), trade.SortRank, time.Since(trade.BuyTime).Hours())
+	msg := fmt.Sprintf("<font color=\"warning\">[ **Sell** ]</font>\nPair: [%v](https://www.dextools.io/app/cn/ether/pair-explorer/%v)\nEarn: <font color=\"comment\">%.2f%%</font>\nReason: <font color=\"comment\">**%v**</font>\nSellPrice: %v\nBuyTime: %v\nBuyRank: %v\nHoldTime: %v\nBuyCounts: %v\nLiquidity: $%.1f K\nAge: %v", trade.PairName, trade.PairAddress, trade.EarnRatio*100, trade.SellReason, trade.SellPrice, trade.BuyTime.In(time.FixedZone("UTC+8", 8*60*60)).Format("01-02 15:04"), trade.SortRank, trade.HoldTime.String(), mainTokenCount, trade.PairLiquidity/1000, utils.ReadibleDuration(trade.PairAge))
 
 	utils.SendWecommBot(p.Set.Config.HotPairHookUrl, msg)
+}
+
+func (p *HSPair) getSoldTradesByMainToken(mainToken string) int64 {
+	filter := bson.M{}
+	filter["status"] = 1
+	filter["mainToken"] = mainToken
+
+	options := &options.FindOptions{}
+	_, count, _ := wiser.GetBiTrades(options, &filter, p.Set.DB.Database(config.DatabaseName))
+
+	return count
 }
 
 func (p *HSPair) getUnSoldTrades() []schema.BiTrade {
@@ -297,7 +319,7 @@ func (p *HSPair) FindHotSubnewPairs() []*schema.Pair {
 		"$gte": date,
 	}
 
-	limit := int64(50)
+	limit := int64(20)
 	options := &options.FindOptions{Limit: &limit}
 
 	sort := bson.D{}

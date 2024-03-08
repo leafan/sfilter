@@ -124,7 +124,7 @@ func getPairTypeFromChain(address string) int {
 
 func TEST_PAIR() {
 	// pair, _ := GetPairInfo("0xEfC97fa9e615D6aE8D4Ed43c14611191f9390ab3", chain.GetMongo())  // 通缩币
-	pair, _ := GetPairInfo("0xfF3fCA3388edB6873563fe8C6AAbea3c129E65b9", chain.GetMongo()) // normal token
+	pair, _ := GetPairInfo("0x43bEc83553828f02a4A20BAa536917F709866322", chain.GetMongo()) // normal token
 	pair.Type = schema.SWAP_EVENT_UNISWAPV2_LIKE
 
 	_type := chain.GetUniV2PoolTokenHackType(pair)

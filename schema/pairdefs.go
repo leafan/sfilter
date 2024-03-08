@@ -116,6 +116,9 @@ type TradeInfoForPair struct {
 
 	// 24h内的交易金额(usd)
 	VolumeByUsdIn24h float64 `json:"volumeByUsdIn24h" bson:"volumeByUsdIn24h"`
+
+	// tradeinfo更新时间, 用于获取最新有交易的pair
+	TradeInfoUpdatedAt time.Time `json:"tradeInfoUpdatedAt" bson:"tradeInfoUpdatedAt"`
 }
 
 var PairIndexModel = []mongo.IndexModel{
@@ -197,5 +200,9 @@ var PairIndexModel = []mongo.IndexModel{
 	{
 		Keys:    bson.D{{Key: "volumeByUsdIn24h", Value: 1}},
 		Options: options.Index().SetName("volumeByUsdIn24h_index"),
+	},
+	{
+		Keys:    bson.D{{Key: "tradeInfoUpdatedAt", Value: 1}},
+		Options: options.Index().SetName("tradeInfoUpdatedAt_index"),
 	},
 }

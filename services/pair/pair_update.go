@@ -108,6 +108,9 @@ func UpSertPairCreatedInfo(pair *schema.Pair, mongodb *mongo.Client) {
 func UpdateTradeInfo(pair *schema.Pair, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.PairTableName)
 
+	// 更新时间
+	pair.TradeInfoUpdatedAt = time.Now()
+
 	info := struct {
 		schema.TradeInfoForPair `bson:",inline"`
 		UpdatedAt               time.Time `bson:"updatedAt"`

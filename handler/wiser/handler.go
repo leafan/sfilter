@@ -4,10 +4,11 @@ type Handler struct {
 	Wiser  *Wiser
 	Hbpair *HBPair
 	Hspair *HSPair
+	Hnpair *HNPair
 }
 
 // deal or wiser 表示分析deal和wiser, 任意一个开启均表示打开 wiser 服务
-func NewHandler(account, db string, debug bool, deal, wiser, hb, hs bool) *Handler {
+func NewHandler(account, db string, debug bool, deal, wiser bool, hx string) *Handler {
 	set := NewSetting(account, db, debug)
 
 	hndl := &Handler{}
@@ -20,14 +21,20 @@ func NewHandler(account, db string, debug bool, deal, wiser, hb, hs bool) *Handl
 		}
 	}
 
-	if hb {
+	if hx == "hb" {
 		hndl.Hbpair = &HBPair{
 			Set: set,
 		}
 	}
 
-	if hs {
+	if hx == "hs" {
 		hndl.Hspair = &HSPair{
+			Set: set,
+		}
+	}
+
+	if hx == "hn" {
+		hndl.Hnpair = &HNPair{
 			Set: set,
 		}
 	}
@@ -47,5 +54,9 @@ func (h *Handler) Run() {
 
 	if h.Hspair != nil {
 		h.Hspair.Run()
+	}
+
+	if h.Hnpair != nil {
+		h.Hnpair.Run()
 	}
 }

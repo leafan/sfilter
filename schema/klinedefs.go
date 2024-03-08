@@ -63,6 +63,14 @@ type KLine struct {
 	DeepEyeInfo `bson:",inline"`
 }
 
+// deepeye专属额外字段
+type DeepEyeInfo struct {
+	TxNum       int     `json:"txNum" bson:"txNum"`             // 该周期内的交易数
+	VolumeInUsd float64 `bson:"volumeInUsd" json:"volumeInUsd"` // 以usd计价的volume
+
+	PriceInUsd float64 `bson:"priceInUsd" json:"priceInUsd"` // 以usd计价的法币价格
+}
+
 type KLinePairInfo struct {
 	Pair       string `bson:"pair" json:"pair"`             // 交易对pair地址
 	BaseToken  string `bson:"baseToken" json:"baseToken"`   // base 币, 对应为 PEPE
@@ -76,14 +84,6 @@ type KLineCreatTime struct {
 	// 这个Timestamp不表示创建时间, 而是他代表的周期时间
 	// 每一次有交易来的时候, 都会更新成其区块时间
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
-}
-
-// deepeye专属额外字段
-type DeepEyeInfo struct {
-	TxNum       int     `json:"txNum" bson:"txNum"`             // 该周期内的交易数
-	VolumeInUsd float64 `bson:"volumeInUsd" json:"volumeInUsd"` // 以usd计价的volume
-
-	PriceInUsd float64 `bson:"priceInUsd" json:"priceInUsd"` // 以usd计价的法币价格
 }
 
 type KLinesForHour [60]KLine // 分钟K线，1小时60根

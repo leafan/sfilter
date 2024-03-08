@@ -25,6 +25,8 @@ func SendWecommBot(robotUrl, content string) {
 	err := wxbot.Send(msg)
 	if err != nil {
 		Warnf("[ SendWecommBot ] wxbot.Send error: ", err)
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 2)
 	}
+
+	time.Sleep(time.Millisecond * 500)
 }
