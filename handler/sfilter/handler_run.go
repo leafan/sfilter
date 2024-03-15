@@ -83,10 +83,7 @@ func (h *Handler) handleOneBlock(blk *schema.Block) {
 
 func (h *Handler) initMaps() error {
 	var err error
-	dbName := config.GlobalDatabaseName
-	if dbName == "" {
-		dbName = config.DatabaseName
-	}
+	dbName := config.DatabaseName
 
 	h.Tokens, err = token.GetTokenMap(config.SELECT_UPPER_SIZE, h.DB.Database(dbName))
 	if err != nil {

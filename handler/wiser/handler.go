@@ -1,10 +1,11 @@
 package handler
 
 type Handler struct {
-	Wiser  *Wiser
-	Hbpair *HBPair
-	Hspair *HSPair
-	Hnpair *HNPair
+	Wiser   *Wiser
+	Hbpair  *HBPair
+	Hspair  *HSPair
+	Hnpair  *HNPair
+	HspPair *HSPPair
 }
 
 // deal or wiser 表示分析deal和wiser, 任意一个开启均表示打开 wiser 服务
@@ -39,6 +40,12 @@ func NewHandler(account, db string, debug bool, deal, wiser bool, hx string) *Ha
 		}
 	}
 
+	if hx == "hsp" {
+		hndl.HspPair = &HSPPair{
+			Set: set,
+		}
+	}
+
 	return hndl
 }
 
@@ -58,5 +65,9 @@ func (h *Handler) Run() {
 
 	if h.Hnpair != nil {
 		h.Hnpair.Run()
+	}
+
+	if h.HspPair != nil {
+		h.HspPair.Run()
 	}
 }

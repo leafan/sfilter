@@ -27,20 +27,16 @@ type Wiser struct {
 }
 
 func (w *Wiser) Run() {
-	c := cron.New()
-	w.Save1HourTopRank()
+	{
+		// w.Save1HourTopRank()
+		// return
+	}
 
-	// 每小时执行一次
-	spec_hour := "20 0 * * * *"
+	c := cron.New()
+
+	spec_hour := "20 0/5 * * * *"
 	c.AddFunc(spec_hour, func() {
 		w.Save1HourTopRank()
-	})
-
-	// 每天执行一次
-	spec_day := "30 0 0 * * *"
-	c.AddFunc(spec_day, func() {
-		w.Save1DayTopRank()
-		w.WiserSearcher()
 	})
 
 	c.Start()
@@ -52,27 +48,30 @@ func (w *Wiser) fillRankWithPair(rank *schema.HotPairRank, _pair *schema.Pair) {
 	rank.MainToken = utils.GetMainToken(_pair.Token0, _pair.Token1)
 	rank.PairAddress = _pair.Address
 	rank.PairName = _pair.PairName
+
 	rank.PairLiquidity = _pair.LiquidityInUsd
 	rank.PairAge = time.Since(_pair.FirstAddPoolTime)
+
+	rank.TradeInfoForPair = _pair.TradeInfoForPair
 
 	rank.CreatedAt = time.Now()
 }
 
 func (w *Wiser) Save1HourTopRank() {
-	pairs := w.FindTopXPairs(100, "txNumIn1h")
+	pairs := w.FindTopXPairs(30, "txNumIn1h")
 	now := time.Now()
 
 	var rankList []interface{}
 	for ind, _pair := range pairs {
-		pKey := fmt.Sprintf("%v_%v_%v_%v", now.Year(), now.Month(), now.Day(), now.Hour())
+		pKey := fmt.Sprintf("%v_%v_%v_%v_%v", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute())
 
 		rank := schema.HotPairRank{
 			PeriodKey:         pKey,
 			PeriodKeyWithPair: fmt.Sprintf("%v_%v", pKey, _pair.Address),
 			SortRank:          ind + 1,
-			TxNumInPeriod:     _pair.TxNumIn1h,
 		}
-		utils.Tracef("test, pairname: %v, txnum: %v", _pair.PairName, _pair.TxNumIn1h)
+
+		// utils.Tracef("[ Save1HourTopRank ] pairname: %v, txnum: %v", _pair.PairName, _pair.TxNumIn1h)
 		w.fillRankWithPair(&rank, _pair)
 
 		rankList = append(rankList, rank)
@@ -83,9 +82,6 @@ func (w *Wiser) Save1HourTopRank() {
 	if err != nil {
 		utils.Errorf("[ Save1HourTopRank ] SaveTopRanks error: %v", err)
 	}
-}
-
-func (w *Wiser) Save1DayTopRank() {
 }
 
 func (w *Wiser) Test(accounts []string) {

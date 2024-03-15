@@ -73,8 +73,6 @@ func SaveBiTrade(trade *schema.BiTrade, mongodb *mongo.Client) {
 func UpdateBiTrade(trade *schema.BiTrade, mongodb *mongo.Client) {
 	collection := mongodb.Database(config.DatabaseName).Collection(config.BiTradeTableName)
 
-	trade.UpdatedAt = time.Now()
-
 	filter := bson.D{
 		{Key: "pairAddress", Value: trade.PairAddress},
 		{Key: "status", Value: 0},
@@ -86,6 +84,6 @@ func UpdateBiTrade(trade *schema.BiTrade, mongodb *mongo.Client) {
 
 	_, err := collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		utils.Errorf("[ UpdateTrade ] failed. trade: %v, err: %v\n", trade, err)
+		utils.Errorf("[ ReplaceOne ] failed. trade: %v, err: %v\n", trade, err)
 	}
 }

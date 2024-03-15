@@ -181,15 +181,17 @@ type BiDeal struct {
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
 
-// 排名列表保存, 每小时保存一次小时前100名
-// 一年有 50*24*365 = 88w 条记录
+// pair_addr为key, value为rank数组, 以createdAt倒排
+type HRankMap map[string][]HotPairRank
+
+// 排名列表保存, 每分钟保存前50名
+// 保存一个月有 60*24*30*50 = 216w
 type HotPairRank struct {
 	// year_month_day or year_month_day_hour
 	PeriodKey string `json:"periodKey" bson:"periodKey"`
 
-	// 被选中买点的时候, 其 tx1h 排序多少
-	SortRank      int `json:"sortRank" bson:"sortRank"`
-	TxNumInPeriod int `json:"txNumInPeriod" bson:"txNumInPeriod"`
+	// 被选中买点的时候, 其 tx 排序多少
+	SortRank int `json:"sortRank" bson:"sortRank"`
 
 	// unique key, 由 year_month_day_pairAddr or year_month_day_hour_pairAddr 组成
 	PeriodKeyWithPair string `json:"periodKeyWithPair" bson:"periodKeyWithPair"`
@@ -199,6 +201,9 @@ type HotPairRank struct {
 	PairName      string        `json:"pairName" bson:"pairName"`
 	PairLiquidity float64       `json:"pairLiquidity" bson:"pairLiquidity"`
 	PairAge       time.Duration `json:"pairAge" bson:"pairAge"`
+
+	// 把pair中的对应排名相关信息全拷过来
+	TradeInfoForPair `bson:",inline"`
 
 	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
 }
@@ -280,6 +285,11 @@ var HotPairRankIndexModel = []mongo.IndexModel{
 		Keys:    bson.D{{Key: "pairAge", Value: -1}},
 		Options: options.Index().SetName("pairAge_index"),
 	},
+	{
+		Keys:    bson.D{{Key: "sortRank", Value: -1}},
+		Options: options.Index().SetName("sortRank_index"),
+	},
+
 	{
 		Keys:    bson.D{{Key: "pairLiquidity", Value: -1}},
 		Options: options.Index().SetName("pairLiquidity_index"),
