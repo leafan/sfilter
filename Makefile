@@ -1,6 +1,25 @@
-.PHONY:  run ps build stop restart creat filter api wiser deepeye dwiser cwiser
+.PHONY:  run ps build stop restart bsc creat filter api wiser deepeye dwiser cwiser
 
 default: build
+
+bsc:
+	@make build
+
+	@echo "\n\033[0;34mKill process...\033[0m"
+	pkill -f '^.*sfilter_bsc$$' 2>&1 || true
+	pkill -f '^.*sapi_bsc$$' 2>&1 || true
+
+	@echo "\n\033[0;34mCopy file...\033[0m"
+	cp sfilter_eth /backup/bsc_filter/sfilter_bsc
+	cp sapi /backup/bsc_filter/sapi_bsc
+
+	@echo "\n\033[0;34mStart process...\033[0m"
+
+	cd /backup/bsc_filter/ && nohup ./sapi_bsc > /backup/bsc_filter/logs/sapi_$(shell date +%s).log 2>&1 &
+	cd /backup/bsc_filter/ && nohup ./sfilter_bsc > /backup/bsc_filter/logs/sfilter_$(shell date +%s).log 2>&1 &
+
+	@echo "\n\033[0;34mFinished...\033[0m"
+
 
 creat:
 	@make build

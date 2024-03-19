@@ -41,6 +41,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sfilter/config"
 	"sfilter/schema"
 	"sfilter/services/chain"
 	"sfilter/services/pair"
@@ -359,7 +360,7 @@ finish:
 	} else {
 		// 还需要将 tokenOut 的amountOut转成法币
 		var ethPrice float64
-		ethPrice, errRet = chain.GetEthPrice(nil, nil)
+		ethPrice, errRet = chain.GetBasicCoinPrice(nil, nil, config.BlockChain)
 		if errRet == nil {
 			sellUsdValue = utils.CalculateVolumeInUsd(tokenOut, new(big.Float).SetInt(amountOut), decimalOut, ethPrice)
 		}

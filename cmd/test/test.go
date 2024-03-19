@@ -1,14 +1,14 @@
 package main
 
 import (
-	"sfilter/services/pair"
+	"sfilter/services/chain"
 	"sfilter/utils"
 )
 
 func test() {
 	utils.Infof("****** Debug start ******\n\n")
 
-	pair.TEST_PAIR()
+	chain.TEST_POOL()
 
 	// chain.TEST_CHAIN()
 	// tutils.TEST_ENCRYPT()

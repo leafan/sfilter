@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/daoleno/uniswapv3-sdk/examples/quoter/uniswapv3"
 )
@@ -282,6 +283,23 @@ func getHackStatusFromContract(_pair *schema.Pair, divFactorInt int) int {
 	return 0
 }
 
+// 获取bsc链上的wbnb等价格
+// 这是基础函数, 写挫一点, 不引入任何第三方接口
+func GetBnbPriceByBsc(client *ethclient.Client) (float64, error) {
+	poolAddr := "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE"
+
+	r0, r1, err := GetUniV2PairReserves(poolAddr)
+	if err != nil {
+		return 0, nil
+	}
+
+	r0 = r0.Mul(r0, big.NewInt(1e18))
+	r0 = r0.Div(r0, r1)
+	priceWith1e18, _ := r0.Float64()
+
+	return priceWith1e18 / 1e18, nil
+}
+
 func GetUniPoolType(poolAddr string) (int, error) {
 	// uni v2 check
 	_, err := getSingleProp(poolAddr, "kLast", getClient(), nil)
@@ -319,11 +337,7 @@ func TEST_POOL() {
 
 	// fmt.Printf("[ TEST_POOL ] v3: %v, err: %v\n\n", v3, err)
 
-	// balance, err := GetAccountEthBalance("0xf97fab3851f05a3ded46baf325f58d57405332c3")
-	// fmt.Printf("[ TEST_POOL ] balance: %v, err: %v\n\n", balance, err)
-
-	token := "0xa7b64388f0f125354A3C5d5f799EBcDf1F832419"
-	_type, err := GetUniPoolType(token)
-	utils.Warnf("[ test ] type: %v, err :%v", _type, err)
+	price, err := GetBnbPriceByBsc(nil)
+	utils.Infof("price: %v, err: %v", price, err)
 
 }

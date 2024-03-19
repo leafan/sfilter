@@ -68,18 +68,17 @@ func SaveDeal(deal *schema.BiDeal, mongodb *mongo.Client) {
 	_, err := collection.InsertOne(context.Background(), deal)
 	if err != nil {
 		// 这里失败是正常现象, 重新写入
-		if err != nil {
-			filter := bson.D{{Key: "sellTxHashWithToken", Value: deal.SellTxHashWithToken}}
-			opts := options.Update().SetUpsert(true)
+		filter := bson.D{{Key: "sellTxHashWithToken", Value: deal.SellTxHashWithToken}}
+		opts := options.Update().SetUpsert(true)
 
-			update := bson.D{
-				{Key: "$set", Value: deal},
-			}
-			_, err := collection.UpdateOne(context.Background(), filter, update, opts)
-			if err != nil {
-				utils.Errorf("[ SaveDeal ] failed. sell_hash: %v, err: %v\n", deal.SellTxHashWithToken, err)
-			}
+		update := bson.D{
+			{Key: "$set", Value: deal},
 		}
+		_, err := collection.UpdateOne(context.Background(), filter, update, opts)
+		if err != nil {
+			utils.Errorf("[ SaveDeal ] failed. sell_hash: %v, err: %v\n", deal.SellTxHashWithToken, err)
+		}
+
 	}
 }
 

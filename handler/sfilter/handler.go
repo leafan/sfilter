@@ -81,6 +81,11 @@ func (h *Handler) HandleBlock(blockNumber *big.Int) {
 // 每次启动往回回溯n个区块, 防止某一次未处理
 // 回溯的时候, eth价格通过infura获取, 每10个区块更新一次价格
 func (h *Handler) Retrive_old_blocks() {
+	if config.RetriveOldBlockNum < 0 {
+		utils.Infof("[ Retrive_old_blocks ] no retrive, return..")
+		return
+	}
+
 	curBlkNo, err := h.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		utils.Fatalf("[ Retrive_old_blocks ] HeaderByNumber err: %v", err)
@@ -102,7 +107,7 @@ func (h *Handler) Retrive_old_blocks() {
 		}
 
 		if times%config.GetPriceIntervalForRetrive == 0 {
-			ethPrice, err = chain.GetEthPrice(h.Client, big.NewInt(i))
+			ethPrice, err = chain.GetBasicCoinPrice(h.Client, big.NewInt(i), config.BlockChain)
 			if err != nil {
 				continue // eth价格必须取到, 如果没取到, 回溯
 			}

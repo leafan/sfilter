@@ -32,10 +32,10 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 
 	if ethPrice == 0 {
 		if config.DevelopmentMode {
-			ethPrice, err = chain.GetEthPrice(client, blockNumber)
+			ethPrice, err = chain.GetBasicCoinPrice(client, blockNumber, config.BlockChain)
 		} else {
 			// 直接通过本地链上读取, 不要走 infura
-			ethPrice, err = chain.GetEthPrice(client, nil)
+			ethPrice, err = chain.GetBasicCoinPrice(client, nil, config.BlockChain)
 		}
 
 		if err != nil {
@@ -59,10 +59,11 @@ func getBlock(blockNumber *big.Int, client *ethclient.Client, mongodb *mongo.Cli
 			// 单纯的transfer, continue掉
 			continue
 		}
+		// utils.Debugf("[ getBlock ] tx: %v", tx.Hash())
 
 		receipt, err := ethblocks.GetTransactionReceipt(ctx, client, tx.Hash())
 		if err != nil {
-			utils.Errorf("[ getBlock ] GetTransactionReceipt err: %v", err)
+			utils.Errorf("[ getBlock ] GetTransactionReceipt: %v err: %v", tx.Hash(), err)
 			continue
 		}
 

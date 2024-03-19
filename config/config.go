@@ -11,6 +11,9 @@ import (
 var (
 	DevelopmentMode = false
 
+	// 默认eth链
+	BlockChain = "eth"
+
 	MONGO_ADDR   = "mongodb://127.0.0.1:27017"
 	DatabaseName = "deepeye"
 
@@ -49,6 +52,7 @@ func GetFacetProjectName(addr string) string {
 }
 
 func init() {
+	// anything else..
 
 	// 如果本地有env, 则以本地为主
 	initEnvConfig()
@@ -58,6 +62,12 @@ func initEnvConfig() {
 	if err := godotenv.Load(".env"); err != nil {
 		utils.Warnf("no env file, pass..")
 		return
+	}
+
+	chain := os.Getenv("CHAIN")
+	if chain == "bsc" {
+		// 解析bsc版本
+		initBscChain()
 	}
 
 	mongoAddr := os.Getenv("MONGO_ADDR")

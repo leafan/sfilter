@@ -239,15 +239,23 @@ func IsContract(address string) int {
 	return 0
 }
 
+func GetBasicCoinPrice(client *ethclient.Client, height *big.Int, chain string) (float64, error) {
+	if client == nil {
+		client = getClient()
+	}
+
+	if chain == "bsc" {
+		return GetBnbPriceByBsc(client)
+	}
+
+	return GetEthPrice(client, height)
+}
+
 // 获取eth价格,
 // 如果配置了height, 需要client支持archive查询功能, 可以用infura
 func GetEthPrice(client *ethclient.Client, height *big.Int) (float64, error) {
 	if height != nil {
 		client = getInfuraClient() // 当指定高度时, 则需要去infura上获取
-	}
-
-	if client == nil {
-		client = getClient()
 	}
 
 	const ETH_UNI_POOL = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
