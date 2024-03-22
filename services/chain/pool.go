@@ -237,13 +237,13 @@ func getHackStatusFromContract(_pair *schema.Pair, divFactorInt int) int {
 	contractAddr := common.HexToAddress(hackCheckAddr)
 
 	// 必须有一个是eth token, 否则认为是不识别类型
-	if !utils.Contains(utils.QuoteEthCoinList, _pair.Token0) && !utils.Contains(utils.QuoteEthCoinList, _pair.Token1) {
+	if !utils.Contains(config.QuoteEthCoinList, _pair.Token0) && !utils.Contains(config.QuoteEthCoinList, _pair.Token1) {
 		return 2
 	}
 
 	// 找出weth
 	var tokenFrom, tokenTo string
-	if utils.Contains(utils.QuoteEthCoinList, _pair.Token0) {
+	if utils.Contains(config.QuoteEthCoinList, _pair.Token0) {
 		tokenFrom = _pair.Token0
 		tokenTo = _pair.Token1
 	} else {

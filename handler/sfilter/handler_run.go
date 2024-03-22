@@ -2,7 +2,6 @@ package handler
 
 import (
 	"sfilter/config"
-	"sfilter/handler/facet"
 	"sfilter/schema"
 	service_block "sfilter/services/block"
 	"sfilter/services/pair"
@@ -68,10 +67,10 @@ func (h *Handler) handleOneBlock(blk *schema.Block) {
 	}
 
 	// 更新 用户跟踪地址逻辑
-	HandleUserTrackSwaps(blk, h.DB, swaps)
+	// HandleUserTrackSwaps(blk, h.DB, swaps)
 
 	// 更新 facet 逻辑
-	facet.HandleFacetLogic(blk, h.DB)
+	// facet.HandleFacetLogic(blk, h.DB)
 
 	// etc.. todo
 

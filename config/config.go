@@ -1,8 +1,8 @@
 package config
 
 import (
+	"log"
 	"os"
-	"sfilter/utils"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -60,7 +60,7 @@ func init() {
 
 func initEnvConfig() {
 	if err := godotenv.Load(".env"); err != nil {
-		utils.Warnf("no env file, pass..")
+		log.Printf("no env file, pass..")
 		return
 	}
 
@@ -72,25 +72,25 @@ func initEnvConfig() {
 
 	mongoAddr := os.Getenv("MONGO_ADDR")
 	if mongoAddr != "" {
-		utils.Infof("[ init ] Using mongo addr: %v", mongoAddr)
+		log.Printf("[ init ] Using mongo addr: %v", mongoAddr)
 		MONGO_ADDR = mongoAddr
 	}
 
 	infura_apikey := os.Getenv("INFURA_API_KEY")
 	if infura_apikey != "" {
-		utils.Infof("[ init ] Using infura_apikey: %v", infura_apikey)
+		log.Printf("[ init ] Using infura_apikey: %v", infura_apikey)
 		INFURA_API_KEY = infura_apikey
 	}
 
 	ws_addr := os.Getenv("WS_ADDR")
 	if ws_addr != "" {
-		utils.Infof("[ init ] Using ws addr: %v", ws_addr)
+		log.Printf("[ init ] Using ws addr: %v", ws_addr)
 		WS_ADDR = ws_addr
 	}
 
 	dbName := os.Getenv("DB_NAME")
 	if dbName != "" {
-		utils.Infof("[ init ] Using db: %v", dbName)
+		log.Printf("[ init ] Using db: %v", dbName)
 		DatabaseName = dbName
 	}
 
@@ -98,22 +98,21 @@ func initEnvConfig() {
 	if retriveNum != "" {
 		tmpNum, err := strconv.Atoi(retriveNum)
 		if err != nil {
-			utils.Fatalf("Wrong param of RETRIVE_OLD_BLOCK_NUM: %v", retriveNum)
+			log.Fatal("Wrong param of RETRIVE_OLD_BLOCK_NUM: %v", retriveNum)
 		}
 
-		utils.Infof("[ init ] Using RetriveOldBlockNum: %v", tmpNum)
+		log.Printf("[ init ] Using RetriveOldBlockNum: %v", tmpNum)
 		RetriveOldBlockNum = tmpNum
 	}
 
 	listenAddr := os.Getenv("API_LISTEN_PORT")
 	if listenAddr != "" {
-		utils.Infof("[ init ] Using ApiListenAddrPort: %v", listenAddr)
+		log.Printf("[ init ] Using ApiListenAddrPort: %v", listenAddr)
 		ApiListenAddrPort = listenAddr
 	}
 
 	aesKey := os.Getenv("API_AES_DATA_KEY")
 	if aesKey != "" {
-		// utils.Infof("[ init ] Using API_AES_DATA_KEY: %v", aesKey)
 		API_AES_DATA_KEY = aesKey
 	}
 

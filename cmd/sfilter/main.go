@@ -32,7 +32,7 @@ func main() {
 		utils.Fatalf("[ loop ] NewHandler failed: %v", err)
 	}
 
-	go getTrackAddressOnTimer(mongodb)
+	// go getTrackAddressOnTimer(mongodb)
 
 	h.Run(*block)
 

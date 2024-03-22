@@ -103,12 +103,14 @@ func (h *Handler) Retrive_old_blocks() {
 
 	for i := startBlock; i < curBlkNo.Number.Int64(); i++ {
 		if service_block.IsBlockProceeded(i, h.DB) {
+			utils.Debugf("[ Retrive_old_blocks ] block %v has handled, pass..", i)
 			continue
 		}
 
 		if times%config.GetPriceIntervalForRetrive == 0 {
 			ethPrice, err = chain.GetBasicCoinPrice(h.Client, big.NewInt(i), config.BlockChain)
 			if err != nil {
+				utils.Warnf("[ Retrive_old_blocks ] GetBasicCoinPrice err: %v", err)
 				continue // eth价格必须取到, 如果没取到, 回溯
 			}
 		}

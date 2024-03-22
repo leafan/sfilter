@@ -410,9 +410,9 @@ func updateUsdInfo(swap *schema.Swap, mongodb *mongo.Client) {
 		quoteToken = swap.Token0
 	}
 
-	if utils.CheckExistString(quoteToken, utils.QuoteUsdCoinList) {
+	if utils.CheckExistString(quoteToken, config.QuoteUsdCoinList) {
 		swap.PriceInUsd = swap.Price
-	} else if utils.CheckExistString(quoteToken, utils.QuoteEthCoinList) {
+	} else if utils.CheckExistString(quoteToken, config.QuoteEthCoinList) {
 		swap.PriceInUsd = swap.Price * swap.CurrentEthPrice
 	} else {
 		// 从token中取, 还取不到, 那就尴尬一笑
