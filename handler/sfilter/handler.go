@@ -60,7 +60,19 @@ func (h *Handler) Run(block int64) {
 	for {
 		select {
 		case err := <-sub.Err():
-			utils.Fatalf("SubscribeBlocks error: %v", err)
+			utils.Warnf("[ Run ]SubscribeBlocks error: %v, reconnecting now...", err)
+
+			for {
+				sub, err = h.Client.SubscribeNewHead(context.Background(), headers)
+				if err != nil {
+					utils.Warnf("[ Run ] SubscribeNewHead err: %v, sleep now..", err)
+					time.Sleep(5 * time.Second)
+				} else {
+					utils.Infof("[ Run ] reconnect success..")
+					break
+				}
+
+			}
 
 		case header := <-headers:
 			utils.Infof("[ loop ] Get new header now. number: %v\n", header.Number)

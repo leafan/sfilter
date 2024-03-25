@@ -258,6 +258,9 @@ func creatTokenTransferMap(transfers []*schema.Transfer, swapContracts map[strin
 }
 
 func UpsertSwapToDB(swaps []*schema.Swap, swapContracts map[string]bool, transfers []*schema.Transfer, mongodb *mongo.Client) {
+	handler_Lock.Lock()
+	defer handler_Lock.Unlock()
+
 	ttm := creatTokenTransferMap(transfers, swapContracts)
 
 	for _, _swap := range swaps {
