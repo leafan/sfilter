@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func parsePairCreatedEvent(block *schema.Block, l *types.Log) *schema.Pair {
+func parsePairCreatedEvent(l *types.Log) *schema.Pair {
 	var pair *schema.Pair
 
 	// uniswap v2 的 paircreated 事件

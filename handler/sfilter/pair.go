@@ -23,7 +23,7 @@ func HandlePairLogic(block *schema.Block, mongodb *mongo.Client) {
 }
 
 func handlePairCreated(block *schema.Block, _log *types.Log, mongodb *mongo.Client) {
-	_pair := parsePairCreatedEvent(block, _log)
+	_pair := parsePairCreatedEvent(_log)
 	if _pair != nil {
 		utils.Debugf("[ handlePairCreated ] pair: %v, tx: %v", _pair, _log.TxHash)
 
