@@ -58,7 +58,7 @@ func (w *Wiser) fillRankWithPair(rank *schema.HotPairRank, _pair *schema.Pair) {
 }
 
 func (w *Wiser) Save1HourTopRank() {
-	pairs := w.FindTopXPairs(30, "txNumIn1h")
+	pairs := w.FindTopXPairs(50, "txNumIn1h")
 	now := time.Now()
 
 	var rankList []interface{}
@@ -171,9 +171,9 @@ func (w *Wiser) FindTopXPairs(topN int64, sortKey string) []*schema.Pair {
 	info, _, err := pair.GetHotPairs(options, &filter, db)
 
 	utils.Debugf("[ FindTopXPairs ] top x print. len: %v, err: %v", len(info), err)
-	// for ind, _pair := range info {
-	// 	fmt.Printf("%v: pair: %v, address: %v\n", ind+1, _pair.PairName, _pair.Address)
-	// }
+	for ind, _pair := range info {
+		fmt.Printf("%v: pair: %v, address: %v\n", ind+1, _pair.PairName, _pair.Address)
+	}
 
 	return info
 }

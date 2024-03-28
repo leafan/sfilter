@@ -34,8 +34,8 @@ creat:
 
 	@echo "\n\033[0;34mStart process...\033[0m"
 
-	cd /data_v1/creat/ && nohup ./sapi_creat > /data_v1/creat/logs/sapi_creat_$(shell date +%s).log 2>&1 &
-	cd /data_v1/creat/ && nohup ./sfilter_creat > /data_v1/creat/logs/sfilter_creat_$(shell date +%s).log 2>&1 &
+	cd /data_v1/creat/ && nohup ./sapi_creat > /data_v1/creat/logs/sapi_creat.log 2>&1 &
+	cd /data_v1/creat/ && nohup ./sfilter_creat > /data_v1/creat/logs/sfilter_creat.log 2>&1 &
 
 	@echo "\n\033[0;34mFinished...\033[0m"
 
@@ -77,7 +77,7 @@ cwiser:
 
 	cp swiser /data_v1/creat/swiser_creat
 
-	cd /data_v1/creat/ && nohup ./swiser_creat -wiser -deal > /data_v1/creat/logs/swiser_creat.log 2>&1 &
+	cd /data_v1/creat/ && nohup ./swiser_creat -wiser > /data_v1/creat/logs/swiser_creat.log 2>&1 &
 
 
 run:
